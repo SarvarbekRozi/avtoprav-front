@@ -14,13 +14,13 @@ const filtered = computed(() => {
   return tickets.value
 })
 
-function tileClass(t: any) {
-  if (t.is_locked)         return 'bg-ink-50 text-ink-400 border-ink-200 cursor-not-allowed'
-  if (!t.is_ready)         return 'bg-ink-50 text-ink-300 border-ink-200 cursor-not-allowed'
-  if (t.best_score >= 18)  return 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:border-emerald-400 hover:bg-emerald-100'
-  if (t.best_score >= 16)  return 'bg-white text-ink-900 border-emerald-200 hover:border-emerald-400'
-  if (t.attempts > 0)      return 'bg-white text-ink-900 border-amber-200 hover:border-amber-400'
-  return 'bg-white text-ink-900 border-ink-200 hover:border-ink-400'
+function tileStyle(t: any) {
+  if (t.is_locked)         return { bg: 'var(--surface-soft)', border: 'var(--surface-inset)', fg: 'var(--text-4)',  cursor: 'not-allowed' }
+  if (!t.is_ready)         return { bg: 'var(--surface-soft)', border: 'var(--surface-inset)', fg: 'var(--text-muted)', cursor: 'not-allowed' }
+  if (t.best_score >= 18)  return { bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)', fg: '#047857', cursor: 'pointer' }
+  if (t.best_score >= 16)  return { bg: 'var(--surface)',       border: 'rgba(16,185,129,0.3)', fg: 'var(--text-1)', cursor: 'pointer' }
+  if (t.attempts > 0)      return { bg: 'var(--surface)',       border: 'rgba(251,191,36,0.3)', fg: 'var(--text-1)', cursor: 'pointer' }
+  return                          { bg: 'var(--surface)',       border: 'var(--border-1)',     fg: 'var(--text-1)', cursor: 'pointer' }
 }
 
 const counts = computed(() => ({
@@ -31,19 +31,19 @@ const counts = computed(() => ({
 }))
 
 const filters = computed(() => [
-  { id: 'all',        label: i18n.t({ uz: 'Hammasi',    kr: 'Ҳаммаси' }),       count: counts.value.all },
-  { id: 'unfinished', label: i18n.t({ uz: 'Ishlanmagan', kr: 'Ишланмаган' }),    count: counts.value.unfinished },
-  { id: 'ready',      label: i18n.t({ uz: 'Tayyor',      kr: 'Тайёр' }),         count: counts.value.ready },
-  { id: 'mastered',   label: i18n.t({ uz: 'Mukammal',    kr: 'Мукаммал' }),      count: counts.value.mastered },
+  { id: 'all',        label: i18n.t({ uz: 'Hammasi',    kr: 'Ҳаммаси' }),    count: counts.value.all },
+  { id: 'unfinished', label: i18n.t({ uz: 'Ishlanmagan', kr: 'Ишланмаган' }), count: counts.value.unfinished },
+  { id: 'ready',      label: i18n.t({ uz: 'Tayyor',      kr: 'Тайёр' }),     count: counts.value.ready },
+  { id: 'mastered',   label: i18n.t({ uz: 'Mukammal',    kr: 'Мукаммал' }),  count: counts.value.mastered },
 ] as const)
 </script>
 
 <template>
   <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10">
     <!-- Header -->
-    <div class="mb-8">
-      <div class="eyebrow mb-2">{{ i18n.t({ uz: 'Katalog', kr: 'Каталог' }) }}</div>
-      <h1 class="text-3xl font-semibold tracking-tightest text-ink-900">
+    <div class="mb-7">
+      <div class="eyebrow">{{ i18n.t({ uz: 'Katalog', kr: 'Каталог' }) }}</div>
+      <h1 class="text-3xl font-semibold tracking-tightest text-ink-900 mt-1.5">
         {{ i18n.t({ uz: 'Rasmiy biletlar', kr: 'Расмий билетлар' }) }}
       </h1>
       <p class="text-ink-500 mt-2 max-w-2xl">
@@ -61,7 +61,7 @@ const filters = computed(() => [
         class="px-3.5 h-9 inline-flex items-center gap-2 rounded-lg text-sm font-medium transition-all"
         :class="filter === f.id ? 'bg-white text-ink-900 shadow-soft' : 'text-ink-600 hover:text-ink-900'">
         {{ f.label }}
-        <span class="text-2xs px-1.5 py-0.5 rounded-md"
+        <span class="text-2xs px-1.5 py-0.5 rounded-md tabular-nums"
               :class="filter === f.id ? 'bg-ink-100 text-ink-600' : 'bg-white/60 text-ink-500'">
           {{ f.count }}
         </span>
@@ -75,12 +75,7 @@ const filters = computed(() => [
 
     <!-- Empty -->
     <div v-else-if="tickets.length === 0" class="card p-12 text-center">
-      <div class="text-ink-400 mb-2">
-        <svg class="w-10 h-10 mx-auto" viewBox="0 0 24 24" fill="none">
-          <rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M3 10h18" stroke="currentColor" stroke-width="1.5"/>
-        </svg>
-      </div>
+      <div class="text-ink-400 mb-2 flex justify-center"><AppIcon name="ticket" :size="40" /></div>
       <p class="text-ink-600">{{ i18n.t({
         uz: 'Hozircha biletlar mavjud emas.',
         kr: 'Ҳозирча билетлар мавжуд эмас.'
@@ -92,18 +87,39 @@ const filters = computed(() => [
       <component v-for="t in filtered" :key="t.id"
         :is="(t.is_locked || !t.is_ready) ? 'div' : 'NuxtLink'"
         :to="(t.is_locked || !t.is_ready) ? undefined : `/test/start/ticket?ticket_id=${t.id}`"
-        :class="tileClass(t)"
-        class="relative aspect-square flex flex-col items-center justify-center border rounded-xl transition-all duration-150 group">
-        <span v-if="t.is_locked" class="absolute top-1.5 right-1.5 text-2xs">
-          <svg class="w-3 h-3" viewBox="0 0 12 12" fill="currentColor"><path d="M6 1.5a2.25 2.25 0 0 0-2.25 2.25v1.5h-.375A.875.875 0 0 0 2.5 6.125v3.75c0 .483.392.875.875.875h5.25a.875.875 0 0 0 .875-.875v-3.75a.875.875 0 0 0-.875-.875H8.25v-1.5A2.25 2.25 0 0 0 6 1.5Zm-1.25 3.75v-1.5a1.25 1.25 0 0 1 2.5 0v1.5h-2.5Z"/></svg>
-        </span>
-        <span v-else-if="t.best_score >= 18" class="absolute top-1.5 right-1.5 text-emerald-500">
-          <svg class="w-3 h-3" viewBox="0 0 12 12" fill="currentColor"><path d="M6 1l1.545 3.13L11 4.635l-2.5 2.435.59 3.43L6 8.88 2.91 10.5l.59-3.43L1 4.635l3.455-.505L6 1z"/></svg>
-        </span>
-        <div class="text-xl sm:text-2xl font-semibold tracking-tightish">{{ t.number }}</div>
-        <div v-if="t.best_score !== null" class="text-2xs mt-0.5 font-medium opacity-80">{{ t.best_score }}/20</div>
-        <div v-else class="text-2xs mt-0.5 opacity-60">{{ t.questions_count }}{{ i18n.t({ uz: ' s.', kr: ' с.' }) }}</div>
+        class="relative aspect-square flex flex-col items-center justify-center border rounded-xl transition-all duration-150 hover:-translate-y-0.5"
+        :style="{
+          background: tileStyle(t).bg,
+          borderColor: tileStyle(t).border,
+          color: tileStyle(t).fg,
+          cursor: tileStyle(t).cursor,
+        }">
+        <AppIcon v-if="t.is_locked" name="lock" :size="10" class="absolute top-1.5 right-1.5 text-ink-400" />
+        <AppIcon v-else-if="t.best_score >= 18" name="star" :size="10" class="absolute top-1.5 right-1.5 text-amber-500" />
+        <div class="text-xl font-semibold tracking-tightish">{{ t.number }}</div>
+        <div v-if="t.best_score !== null" class="text-2xs mt-0.5 font-medium opacity-80 tabular-nums">{{ t.best_score }}/20</div>
+        <div v-else class="text-2xs mt-0.5 opacity-60">{{ t.questions_count }} {{ i18n.t({ uz: 's.', kr: 'с.' }) }}</div>
       </component>
+    </div>
+
+    <!-- Legend -->
+    <div class="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2 text-2xs text-ink-500">
+      <span class="flex items-center gap-2">
+        <span class="w-4 h-4 rounded-md" style="background: var(--surface); border: 1px solid var(--border-1);"></span>
+        {{ i18n.t({ uz: 'Hali ishlanmagan',   kr: 'Ҳали ишланмаган' }) }}
+      </span>
+      <span class="flex items-center gap-2">
+        <span class="w-4 h-4 rounded-md" style="background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.3);"></span>
+        {{ i18n.t({ uz: 'Mashq qilingan',     kr: 'Машқ қилинган' }) }}
+      </span>
+      <span class="flex items-center gap-2">
+        <span class="w-4 h-4 rounded-md" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3);"></span>
+        {{ i18n.t({ uz: 'Mukammal · ≥18',     kr: 'Мукаммал · ≥18' }) }}
+      </span>
+      <span class="flex items-center gap-2">
+        <span class="w-4 h-4 rounded-md" style="background: var(--surface-soft); border: 1px solid var(--border-1);"></span>
+        {{ i18n.t({ uz: 'Yopiq · Premium',    kr: 'Ёпиқ · Премиум' }) }}
+      </span>
     </div>
 
     <div v-if="filtered.length === 0 && tickets.length > 0" class="text-center py-12 text-ink-400 text-sm">

@@ -26,7 +26,13 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n/manifest.webmanifest: \" http://localhost:3000/tickets)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n/icon-192.svg: \" http://localhost:3000/manifest.webmanifest)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/icon-192.svg)",
-      "Bash(npx nuxt *)"
+      "Bash(npx nuxt *)",
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(mkdir -p /tmp/avtoprav)",
+      "Bash(cp \"C:/Users/mehnatuzS#/.claude/projects/D--loyiha-autotest-front/6d826bb7-98c4-49de-b6b1-ce79889ff66f/tool-results/webfetch-1778845334853-ayt0xu.bin\" design.gz)",
+      "Bash(gunzip -f design.gz)",
+      "Bash(tar -xf design)",
+      "Bash(php artisan *)"
     ]
   }
 }

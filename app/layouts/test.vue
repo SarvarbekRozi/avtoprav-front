@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-ink-50">
+  <div class="min-h-screen" style="background: var(--canvas);">
     <slot />
   </div>
 </template>

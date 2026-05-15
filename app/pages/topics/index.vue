@@ -7,13 +7,28 @@ const topics = computed(() => topicsRes.value?.data || [])
 
 function name(t: any)        { return i18n.locale.value === 'uz_cyrl' ? t.name_kr : t.name_uz }
 function description(t: any) { return i18n.locale.value === 'uz_cyrl' ? t.description_kr : t.description_uz }
+
+const TONE_ROTATION = ['brand', 'sky', 'amber', 'rose', 'violet', 'emerald', 'ink'] as const
+function toneFor(i: number) { return TONE_ROTATION[i % TONE_ROTATION.length] }
+
+function progress(t: any) {
+  // Backend may not provide; default 0. If `accuracy` provided per topic, use it.
+  return Number.isFinite(t.accuracy) ? Math.round(t.accuracy) : 0
+}
+function progressColor(p: number) {
+  if (p >= 80) return '#10b981'
+  if (p >= 60) return '#3f5894'
+  if (p >= 50) return '#f59e0b'
+  if (p > 0)   return '#f43f5e'
+  return '#d9dade'
+}
 </script>
 
 <template>
   <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10">
-    <div class="mb-8">
-      <div class="eyebrow mb-2">{{ i18n.t({ uz: 'Mashq', kr: 'Машқ' }) }}</div>
-      <h1 class="text-3xl font-semibold tracking-tightest text-ink-900">
+    <div class="mb-7">
+      <div class="eyebrow">{{ i18n.t({ uz: 'Mashq', kr: 'Машқ' }) }}</div>
+      <h1 class="text-3xl font-semibold tracking-tightest text-ink-900 mt-1.5">
         {{ i18n.t({ uz: 'Mavzular bo\'yicha mashq', kr: 'Мавзулар бўйича машқ' }) }}
       </h1>
       <p class="text-ink-500 mt-2 max-w-2xl">
@@ -26,20 +41,12 @@ function description(t: any) { return i18n.locale.value === 'uz_cyrl' ? t.descri
 
     <!-- Loading -->
     <div v-if="pending" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      <div v-for="i in 6" :key="i" class="card p-5 h-36 animate-pulse">
-        <div class="h-4 w-3/4 bg-ink-100 rounded mb-3"></div>
-        <div class="h-3 w-1/3 bg-ink-100 rounded mb-2"></div>
-        <div class="h-3 w-full bg-ink-100 rounded"></div>
-      </div>
+      <div v-for="i in 6" :key="i" class="card p-5 h-48 animate-pulse"></div>
     </div>
 
     <!-- Empty -->
     <div v-else-if="topics.length === 0" class="card p-12 text-center">
-      <div class="text-ink-400 mb-2">
-        <svg class="w-10 h-10 mx-auto" viewBox="0 0 24 24" fill="none">
-          <path d="M4 5h16v14H4zM8 9h8M8 13h8M8 17h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-      </div>
+      <div class="text-ink-400 mb-2 flex justify-center"><AppIcon name="book" :size="40" /></div>
       <p class="text-ink-600">{{ i18n.t({
         uz: 'Mavzular hozircha mavjud emas.',
         kr: 'Мавзулар ҳозирча мавжуд эмас.'
@@ -48,35 +55,40 @@ function description(t: any) { return i18n.locale.value === 'uz_cyrl' ? t.descri
 
     <!-- Grid -->
     <div v-else class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      <NuxtLink v-for="t in topics" :key="t.id"
+      <NuxtLink v-for="(t, i) in topics" :key="t.id"
         :to="t.is_locked || t.questions_count === 0 ? '' : `/test/start/topic?topic_id=${t.id}`"
         class="card card-hover p-5 group block relative"
-        :class="{ 'opacity-60 pointer-events-none': t.is_locked || t.questions_count === 0 }">
-        <div v-if="t.is_premium" class="badge-warn absolute top-4 right-4">Premium</div>
+        :class="{ 'opacity-70 pointer-events-none': t.is_locked }">
+        <span v-if="t.is_premium" class="badge-warn absolute top-4 right-4">
+          <AppIcon name="spark" :size="10" />
+          Premium
+        </span>
 
-        <div class="flex items-start justify-between gap-3 mb-2">
-          <div class="font-semibold text-ink-900 leading-snug pr-6">{{ name(t) }}</div>
-        </div>
+        <IconTile icon="sign" :tone="toneFor(i)" :size="40" />
 
-        <div class="flex items-center gap-2 text-2xs text-ink-500 mb-3">
-          <span>{{ t.questions_count }} {{ i18n.t({ uz: 'savol', kr: 'савол' }) }}</span>
-        </div>
+        <div class="font-semibold mt-4 leading-snug pr-12 text-ink-900">{{ name(t) }}</div>
+        <div class="text-2xs mt-1 text-ink-500">{{ t.questions_count }} {{ i18n.t({ uz: 'ta savol', kr: 'та савол' }) }}</div>
 
-        <p v-if="description(t)" class="text-sm text-ink-500 leading-relaxed line-clamp-2">
+        <p v-if="description(t)" class="text-sm mt-2.5 leading-relaxed line-clamp-2 text-ink-500">
           {{ description(t) }}
         </p>
 
+        <div class="mt-4">
+          <div class="flex items-center justify-between text-2xs mb-1.5">
+            <span class="text-ink-500">{{ i18n.t({ uz: 'O\'zlashtirilgan', kr: 'Ўзлаштирилган' }) }}</span>
+            <span class="tabular-nums font-semibold text-ink-800">{{ progress(t) }}%</span>
+          </div>
+          <div class="h-1.5 rounded-full overflow-hidden bg-ink-100">
+            <div class="h-full rounded-full transition-all duration-500"
+                 :style="{ background: progressColor(progress(t)), width: progress(t) + '%' }"></div>
+          </div>
+        </div>
+
         <div class="mt-4 pt-4 border-t border-ink-200/70 flex items-center justify-between">
-          <span v-if="t.is_locked" class="text-sm text-amber-700 font-medium">
-            {{ i18n.t({ uz: 'Premium kerak', kr: 'Премиум керак' }) }}
+          <span class="text-sm font-medium" :class="t.is_locked ? 'text-amber-700' : 'text-ink-700'">
+            {{ t.is_locked ? i18n.t({ uz: 'Premium kerak', kr: 'Премиум керак' }) : i18n.t({ uz: 'Mashq qilish', kr: 'Машқ қилиш' }) }}
           </span>
-          <span v-else class="text-sm font-medium text-ink-700 group-hover:text-ink-900">
-            {{ i18n.t({ uz: 'Mashq qilish', kr: 'Машқ қилиш' }) }}
-          </span>
-          <svg class="w-4 h-4 text-ink-300 group-hover:text-ink-900 group-hover:translate-x-0.5 transition-all"
-               viewBox="0 0 16 16" fill="none">
-            <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+          <AppIcon name="arrow" :size="14" class="text-ink-300 group-hover:translate-x-0.5 transition-transform" />
         </div>
       </NuxtLink>
     </div>

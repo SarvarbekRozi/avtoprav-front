@@ -11,10 +11,15 @@ const showAll = ref(false)
 const a = computed(() => data.value?.attempt)
 const answers = computed(() => data.value?.answers || [])
 const wrongAnswers = computed(() => answers.value.filter((x: any) => !x.is_correct))
+const firstWrong = computed(() => wrongAnswers.value[0])
 
 function fmtTime(sec: number) {
   const m = Math.floor(sec / 60), s = sec % 60
   return `${m}:${s.toString().padStart(2, '0')}`
+}
+function fmtTimeWord(sec: number) {
+  const m = Math.floor(sec / 60), s = sec % 60
+  return `${m} ${i18n.t({ uz: 'daq', kr: 'дақ' })} ${s} ${i18n.t({ uz: 'son', kr: 'сон' })}`
 }
 
 const passed = computed(() => a.value?.is_passed)
@@ -22,132 +27,155 @@ const percent = computed(() => {
   if (!a.value || a.value.total_questions === 0) return 0
   return Math.round((a.value.correct_count / a.value.total_questions) * 100)
 })
+
+const modeLabels: Record<string, { uz: string, kr: string }> = {
+  exam:     { uz: 'Imtihon rejimi',     kr: 'Имтиҳон режими' },
+  topic:    { uz: 'Mavzu',               kr: 'Мавзу' },
+  ticket:   { uz: 'Bilet',               kr: 'Билет' },
+  random:   { uz: 'Tasodifiy',           kr: 'Тасодифий' },
+  mistakes: { uz: 'Xatolar ustida ish', kr: 'Хатолар устида иш' },
+  marathon: { uz: 'Marafon',             kr: 'Марафон' },
+  memorize: { uz: 'Yodlash',             kr: 'Ёдлаш' },
+}
+const modeLabel = computed(() => a.value ? i18n.t(modeLabels[a.value.mode] ?? { uz: a.value.mode, kr: a.value.mode }) : '')
+
+function chosenLetter(ans: any) {
+  if (!ans.chosen_option_id) return null
+  const idx = ans.question.options.findIndex((o: any) => o.id === ans.chosen_option_id)
+  return idx >= 0 ? String.fromCharCode(65 + idx) : null
+}
+function correctLetter(ans: any) {
+  const idx = ans.question.options.findIndex((o: any) => o.is_correct)
+  return idx >= 0 ? String.fromCharCode(65 + idx) : null
+}
+function correctText(ans: any) {
+  return ans.question.options.find((o: any) => o.is_correct)?.text || ''
+}
+function chosenText(ans: any) {
+  return ans.question.options.find((o: any) => o.id === ans.chosen_option_id)?.text || i18n.t({ uz: 'O\'tkazib yuborilgan', kr: 'Ўтказиб юборилган' })
+}
+
+const avgTime = computed(() => {
+  if (!a.value || a.value.total_questions === 0) return 0
+  return Math.round(a.value.time_spent_sec / a.value.total_questions)
+})
+
+function gradeLabel(p: number) {
+  if (p >= 95) return i18n.t({ uz: 'A\'lo', kr: 'Аъло' })
+  if (p >= 85) return i18n.t({ uz: 'Yaxshi', kr: 'Яхши' })
+  if (p >= 70) return i18n.t({ uz: 'O\'rtacha', kr: 'Ўртача' })
+  return i18n.t({ uz: 'Past', kr: 'Паст' })
+}
 </script>
 
 <template>
   <div class="max-w-3xl mx-auto px-4 sm:px-6 py-10" v-if="a">
     <!-- Hero result -->
-    <div class="card p-8 mb-6 text-center"
-         :class="passed ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50/50 border-rose-200'">
-      <div class="inline-flex w-12 h-12 rounded-2xl items-center justify-center mb-5"
-           :class="passed ? 'bg-emerald-500 text-white' : 'bg-rose-100 text-rose-600'">
-        <svg v-if="passed" class="w-6 h-6" viewBox="0 0 24 24" fill="none">
-          <path d="M5 12L10 17L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <svg v-else class="w-6 h-6" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/>
-          <path d="M12 7v6M12 16v.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-        </svg>
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center gap-1.5 px-3 h-7 rounded-full text-2xs font-semibold uppercase tracking-wider"
+           :class="passed ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'">
+        <AppIcon v-if="passed" name="check" :size="12" />
+        <AppIcon v-else name="x" :size="12" />
+        {{ passed ? i18n.t({ uz: 'Muvaffaqiyatli', kr: 'Муваффақиятли' }) : i18n.t({ uz: 'O\'tilmadi', kr: 'Ўтилмади' }) }}
       </div>
 
-      <div class="text-2xl font-semibold tracking-tightish text-ink-900 mb-1">
-        {{ passed
-          ? i18n.t({ uz: 'Imtihondan o\'tdingiz', kr: 'Имтиҳондан ўтдингиз' })
-          : i18n.t({ uz: 'Yana harakat qilib ko\'ring', kr: 'Яна ҳаракат қилиб кўринг' }) }}
-      </div>
-      <p class="text-sm text-ink-500 max-w-md mx-auto">
-        {{ passed
-          ? i18n.t({ uz: 'Ajoyib natija. Davom eting va boshqa rejimlarni ham sinab ko\'ring.', kr: 'Ажойиб натижа. Давом этинг ва бошқа режимларни ҳам синаб кўринг.' })
-          : i18n.t({ uz: 'Xato javoblaringizni qayta ko\'rib chiqing va yana urinib ko\'ring.', kr: 'Хато жавобларингизни қайта кўриб чиқинг ва яна уриниб кўринг.' }) }}
-      </p>
-
-      <div class="grid grid-cols-3 gap-4 mt-7 max-w-md mx-auto">
-        <div>
-          <div class="text-3xl font-semibold tracking-tightish text-emerald-600 tabular-nums">{{ a.correct_count }}</div>
-          <div class="text-2xs uppercase tracking-wider text-ink-500 font-semibold mt-1">{{ i18n.t({ uz: 'To\'g\'ri', kr: 'Тўғри' }) }}</div>
-        </div>
-        <div>
-          <div class="text-3xl font-semibold tracking-tightish text-rose-500 tabular-nums">{{ a.wrong_count }}</div>
-          <div class="text-2xs uppercase tracking-wider text-ink-500 font-semibold mt-1">{{ i18n.t({ uz: 'Xato', kr: 'Хато' }) }}</div>
-        </div>
-        <div>
-          <div class="text-3xl font-semibold tracking-tightish text-ink-900 tabular-nums">{{ percent }}%</div>
-          <div class="text-2xs uppercase tracking-wider text-ink-500 font-semibold mt-1">{{ i18n.t({ uz: 'Aniqlik', kr: 'Аниқлик' }) }}</div>
-        </div>
-      </div>
-
-      <div class="mt-5 text-2xs text-ink-500 flex items-center justify-center gap-3">
-        <span class="tabular-nums">⏱ {{ fmtTime(a.time_spent_sec) }}</span>
-        <span>·</span>
-        <span>{{ a.total_questions }} {{ i18n.t({ uz: 'savol', kr: 'савол' }) }}</span>
+      <h1 class="text-4xl sm:text-5xl font-semibold tracking-tightest mt-4 text-ink-900 tabular-nums">
+        {{ a.correct_count }} <span class="text-ink-300">/ {{ a.total_questions }}</span>
+      </h1>
+      <div class="mt-2 text-ink-500">
+        {{ modeLabel }} · {{ fmtTimeWord(a.time_spent_sec) }} · {{ percent }}%
       </div>
     </div>
 
-    <!-- Actions -->
-    <div class="flex flex-wrap gap-2.5 justify-center mb-8">
-      <NuxtLink :to="`/test/start/${a.mode}`" class="btn-primary">
-        <svg class="w-3.5 h-3.5" viewBox="0 0 14 14" fill="none">
-          <path d="M2 7a5 5 0 1 0 1.5-3.5M2 3v3h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        {{ i18n.t({ uz: 'Qayta urinish', kr: 'Қайта уриниш' }) }}
-      </NuxtLink>
-      <NuxtLink to="/" class="btn-outline">{{ i18n.t({ uz: 'Bosh sahifa', kr: 'Бош саҳифа' }) }}</NuxtLink>
-      <NuxtLink to="/me/stats" class="btn-ghost">{{ i18n.t({ uz: 'Statistika', kr: 'Статистика' }) }}</NuxtLink>
+    <!-- Stat tiles -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div class="card p-4">
+        <div class="eyebrow mb-1.5">{{ i18n.t({ uz: 'To\'g\'ri', kr: 'Тўғри' }) }}</div>
+        <div class="text-2xl font-semibold tracking-tightish tabular-nums text-emerald-600">{{ a.correct_count }}</div>
+      </div>
+      <div class="card p-4">
+        <div class="eyebrow mb-1.5">{{ i18n.t({ uz: 'Xato', kr: 'Хато' }) }}</div>
+        <div class="text-2xl font-semibold tracking-tightish tabular-nums text-rose-500">{{ a.wrong_count }}</div>
+      </div>
+      <div class="card p-4">
+        <div class="eyebrow mb-1.5">{{ i18n.t({ uz: 'O\'rtacha vaqt', kr: 'Ўртача вақт' }) }}</div>
+        <div class="text-2xl font-semibold tracking-tightish tabular-nums text-ink-900">{{ avgTime }} {{ i18n.t({ uz: 's.', kr: 'с.' }) }}</div>
+      </div>
+      <div class="card p-4">
+        <div class="eyebrow mb-1.5">{{ i18n.t({ uz: 'Daraja', kr: 'Даража' }) }}</div>
+        <div class="text-2xl font-semibold tracking-tightish text-ink-900">{{ gradeLabel(percent) }}</div>
+      </div>
     </div>
 
-    <!-- Answers review -->
-    <div v-if="wrongAnswers.length || showAll" class="card">
-      <div class="px-5 py-4 border-b border-ink-200/70 flex items-center justify-between">
-        <div>
-          <div class="text-sm font-semibold text-ink-900">
-            {{ showAll
-              ? i18n.t({ uz: 'Barcha savollar', kr: 'Барча саволлар' })
-              : i18n.t({ uz: 'Xato javoblar', kr: 'Хато жавоблар' }) }}
-          </div>
-          <div class="text-2xs text-ink-500 mt-0.5">
-            {{ showAll ? answers.length : wrongAnswers.length }} {{ i18n.t({ uz: 'ta', kr: 'та' }) }}
-          </div>
-        </div>
-        <button @click="showAll = !showAll" class="btn-ghost btn-sm">
+    <!-- Per-question matrix -->
+    <div class="card p-5 mb-6">
+      <div class="flex items-center justify-between mb-3">
+        <div class="text-sm font-semibold text-ink-900">{{ i18n.t({ uz: 'Savollar bo\'yicha', kr: 'Саволлар бўйича' }) }}</div>
+        <button @click="showAll = !showAll" class="text-2xs font-medium text-ink-500 hover:text-ink-900">
           {{ showAll
             ? i18n.t({ uz: 'Faqat xatolar', kr: 'Фақат хатолар' })
-            : i18n.t({ uz: 'Hammasini ko\'rsatish', kr: 'Ҳаммасини кўрсатиш' }) }}
+            : i18n.t({ uz: 'Hammasini ko\'rsat →', kr: 'Ҳаммасини кўрсат →' }) }}
         </button>
       </div>
-
-      <div class="divide-y divide-ink-200/70">
-        <div v-for="ans in (showAll ? answers : wrongAnswers)" :key="ans.position" class="p-5">
-          <div class="flex items-center gap-2 mb-3">
-            <span class="badge"
-                  :class="ans.is_correct ? 'bg-emerald-50 text-emerald-700' :
-                          ans.is_skipped ? 'bg-ink-100 text-ink-500' :
-                          'bg-rose-50 text-rose-700'">
-              <span class="tabular-nums">#{{ ans.position }}</span>
-              <svg v-if="ans.is_correct" class="w-3 h-3" viewBox="0 0 12 12" fill="none"><path d="M2 6.5L4.5 9L10 3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              <svg v-else-if="!ans.is_skipped" class="w-3 h-3" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-              <span v-else>○</span>
-            </span>
-          </div>
-
-          <div class="font-medium text-ink-900 mb-3 leading-relaxed">{{ ans.question.text }}</div>
-          <img v-if="ans.question.image" :src="ans.question.image" class="rounded-lg border border-ink-200 max-h-40 mb-3">
-
-          <ul class="space-y-1.5 text-sm">
-            <li v-for="o in ans.question.options" :key="o.id"
-                class="flex items-start gap-2.5 px-3 py-2 rounded-lg"
-                :class="{
-                  'bg-emerald-50 text-emerald-900 font-medium': o.is_correct,
-                  'bg-rose-50 text-rose-700': !o.is_correct && o.id === ans.chosen_option_id,
-                }">
-              <span class="w-4 h-4 rounded-full grid place-items-center flex-shrink-0 mt-0.5"
-                    :class="o.is_correct ? 'bg-emerald-500 text-white' :
-                            (o.id === ans.chosen_option_id ? 'bg-rose-500 text-white' : 'border border-ink-200')">
-                <svg v-if="o.is_correct" class="w-2.5 h-2.5" viewBox="0 0 10 10" fill="none"><path d="M2 5L4 7L8 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <svg v-else-if="o.id === ans.chosen_option_id" class="w-2.5 h-2.5" viewBox="0 0 10 10" fill="none"><path d="M2.5 2.5l5 5M7.5 2.5l-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-              </span>
-              <span class="leading-relaxed">{{ o.text }}</span>
-            </li>
-          </ul>
-
-          <div v-if="ans.question.explanation" class="mt-3 px-3.5 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-sm flex gap-2.5">
-            <svg class="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" viewBox="0 0 16 16" fill="none">
-              <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/>
-              <path d="M8 5v3.5M8 10.5v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-            </svg>
-            <div class="text-amber-800 leading-relaxed">{{ ans.question.explanation }}</div>
-          </div>
+      <div class="grid grid-cols-10 gap-1.5">
+        <div v-for="ans in answers" :key="ans.position"
+             class="aspect-square rounded-md flex items-center justify-center text-xs font-semibold tabular-nums border"
+             :style="ans.is_correct
+               ? 'background: rgba(16,185,129,0.12); color: #047857; border-color: rgba(16,185,129,0.30);'
+               : ans.is_skipped
+                 ? 'background: var(--surface-soft); color: var(--text-4); border-color: var(--border-1);'
+                 : 'background: rgba(244,63,94,0.10); color: #be123c; border-color: rgba(244,63,94,0.30);'">
+          {{ ans.position }}
         </div>
       </div>
+    </div>
+
+    <!-- Wrong question reviews -->
+    <div v-if="wrongAnswers.length" class="space-y-3 mb-6">
+      <div v-for="(ans, idx) in (showAll ? answers : wrongAnswers)" :key="ans.position"
+           class="card p-5"
+           v-show="showAll || !ans.is_correct">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="w-7 h-7 rounded-lg grid place-items-center flex-shrink-0"
+                :class="ans.is_correct ? 'bg-emerald-50 text-emerald-700' : ans.is_skipped ? 'bg-ink-100 text-ink-500' : 'bg-rose-50 text-rose-600'">
+            <AppIcon v-if="ans.is_correct" name="check" :size="14" />
+            <AppIcon v-else-if="ans.is_skipped" name="info" :size="14" />
+            <AppIcon v-else name="x" :size="14" />
+          </span>
+          <div class="text-sm font-semibold text-ink-900">
+            {{ i18n.t({ uz: 'Savol', kr: 'Савол' }) }} {{ ans.position }} ·
+            <span v-if="ans.is_correct" class="text-emerald-700">{{ i18n.t({ uz: 'To\'g\'ri', kr: 'Тўғри' }) }}</span>
+            <span v-else-if="ans.is_skipped" class="text-ink-500">{{ i18n.t({ uz: 'O\'tkazib yuborilgan', kr: 'Ўтказиб юборилган' }) }}</span>
+            <span v-else class="text-rose-600">{{ i18n.t({ uz: 'Xato javob', kr: 'Хато жавоб' }) }}</span>
+          </div>
+        </div>
+        <div class="text-[15px] leading-relaxed mb-3 text-ink-800">{{ ans.question.text }}</div>
+        <img v-if="ans.question.image" :src="ans.question.image" class="rounded-lg border border-ink-200 max-h-40 mb-3">
+
+        <div v-if="!ans.is_correct" class="flex flex-wrap items-center gap-2 text-sm">
+          <span class="badge-danger" v-if="ans.chosen_option_id">
+            {{ i18n.t({ uz: 'Sizning javobingiz:', kr: 'Сизнинг жавобингиз:' }) }} {{ chosenLetter(ans) }} · {{ chosenText(ans) }}
+          </span>
+          <span class="badge-success">
+            {{ i18n.t({ uz: 'To\'g\'ri javob:', kr: 'Тўғри жавоб:' }) }} {{ correctLetter(ans) }} · {{ correctText(ans) }}
+          </span>
+        </div>
+
+        <div v-if="ans.question.explanation" class="mt-3 px-3.5 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-sm flex gap-2.5">
+          <AppIcon name="info" :size="16" class="text-amber-600 flex-shrink-0 mt-0.5" />
+          <div class="text-amber-800 leading-relaxed">{{ ans.question.explanation }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="flex flex-wrap gap-2">
+      <NuxtLink :to="`/test/start/${a.mode}`" class="btn-primary btn-lg flex-1 min-w-fit">
+        {{ i18n.t({ uz: 'Qayta urinish', kr: 'Қайта уриниш' }) }}
+        <AppIcon name="arrow" :size="14" />
+      </NuxtLink>
+      <NuxtLink to="/" class="btn-outline btn-lg">{{ i18n.t({ uz: 'Bosh sahifa', kr: 'Бош саҳифа' }) }}</NuxtLink>
+      <NuxtLink to="/me/stats" class="btn-outline btn-lg">{{ i18n.t({ uz: 'Statistika', kr: 'Статистика' }) }}</NuxtLink>
     </div>
   </div>
 </template>

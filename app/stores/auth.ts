@@ -14,6 +14,9 @@ export interface AuthUser {
   daily_goal: number
   streak_current: number
   streak_longest: number
+  points: number
+  exam_date: string | null
+  exam_days_left: number | null
 }
 
 export const useAuthStore = defineStore('auth', () => {
