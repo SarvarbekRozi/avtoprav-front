@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php -v)",
+      "Bash(composer -V)",
+      "Bash(npm -v)",
+      "PowerShell(composer *)",
+      "PowerShell(Test-Path *)",
+      "PowerShell(Test-Path \"D:\\\\loyiha\\\\autotest-backend\\\\vendor\"; Test-Path \"D:\\\\loyiha\\\\autotest-backend\\\\vendor\\\\bin\"; if \\(Test-Path \"D:\\\\loyiha\\\\autotest-backend\\\\vendor\"\\) { \\(Get-ChildItem \"D:\\\\loyiha\\\\autotest-backend\\\\vendor\" -Directory | Measure-Object\\).Count })",
+      "PowerShell(Get-Command *)",
+      "PowerShell(Get-PSDrive -PSProvider FileSystem -ErrorAction SilentlyContinue | ForEach-Object { Write-Output $_.Root })",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(curl -s -o /dev/null -w \"Status: %{http_code}\\\\nSize: %{size_download} bytes\\\\n\" http://localhost:3001/)",
+      "Bash(curl -s http://localhost:3001/)",
+      "Bash(taskkill //F //IM node.exe //T)",
+      "Bash(curl -s -o /tmp/home.html -w \"Status: %{http_code}\\\\nSize: %{size_download}\\\\n\" http://localhost:3000/)",
+      "Read(//tmp/**)",
+      "Bash(curl -s http://localhost:3000/login)",
+      "Bash(curl -s -o /dev/null -w \"/login: %{http_code}\\\\n/register: \" http://localhost:3000/login)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/register)",
+      "Bash(curl -s http://localhost:3000/topics -o /tmp/topics.html -w \"Status: %{http_code}\\\\n\")",
+      "Bash(curl -s http://localhost:3000/me/stats -o /tmp/stats.html -w \"/me/stats: %{http_code} \\(auth required, redirected\\)\\\\n\")",
+      "Bash(curl -s http://localhost:3000/test/start/exam -o /tmp/start.html -w \"/test/start/exam: %{http_code}\\\\n\")",
+      "Bash(curl -s -o /dev/null -w \"/: %{http_code}\\\\n/tickets: \" http://localhost:3000/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n/manifest.webmanifest: \" http://localhost:3000/tickets)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n/icon-192.svg: \" http://localhost:3000/manifest.webmanifest)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/icon-192.svg)",
+      "Bash(npx nuxt *)"
+    ]
+  }
+}
