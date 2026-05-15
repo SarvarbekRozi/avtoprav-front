@@ -9,8 +9,15 @@
     text-rendering: optimizeLegibility;
   }
   body {
-    @apply bg-white text-ink-800 antialiased;
+    @apply text-ink-800 antialiased;
     font-feature-settings: "cv11", "ss01";
+    background-color: #f4f6fa;
+    background-image:
+      radial-gradient(at 8% -5%,  rgba(63, 88, 148, 0.10)  0%, transparent 45%),
+      radial-gradient(at 95% 0%,  rgba(251, 191, 36, 0.08) 0%, transparent 40%),
+      radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
   }
   h1, h2, h3, h4 {
     @apply tracking-tightish text-ink-900;
@@ -49,11 +56,22 @@
 
   /* Cards */
   .card {
-    @apply bg-white rounded-2xl border border-ink-200/70 shadow-card
-           transition-shadow duration-200;
+    @apply bg-white rounded-2xl border border-ink-200/60 shadow-card
+           transition-all duration-200;
   }
-  .card-hover:hover { @apply shadow-lift -translate-y-px; }
-  .card-flat { @apply bg-white rounded-2xl border border-ink-200/70; }
+  .card-hover:hover { @apply shadow-lift -translate-y-0.5 border-ink-200; }
+  .card-flat { @apply bg-white rounded-2xl border border-ink-200/60; }
+
+  /* Tinted surfaces for variety */
+  .surface-tinted {
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.3) 100%),
+      #f4f6fa;
+  }
+  .surface-dotgrid {
+    background-image: radial-gradient(rgb(15 23 42 / 0.06) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
 
   /* Inputs */
   .input {

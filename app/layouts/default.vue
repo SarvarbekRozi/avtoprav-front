@@ -43,8 +43,8 @@ const initials = computed(() => {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-white">
-    <header class="sticky top-0 z-30 bg-white/85 backdrop-blur border-b border-ink-200/70">
+  <div class="min-h-screen flex flex-col">
+    <header class="sticky top-0 z-30 bg-white/70 backdrop-blur-md border-b border-ink-200/60">
       <div class="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
         <NuxtLink to="/" class="flex items-center gap-2.5">
           <div class="w-7 h-7 rounded-lg bg-ink-900 text-white flex items-center justify-center text-sm font-bold tracking-tight">A</div>
@@ -149,7 +149,7 @@ const initials = computed(() => {
       <slot />
     </main>
 
-    <footer class="border-t border-ink-200/70 mt-12">
+    <footer class="border-t border-ink-200/60 mt-12 bg-white/40 backdrop-blur">
       <div class="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-ink-500">
         <div class="flex items-center gap-2.5">
           <div class="w-5 h-5 rounded bg-ink-900 text-white grid place-items-center text-2xs font-bold">A</div>
