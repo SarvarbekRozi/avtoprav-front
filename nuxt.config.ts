@@ -6,7 +6,14 @@ export default defineNuxtConfig({
     '@nuxtjs/tailwindcss',
     '@pinia/nuxt',
     '@vueuse/nuxt',
+    '@nuxt/icon',
   ],
+
+  icon: {
+    serverBundle: { collections: ['lucide', 'heroicons'] },
+    class: 'iconify',
+    mode: 'svg',
+  },
 
   css: ['~/assets/css/main.css'],
 
@@ -33,7 +40,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8000',
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'https://admin.avtoprav.uz',
     },
   },
 

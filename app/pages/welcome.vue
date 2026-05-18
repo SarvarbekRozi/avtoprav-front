@@ -95,7 +95,7 @@ const pricingFeatures = computed(() => ({
               </p>
 
               <div class="mt-7 flex flex-wrap gap-3">
-                <NuxtLink to="/register" class="btn-primary btn-lg">
+                <NuxtLink to="/register" class="btn-gradient btn-lg">
                   <AppIcon name="exam" :size="16" />
                   {{ i18n.t({ uz: 'Bepul boshlash', kr: 'Бепул бошлаш' }) }}
                 </NuxtLink>

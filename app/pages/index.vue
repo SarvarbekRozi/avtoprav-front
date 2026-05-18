@@ -126,12 +126,12 @@ function timeAgo(iso: string) {
           </h1>
 
           <div class="flex flex-wrap items-center gap-2.5 mt-5">
-            <NuxtLink v-if="current" :to="`/test/play/${current.id}`" class="btn-primary btn-lg">
+            <NuxtLink v-if="current" :to="`/test/play/${current.id}`" class="btn-gradient btn-lg">
               {{ i18n.t({ uz: 'Davom etish', kr: 'Давом этиш' }) }} ·
               <span class="tabular-nums">{{ current.answered }} / {{ current.total }}</span>
               <AppIcon name="arrow" :size="14" />
             </NuxtLink>
-            <NuxtLink to="/test/start/exam" class="btn-primary btn-lg" v-else>
+            <NuxtLink to="/test/start/exam" class="btn-gradient btn-lg" v-else>
               <AppIcon name="exam" :size="15" />
               {{ i18n.t({ uz: 'Imtihon rejimi', kr: 'Имтиҳон режими' }) }}
             </NuxtLink>
