@@ -44,6 +44,11 @@ export default defineNuxtConfig({
     },
   },
 
+  routeRules: {
+    '/test/play/**': { ssr: false },
+    '/test/result/**': { ssr: false },
+  },
+
   tailwindcss: {
     cssPath: '~/assets/css/main.css',
   },
