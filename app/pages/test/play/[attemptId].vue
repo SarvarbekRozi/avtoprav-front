@@ -120,9 +120,17 @@ function stopTimer() {
   if (timerId) { clearInterval(timerId); timerId = null }
 }
 
+let autoAdvanceTimer: any = null
+
+function onOptionClick(optionId: number) {
+  if (submitting.value) return
+  if (lastAnswer.value) return
+  selectedOptionId.value = optionId
+  submitAnswer()
+}
+
 async function submitAnswer() {
   if (submitting.value || !state.value) return
-  // If this question was already answered (revisit), just go next
   if (lastAnswer.value && !isExam.value) { goNext(); return }
   submitting.value = true
   try {
@@ -133,7 +141,6 @@ async function submitAnswer() {
     })
     lastAnswer.value = res.answer
     progress.value = res.progress ?? progress.value
-    // Live-update user's XP in the header
     if (typeof res.user_points === 'number' && auth.user) {
       const delta = res.user_points - (auth.user.points ?? 0)
       auth.user.points = res.user_points
@@ -145,7 +152,7 @@ async function submitAnswer() {
     if (res.finished) {
       stopTimer()
       finished.value = true
-      setTimeout(() => navigateTo(`/test/result/${attemptId}`), 600)
+      setTimeout(() => navigateTo(`/test/result/${attemptId}`), 800)
       return
     }
     if (isExam.value) {
@@ -154,6 +161,10 @@ async function submitAnswer() {
       hydrateFromAnswer(state.value!)
     } else {
       state.value._next = res.next
+      if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer)
+      autoAdvanceTimer = setTimeout(() => {
+        if (lastAnswer.value) goNext()
+      }, 1500)
     }
   } catch (e: any) {
     error.value = e?.data?.message || 'Xatolik'
@@ -227,15 +238,19 @@ function tileStyleFor(p: ProgressEntry, isCurrent: boolean) {
 }
 
 onMounted(() => load())
-onBeforeUnmount(stopTimer)
+onBeforeUnmount(() => {
+  stopTimer()
+  if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer)
+})
 </script>
 
 <template>
+  <ClientOnly>
   <div class="min-h-screen flex flex-col">
     <!-- Top bar -->
     <header class="border-b sticky top-0 z-10"
             style="background: var(--surface); border-color: var(--border-soft);">
-      <div class="max-w-3xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-3">
         <button @click="exitConfirm" class="btn-ghost btn-sm">
           <AppIcon name="chev-l" :size="14" />
           {{ i18n.t({ uz: 'Chiqish', kr: 'Чиқиш' }) }}
@@ -280,24 +295,25 @@ onBeforeUnmount(stopTimer)
       </div>
     </header>
 
-    <main class="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 py-6">
-      <!-- Question number grid -->
-      <div v-if="state && progress.length" class="mb-5">
-        <div class="flex items-center justify-between mb-2.5">
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <!-- Top: Question number grid (full width) -->
+      <section v-if="state && progress.length" class="card p-5 lg:p-6">
+        <div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
           <div class="eyebrow">{{ i18n.t({ uz: 'Savollar', kr: 'Саволлар' }) }}</div>
-          <div v-if="isExam" class="text-2xs text-amber-700 flex items-center gap-1">
-            <AppIcon name="lock" :size="10" />
+          <div v-if="isExam" class="text-xs text-amber-700 flex items-center gap-1">
+            <AppIcon name="lock" :size="12" />
             {{ i18n.t({ uz: 'Imtihon: tartib bo\'yicha', kr: 'Имтиҳон: тартиб бўйича' }) }}
           </div>
-          <div v-else class="text-2xs text-ink-400">
+          <div v-else class="text-xs text-ink-400">
             {{ i18n.t({ uz: 'Tugmani bosing va o\'sha savolga o\'ting', kr: 'Тугмани босинг ва ўша саволга ўтинг' }) }}
           </div>
         </div>
-        <div class="flex flex-wrap gap-1.5">
+        <div class="grid gap-2"
+             style="grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));">
           <button v-for="p in progress" :key="p.position"
             :disabled="!canNavigate"
             @click="jumpTo(p.position)"
-            class="relative w-8 h-8 sm:w-9 sm:h-9 rounded-md text-xs font-semibold tabular-nums border transition-all flex items-center justify-center"
+            class="relative aspect-square rounded-lg text-sm font-semibold tabular-nums border transition-all flex items-center justify-center"
             :class="canNavigate ? 'hover:-translate-y-0.5 hover:shadow-soft cursor-pointer' : 'cursor-not-allowed'"
             :style="{
               background: tileStyleFor(p, p.position === state.position).background,
@@ -309,122 +325,115 @@ onBeforeUnmount(stopTimer)
           </button>
         </div>
         <!-- legend -->
-        <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-2xs text-ink-500">
-          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded border border-ink-900 bg-ink-900"></span>{{ i18n.t({ uz: 'Joriy', kr: 'Жорий' }) }}</span>
-          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-emerald-500"></span>{{ i18n.t({ uz: 'To\'g\'ri', kr: 'Тўғри' }) }}</span>
-          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-rose-500"></span>{{ i18n.t({ uz: 'Xato', kr: 'Хато' }) }}</span>
-          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-amber-100 border border-amber-200"></span>{{ i18n.t({ uz: 'O\'tkazilgan', kr: 'Ўтказилган' }) }}</span>
-          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded border border-ink-200 bg-white"></span>{{ i18n.t({ uz: 'Tegilmagan', kr: 'Тегилмаган' }) }}</span>
+        <div class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-ink-500">
+          <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded border border-ink-900 bg-ink-900"></span>{{ i18n.t({ uz: 'Joriy', kr: 'Жорий' }) }}</span>
+          <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-emerald-500"></span>{{ i18n.t({ uz: 'To\'g\'ri', kr: 'Тўғри' }) }}</span>
+          <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-rose-500"></span>{{ i18n.t({ uz: 'Xato', kr: 'Хато' }) }}</span>
+          <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-amber-100 border border-amber-200"></span>{{ i18n.t({ uz: 'O\'tkazilgan', kr: 'Ўтказилган' }) }}</span>
+          <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded border border-ink-200 bg-white"></span>{{ i18n.t({ uz: 'Tegilmagan', kr: 'Тегилмаган' }) }}</span>
         </div>
-      </div>
+      </section>
 
-      <!-- Loading -->
-      <div v-if="loading" class="space-y-4">
-        <div class="h-3 w-1/4 bg-ink-100 rounded animate-pulse"></div>
-        <div class="card p-6">
-          <div class="h-5 w-3/4 bg-ink-100 rounded animate-pulse mb-3"></div>
-          <div class="h-5 w-1/2 bg-ink-100 rounded animate-pulse"></div>
-        </div>
-        <div class="space-y-2">
-          <div v-for="i in 4" :key="i" class="h-14 bg-ink-100 rounded-xl animate-pulse"></div>
-        </div>
-      </div>
-
-      <!-- Error -->
-      <div v-else-if="error" class="card p-8 text-center">
-        <div class="text-rose-600 font-medium mb-4">{{ error }}</div>
-        <NuxtLink to="/" class="btn-primary">{{ i18n.t({ uz: 'Bosh sahifaga', kr: 'Бош саҳифага' }) }}</NuxtLink>
-      </div>
-
-      <!-- Question -->
-      <div v-else-if="state" class="space-y-5 anim-in" :key="state.question.id">
-        <div v-if="state.question.topic" class="eyebrow">{{ state.question.topic }}</div>
-
-        <div class="card p-6">
-          <div class="text-lg font-medium text-ink-900 leading-relaxed text-balance">{{ state.question.text }}</div>
-          <img v-if="state.question.image" :src="state.question.image"
-               class="mt-5 w-full rounded-xl border border-ink-200 max-h-80 object-contain bg-ink-50">
-        </div>
-
-        <div class="space-y-2">
-          <button v-for="(o, i) in state.question.options" :key="o.id"
-                  :disabled="!!lastAnswer && !isExam"
-                  @click="selectedOptionId = o.id"
-                  class="w-full text-left px-4 py-3.5 rounded-xl border transition-all duration-150
-                         flex items-start gap-3 disabled:cursor-not-allowed"
-                  :class="[
-                    optionState(o) === 'selected' ? 'border-ink-900' :
-                    optionState(o) === 'correct'  ? 'border-emerald-500' :
-                    optionState(o) === 'wrong'    ? 'border-rose-500' :
-                    'border-ink-200 bg-white hover:border-ink-400',
-                  ]"
-                  :style="{
-                    background:
-                      optionState(o) === 'selected' ? 'var(--surface-hover)' :
-                      optionState(o) === 'correct'  ? 'rgba(16,185,129,0.12)' :
-                      optionState(o) === 'wrong'    ? 'rgba(244,63,94,0.10)' :
-                      'var(--surface)',
-                  }">
-            <span class="w-7 h-7 rounded-lg flex items-center justify-center font-semibold text-sm flex-shrink-0 transition-all"
-                  :style="{
-                    background:
-                      optionState(o) === 'selected' ? 'var(--text-1)' :
-                      optionState(o) === 'correct'  ? '#10b981' :
-                      optionState(o) === 'wrong'    ? '#f43f5e' :
-                      'var(--surface-inset)',
-                    color: optionState(o) === 'idle' ? 'var(--text-2)' : '#fff',
-                  }">{{ optionLetter(i) }}</span>
-
-            <span class="flex-1 text-sm md:text-base leading-relaxed pt-0.5"
-                  :class="optionState(o) === 'correct' ? 'text-emerald-900 font-medium' :
-                          optionState(o) === 'wrong' ? 'text-rose-900' : 'text-ink-900'">
-              {{ o.text }}
-            </span>
-
-            <span v-if="optionState(o) === 'correct'" class="text-emerald-600 flex-shrink-0">
-              <AppIcon name="check" :size="20" />
-            </span>
-            <span v-else-if="optionState(o) === 'wrong'" class="text-rose-500 flex-shrink-0">
-              <AppIcon name="x" :size="20" />
-            </span>
-          </button>
-        </div>
-
-        <div v-if="showExplanation && explanationText()"
-             class="p-4 rounded-2xl border flex gap-3"
-             style="background: rgba(251,191,36,0.10); border-color: rgba(251,191,36,0.30);">
-          <AppIcon name="info" :size="18" class="flex-shrink-0 mt-0.5 text-amber-600" />
-          <div class="text-sm leading-relaxed text-amber-900">
-            <b>{{ i18n.t({ uz: 'Izoh.', kr: 'Изоҳ.' }) }}</b>
-            {{ explanationText() }}
+      <!-- Main content -->
+      <div class="min-w-0">
+          <!-- Loading -->
+          <div v-if="loading" class="space-y-4">
+            <div class="h-3 w-1/4 bg-ink-100 rounded animate-pulse"></div>
+            <div class="card p-6">
+              <div class="h-5 w-3/4 bg-ink-100 rounded animate-pulse mb-3"></div>
+              <div class="h-5 w-1/2 bg-ink-100 rounded animate-pulse"></div>
+            </div>
+            <div class="space-y-2">
+              <div v-for="i in 4" :key="i" class="h-14 bg-ink-100 rounded-xl animate-pulse"></div>
+            </div>
           </div>
-        </div>
 
-        <div class="h-28 md:h-0"></div>
+          <!-- Error -->
+          <div v-else-if="error" class="card p-8 text-center">
+            <div class="text-rose-600 font-medium mb-4">{{ error }}</div>
+            <NuxtLink to="/" class="btn-primary">{{ i18n.t({ uz: 'Bosh sahifaga', kr: 'Бош саҳифага' }) }}</NuxtLink>
+          </div>
+
+          <!-- Question -->
+          <div v-else-if="state" class="space-y-5 anim-in" :key="state.question.id">
+            <div v-if="state.question.topic" class="eyebrow">{{ state.question.topic }}</div>
+
+            <!-- Question text (top, full width) -->
+            <div class="card p-6 lg:p-7">
+              <div class="text-lg lg:text-xl font-medium text-ink-900 leading-relaxed">{{ state.question.text }}</div>
+            </div>
+
+            <!-- Below: image on left, options on right (stacked on mobile) -->
+            <div :class="state.question.image ? 'grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5 items-start' : ''">
+              <div v-if="state.question.image" class="card p-3 md:sticky md:top-20">
+                <img :src="state.question.image"
+                     class="w-full rounded-lg border border-ink-200 max-h-[420px] object-contain bg-ink-50">
+              </div>
+
+              <div class="space-y-2">
+                <button v-for="(o, i) in state.question.options" :key="o.id"
+                        :disabled="!!lastAnswer || submitting"
+                        @click="onOptionClick(o.id)"
+                        class="w-full text-left px-4 py-3.5 rounded-xl border transition-all duration-150
+                               flex items-start gap-3 disabled:cursor-not-allowed"
+                        :class="[
+                          optionState(o) === 'selected' ? 'border-ink-900' :
+                          optionState(o) === 'correct'  ? 'border-emerald-500' :
+                          optionState(o) === 'wrong'    ? 'border-rose-500' :
+                          'border-ink-200 bg-white hover:border-ink-400',
+                        ]"
+                        :style="{
+                          background:
+                            optionState(o) === 'selected' ? 'var(--surface-hover)' :
+                            optionState(o) === 'correct'  ? 'rgba(16,185,129,0.12)' :
+                            optionState(o) === 'wrong'    ? 'rgba(244,63,94,0.10)' :
+                            'var(--surface)',
+                        }">
+                  <span class="w-7 h-7 rounded-lg flex items-center justify-center font-semibold text-sm flex-shrink-0 transition-all"
+                        :style="{
+                          background:
+                            optionState(o) === 'selected' ? 'var(--text-1)' :
+                            optionState(o) === 'correct'  ? '#10b981' :
+                            optionState(o) === 'wrong'    ? '#f43f5e' :
+                            'var(--surface-inset)',
+                          color: optionState(o) === 'idle' ? 'var(--text-2)' : '#fff',
+                        }">{{ optionLetter(i) }}</span>
+
+                  <span class="flex-1 text-sm md:text-base leading-relaxed pt-0.5"
+                        :class="optionState(o) === 'correct' ? 'text-emerald-900 font-medium' :
+                                optionState(o) === 'wrong' ? 'text-rose-900' : 'text-ink-900'">
+                    {{ o.text }}
+                  </span>
+
+                  <span v-if="optionState(o) === 'correct'" class="text-emerald-600 flex-shrink-0">
+                    <AppIcon name="check" :size="20" />
+                  </span>
+                  <span v-else-if="optionState(o) === 'wrong'" class="text-rose-500 flex-shrink-0">
+                    <AppIcon name="x" :size="20" />
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <div v-if="showExplanation && explanationText()"
+                 class="p-4 rounded-2xl border flex gap-3"
+                 style="background: rgba(251,191,36,0.10); border-color: rgba(251,191,36,0.30);">
+              <AppIcon name="info" :size="18" class="flex-shrink-0 mt-0.5 text-amber-600" />
+              <div class="text-sm leading-relaxed text-amber-900">
+                <b>{{ i18n.t({ uz: 'Izoh.', kr: 'Изоҳ.' }) }}</b>
+                {{ explanationText() }}
+              </div>
+            </div>
+
+          </div>
       </div>
     </main>
-
-    <!-- Action bar -->
-    <div v-if="state"
-         class="md:static md:max-w-3xl md:mx-auto md:px-6 md:pb-8
-                fixed bottom-0 left-0 right-0 px-4 py-3
-                backdrop-blur border-t
-                md:border-0 md:bg-transparent md:py-0 md:backdrop-blur-0"
-         style="background: color-mix(in srgb, var(--surface) 95%, transparent); border-color: var(--border-soft);">
-      <div class="flex gap-2">
-        <button v-if="!lastAnswer || isExam" :disabled="submitting || selectedOptionId === null"
-                @click="submitAnswer" class="btn-primary btn-lg flex-1">
-          <span v-if="submitting" class="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-          <span v-else>{{ i18n.t({ uz: 'Javob berish', kr: 'Жавоб бериш' }) }}</span>
-        </button>
-        <button v-else @click="goNext" class="btn-primary btn-lg flex-1">
-          {{ i18n.t({ uz: 'Keyingi savol', kr: 'Кейинги савол' }) }}
-          <AppIcon name="arrow" :size="14" />
-        </button>
-        <button v-if="!lastAnswer" @click="selectedOptionId = null; submitAnswer()" class="btn-outline btn-lg">
-          {{ i18n.t({ uz: 'O\'tkazib yuborish', kr: 'Ўтказиб юбориш' }) }}
-        </button>
-      </div>
-    </div>
   </div>
+
+  <template #fallback>
+    <div class="min-h-screen flex items-center justify-center" style="background: var(--canvas);">
+      <div class="inline-block w-6 h-6 border-2 border-ink-300 border-t-ink-900 rounded-full animate-spin"></div>
+    </div>
+  </template>
+  </ClientOnly>
 </template>
