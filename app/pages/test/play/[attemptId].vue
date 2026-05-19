@@ -5,30 +5,59 @@ const route = useRoute()
 const i18n = useI18n()
 const attemptId = Number(route.params.attemptId)
 
-interface QuestionPayload {
-  attempt: { id: number, mode: string, total: number, time_limit_sec: number, started_at: string, remaining_sec: number | null }
+interface AnswerInfo {
+  is_answered: boolean
+  is_correct: boolean
+  is_skipped: boolean
+  selected_option_id: number | null
+  correct_option_id: number
+  explanation_uz: string | null
+  explanation_kr: string | null
+}
+
+interface QuestionItem {
   position: number
-  question: { id: number, text: string, image: string | null, topic: string | null, options: Array<{ id: number, text: string }> }
-  answer: null | {
-    is_answered: boolean
-    is_correct: boolean
-    is_skipped: boolean
-    selected_option_id: number | null
+  question: {
+    id: number
+    text: string
+    image: string | null
+    topic: string | null
+    options: Array<{ id: number, text: string }>
     correct_option_id: number
     explanation_uz: string | null
     explanation_kr: string | null
   }
+  answer: AnswerInfo | null
 }
 
-type ProgressEntry = { position: number, status: 'unseen' | 'correct' | 'wrong' | 'skipped' }
+interface LocalAnswerBuffer {
+  question_id: number
+  option_id: number | null
+  time_spent_sec: number
+}
 
-const state = ref<QuestionPayload | null>(null)
+interface AttemptInfo {
+  id: number
+  mode: string
+  total: number
+  time_limit_sec: number
+  started_at: string
+  remaining_sec: number | null
+}
+
+type ProgressEntry = { position: number, status: 'unseen' | 'correct' | 'wrong' | 'skipped' | 'answered' }
+
+const attemptInfo = ref<AttemptInfo | null>(null)
+const questions = ref<QuestionItem[]>([])
+const currentPosition = ref<number>(1)
 const progress = ref<ProgressEntry[]>([])
+const localAnswers = ref<Record<number, LocalAnswerBuffer>>({})
+const examFailModal = ref(false)
+const zoomedImage = ref<string | null>(null)
 const selectedOptionId = ref<number | null>(null)
 const lastAnswer = ref<{ is_correct: boolean, correct_option_id: number, explanation_uz: string | null, explanation_kr: string | null } | null>(null)
 const loading = ref(true)
 const submitting = ref(false)
-const navigating = ref(false)
 const finished = ref(false)
 const questionStartedAt = ref(Date.now())
 const remainingSec = ref<number | null>(null)
@@ -39,8 +68,12 @@ const auth = useAuthStore()
 const lastPointsDelta = ref<number | null>(null)
 const previousPoints = ref<number>(auth.user?.points ?? 0)
 
-const isExam = computed(() => state.value?.attempt?.mode === 'exam')
-const canNavigate = computed(() => !!state.value && !isExam.value)
+const currentItem = computed<QuestionItem | null>(() => {
+  return questions.value.find(q => q.position === currentPosition.value) ?? null
+})
+
+const isExam = computed(() => attemptInfo.value?.mode === 'exam')
+const canNavigate = computed(() => !!attemptInfo.value)
 const showExplanation = computed(() => !!lastAnswer.value && !isExam.value)
 
 function optionLetter(i: number) { return String.fromCharCode(65 + i) }
@@ -49,15 +82,14 @@ function explanationText() {
   return i18n.locale.value === 'uz_cyrl' ? lastAnswer.value.explanation_kr : lastAnswer.value.explanation_uz
 }
 
-function hydrateFromAnswer(payload: QuestionPayload) {
-  // If this question already has an answer, restore state
-  if (payload.answer?.is_answered) {
-    selectedOptionId.value = payload.answer.selected_option_id
+function hydrateFromAnswer(item: QuestionItem) {
+  if (item.answer?.is_answered) {
+    selectedOptionId.value = item.answer.selected_option_id
     lastAnswer.value = {
-      is_correct: payload.answer.is_correct,
-      correct_option_id: payload.answer.correct_option_id,
-      explanation_uz: payload.answer.explanation_uz,
-      explanation_kr: payload.answer.explanation_kr,
+      is_correct: item.answer.is_correct,
+      correct_option_id: item.answer.correct_option_id,
+      explanation_uz: item.answer.explanation_uz,
+      explanation_kr: item.answer.explanation_kr,
     }
   } else {
     selectedOptionId.value = null
@@ -66,20 +98,21 @@ function hydrateFromAnswer(payload: QuestionPayload) {
   questionStartedAt.value = Date.now()
 }
 
-async function load(position?: number) {
+async function load() {
   loading.value = true
   error.value = ''
   try {
-    const url = position ? `/test/${attemptId}?position=${position}` : `/test/${attemptId}`
-    const res = await apiFetch<any>(url)
+    const res = await apiFetch<any>(`/test/${attemptId}`)
     if (res.finished || res.status === 'finished' || res.status === 'failed' || res.status === 'expired') {
       await navigateTo(`/test/result/${attemptId}`, { replace: true })
       return
     }
-    state.value = res.current
+    attemptInfo.value = res.current?.attempt ?? null
+    questions.value = res.questions ?? []
     progress.value = res.progress ?? []
-    remainingSec.value = state.value?.attempt.remaining_sec ?? null
-    hydrateFromAnswer(state.value!)
+    currentPosition.value = res.current?.position ?? 1
+    remainingSec.value = attemptInfo.value?.remaining_sec ?? null
+    if (currentItem.value) hydrateFromAnswer(currentItem.value)
     startTimer()
   } catch (e: any) {
     error.value = e?.data?.message || 'Xatolik'
@@ -88,20 +121,13 @@ async function load(position?: number) {
   }
 }
 
-async function jumpTo(position: number) {
-  if (!canNavigate.value || navigating.value || position === state.value?.position) return
-  navigating.value = true
-  try {
-    const res = await apiFetch<any>(`/test/${attemptId}?position=${position}`)
-    state.value = res.current
-    progress.value = res.progress ?? progress.value
-    remainingSec.value = state.value?.attempt.remaining_sec ?? remainingSec.value
-    hydrateFromAnswer(state.value!)
-  } catch (e: any) {
-    error.value = e?.data?.message || 'Xatolik'
-  } finally {
-    navigating.value = false
-  }
+function jumpTo(position: number) {
+  if (position === currentPosition.value) return
+  if (position < 1 || position > (attemptInfo.value?.total ?? 0)) return
+  if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null }
+  currentPosition.value = position
+  const item = currentItem.value
+  if (item) hydrateFromAnswer(item)
 }
 
 function startTimer() {
@@ -122,74 +148,129 @@ function stopTimer() {
 
 let autoAdvanceTimer: any = null
 
+const EXAM_MAX_WRONG = 2 // 3rd wrong fails immediately
+
 function onOptionClick(optionId: number) {
   if (submitting.value) return
+  // Both modes: once answered, the question is locked
   if (lastAnswer.value) return
   selectedOptionId.value = optionId
   submitAnswer()
 }
 
-async function submitAnswer() {
-  if (submitting.value || !state.value) return
-  if (lastAnswer.value && !isExam.value) { goNext(); return }
-  submitting.value = true
-  try {
-    const elapsed = Math.floor((Date.now() - questionStartedAt.value) / 1000)
-    const res = await apiFetch<any>(`/test/${attemptId}/answer`, {
-      method: 'POST',
-      body: { question_id: state.value.question.id, option_id: selectedOptionId.value, time_spent_sec: elapsed },
-    })
-    lastAnswer.value = res.answer
-    progress.value = res.progress ?? progress.value
-    if (typeof res.user_points === 'number' && auth.user) {
-      const delta = res.user_points - (auth.user.points ?? 0)
-      auth.user.points = res.user_points
-      if (delta > 0) {
-        lastPointsDelta.value = delta
-        setTimeout(() => { lastPointsDelta.value = null }, 1500)
-      }
+function submitAnswer() {
+  const item = currentItem.value
+  if (!item) return
+
+  const elapsed = Math.floor((Date.now() - questionStartedAt.value) / 1000)
+  const correctId = item.question.correct_option_id
+  const chosenId = selectedOptionId.value
+  if (chosenId === null) return
+
+  localAnswers.value[item.question.id] = {
+    question_id: item.question.id,
+    option_id: chosenId,
+    time_spent_sec: elapsed,
+  }
+
+  const isCorrect = chosenId === correctId
+
+  lastAnswer.value = {
+    is_correct: isCorrect,
+    correct_option_id: correctId,
+    explanation_uz: item.question.explanation_uz,
+    explanation_kr: item.question.explanation_kr,
+  }
+
+  const pIdx = progress.value.findIndex(p => p.position === currentPosition.value)
+  if (pIdx !== -1) {
+    progress.value[pIdx] = {
+      position: progress.value[pIdx].position,
+      status: isCorrect ? 'correct' : 'wrong',
     }
-    if (res.finished) {
+  }
+
+  const qIdx = questions.value.findIndex(q => q.position === currentPosition.value)
+  if (qIdx !== -1) {
+    questions.value[qIdx] = {
+      ...questions.value[qIdx],
+      answer: {
+        is_answered: true,
+        is_correct: isCorrect,
+        is_skipped: false,
+        selected_option_id: chosenId,
+        correct_option_id: correctId,
+        explanation_uz: item.question.explanation_uz,
+        explanation_kr: item.question.explanation_kr,
+      },
+    }
+  }
+
+  // Exam mode: 3rd wrong answer fails the test — show modal
+  if (isExam.value) {
+    const wrongCount = progress.value.filter(p => p.status === 'wrong').length
+    if (wrongCount > EXAM_MAX_WRONG) {
+      if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer)
       stopTimer()
-      finished.value = true
-      setTimeout(() => navigateTo(`/test/result/${attemptId}`), 800)
+      examFailModal.value = true
       return
     }
-    if (isExam.value) {
-      state.value = res.next
-      remainingSec.value = state.value?.attempt.remaining_sec ?? remainingSec.value
-      hydrateFromAnswer(state.value!)
-    } else {
-      state.value._next = res.next
-      if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer)
-      autoAdvanceTimer = setTimeout(() => {
-        if (lastAnswer.value) goNext()
-      }, 1500)
+  }
+
+  const allAnswered = progress.value.every(p => p.status !== 'unseen')
+  if (allAnswered) {
+    if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer)
+    autoAdvanceTimer = setTimeout(() => finalizeAndExit(), 1500)
+    return
+  }
+
+  // Topic mode: auto-advance only on correct
+  // Exam mode: never auto-advance — user navigates manually
+  if (!isExam.value && isCorrect) {
+    if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer)
+    autoAdvanceTimer = setTimeout(() => goNext(), 1500)
+  }
+}
+
+async function finalizeAndExit() {
+  if (submitting.value) return
+  submitting.value = true
+  stopTimer()
+  try {
+    const payload = { answers: Object.values(localAnswers.value) }
+    const res = await apiFetch<any>(`/test/${attemptId}/submit-all`, {
+      method: 'POST',
+      body: payload,
+    })
+    if (typeof res.user_points === 'number' && auth.user) {
+      auth.user.points = res.user_points
     }
+    finished.value = true
+    await navigateTo(`/test/result/${attemptId}`, { replace: true })
   } catch (e: any) {
     error.value = e?.data?.message || 'Xatolik'
-  } finally {
     submitting.value = false
   }
 }
 
 function goNext() {
-  if (state.value?._next) {
-    state.value = state.value._next
-    remainingSec.value = state.value?.attempt.remaining_sec ?? remainingSec.value
-    hydrateFromAnswer(state.value!)
-    return
-  }
-  // Else jump to next unseen question, or just position+1
-  const cur = state.value?.position ?? 0
+  const cur = currentPosition.value
+  const total = attemptInfo.value?.total ?? 0
   const nextUnseen = progress.value.find(p => p.position > cur && p.status === 'unseen')
                   || progress.value.find(p => p.status === 'unseen')
   if (nextUnseen) jumpTo(nextUnseen.position)
-  else if (cur < (state.value?.attempt.total ?? 0)) jumpTo(cur + 1)
+  else if (cur < total) jumpTo(cur + 1)
 }
 
 async function finishAttempt() {
-  try { await apiFetch(`/test/${attemptId}/finish`, { method: 'POST' }) } catch {}
+  const buffered = Object.values(localAnswers.value)
+  try {
+    if (buffered.length > 0) {
+      await apiFetch(`/test/${attemptId}/submit-all`, { method: 'POST', body: { answers: buffered } })
+    } else {
+      await apiFetch(`/test/${attemptId}/finish`, { method: 'POST' })
+    }
+  } catch {}
   await navigateTo(`/test/result/${attemptId}`, { replace: true })
 }
 
@@ -207,7 +288,7 @@ const timerLabel = computed(() => {
 })
 
 const progressPercent = computed(() => {
-  const total = state.value?.attempt.total ?? 0
+  const total = attemptInfo.value?.total ?? 0
   if (!total) return 0
   const answered = progress.value.filter(p => p.status !== 'unseen').length
   return Math.round((answered / total) * 100)
@@ -230,10 +311,11 @@ function tileStyleFor(p: ProgressEntry, isCurrent: boolean) {
     }
   }
   switch (p.status) {
-    case 'correct': return { background: '#10b981', color: '#fff', borderColor: '#10b981', ring: 'none' }
-    case 'wrong':   return { background: '#f43f5e', color: '#fff', borderColor: '#f43f5e', ring: 'none' }
-    case 'skipped': return { background: 'rgba(251,191,36,0.18)', color: '#b45309', borderColor: 'rgba(251,191,36,0.4)', ring: 'none' }
-    default:        return { background: 'var(--surface)', color: 'var(--text-3)', borderColor: 'var(--border-1)', ring: 'none' }
+    case 'correct':  return { background: '#10b981', color: '#fff', borderColor: '#10b981', ring: 'none' }
+    case 'wrong':    return { background: '#f43f5e', color: '#fff', borderColor: '#f43f5e', ring: 'none' }
+    case 'skipped':  return { background: 'rgba(251,191,36,0.18)', color: '#b45309', borderColor: 'rgba(251,191,36,0.4)', ring: 'none' }
+    case 'answered': return { background: 'rgba(63,88,148,0.18)', color: '#1e3a8a', borderColor: 'rgba(63,88,148,0.4)', ring: 'none' }
+    default:         return { background: 'var(--surface)', color: 'var(--text-3)', borderColor: 'var(--border-1)', ring: 'none' }
   }
 }
 
@@ -256,11 +338,11 @@ onBeforeUnmount(() => {
           {{ i18n.t({ uz: 'Chiqish', kr: 'Чиқиш' }) }}
         </button>
 
-        <div v-if="state" class="flex items-center gap-3">
+        <div v-if="attemptInfo" class="flex items-center gap-3">
           <div class="text-sm font-medium tabular-nums" style="color: var(--text-2);">
-            <span class="font-semibold" style="color: var(--text-1);">{{ state.position }}</span>
+            <span class="font-semibold" style="color: var(--text-1);">{{ currentPosition }}</span>
             <span class="mx-1" style="color: var(--text-4);">/</span>
-            <span>{{ state.attempt.total }}</span>
+            <span>{{ attemptInfo.total }}</span>
           </div>
           <div v-if="auth.user"
                class="relative flex items-center gap-1.5 h-7 px-2 rounded-full text-xs"
@@ -297,7 +379,7 @@ onBeforeUnmount(() => {
 
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       <!-- Top: Question number grid (full width) -->
-      <section v-if="state && progress.length" class="card p-5 lg:p-6">
+      <section v-if="attemptInfo && progress.length" class="card p-5 lg:p-6">
         <div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
           <div class="eyebrow">{{ i18n.t({ uz: 'Savollar', kr: 'Саволлар' }) }}</div>
           <div v-if="isExam" class="text-xs text-amber-700 flex items-center gap-1">
@@ -316,10 +398,10 @@ onBeforeUnmount(() => {
             class="relative aspect-square rounded-lg text-sm font-semibold tabular-nums border transition-all flex items-center justify-center"
             :class="canNavigate ? 'hover:-translate-y-0.5 hover:shadow-soft cursor-pointer' : 'cursor-not-allowed'"
             :style="{
-              background: tileStyleFor(p, p.position === state.position).background,
-              color: tileStyleFor(p, p.position === state.position).color,
-              borderColor: tileStyleFor(p, p.position === state.position).borderColor,
-              boxShadow: tileStyleFor(p, p.position === state.position).ring,
+              background: tileStyleFor(p, p.position === currentPosition).background,
+              color: tileStyleFor(p, p.position === currentPosition).color,
+              borderColor: tileStyleFor(p, p.position === currentPosition).borderColor,
+              boxShadow: tileStyleFor(p, p.position === currentPosition).ring,
             }">
             {{ p.position }}
           </button>
@@ -329,8 +411,10 @@ onBeforeUnmount(() => {
           <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded border border-ink-900 bg-ink-900"></span>{{ i18n.t({ uz: 'Joriy', kr: 'Жорий' }) }}</span>
           <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-emerald-500"></span>{{ i18n.t({ uz: 'To\'g\'ri', kr: 'Тўғри' }) }}</span>
           <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-rose-500"></span>{{ i18n.t({ uz: 'Xato', kr: 'Хато' }) }}</span>
-          <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-amber-100 border border-amber-200"></span>{{ i18n.t({ uz: 'O\'tkazilgan', kr: 'Ўтказилган' }) }}</span>
           <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded border border-ink-200 bg-white"></span>{{ i18n.t({ uz: 'Tegilmagan', kr: 'Тегилмаган' }) }}</span>
+          <span v-if="isExam" class="flex items-center gap-1.5 text-rose-600 font-medium">
+            {{ i18n.t({ uz: 'Imtihon: 3 xato — yiqilish', kr: 'Имтиҳон: 3 хато — йиқилиш' }) }}
+          </span>
         </div>
       </section>
 
@@ -355,23 +439,29 @@ onBeforeUnmount(() => {
           </div>
 
           <!-- Question -->
-          <div v-else-if="state" class="space-y-5 anim-in" :key="state.question.id">
-            <div v-if="state.question.topic" class="eyebrow">{{ state.question.topic }}</div>
+          <div v-else-if="currentItem" class="space-y-5 anim-in" :key="currentItem.question.id">
+            <div v-if="currentItem.question.topic" class="eyebrow">{{ currentItem.question.topic }}</div>
 
             <!-- Question text (top, full width) -->
             <div class="card p-6 lg:p-7">
-              <div class="text-lg lg:text-xl font-medium text-ink-900 leading-relaxed">{{ state.question.text }}</div>
+              <div class="text-lg lg:text-xl font-medium text-ink-900 leading-relaxed">{{ currentItem.question.text }}</div>
             </div>
 
             <!-- Below: image on left, options on right (stacked on mobile) -->
-            <div :class="state.question.image ? 'grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5 items-start' : ''">
-              <div v-if="state.question.image" class="card p-3 md:sticky md:top-20">
-                <img :src="state.question.image"
-                     class="w-full rounded-lg border border-ink-200 max-h-[420px] object-contain bg-ink-50">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5 items-start">
+              <div class="card p-3 md:sticky md:top-20">
+                <div class="relative group cursor-zoom-in" @click="zoomedImage = currentItem.question.image || '/default-pic.png'">
+                  <img :src="currentItem.question.image || '/default-pic.png'"
+                       class="w-full rounded-lg border border-ink-200 max-h-[420px] object-contain bg-ink-50 transition-opacity group-hover:opacity-90">
+                  <div class="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                       style="background: rgba(15, 23, 42, 0.7); color: #fff;">
+                    <AppIcon name="plus" :size="16" />
+                  </div>
+                </div>
               </div>
 
               <div class="space-y-2">
-                <button v-for="(o, i) in state.question.options" :key="o.id"
+                <button v-for="(o, i) in currentItem.question.options" :key="o.id"
                         :disabled="!!lastAnswer || submitting"
                         @click="onOptionClick(o.id)"
                         class="w-full text-left px-4 py-3.5 rounded-xl border transition-all duration-150
@@ -428,6 +518,64 @@ onBeforeUnmount(() => {
           </div>
       </div>
     </main>
+
+    <!-- Image zoom lightbox -->
+    <Transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0">
+      <div v-if="zoomedImage"
+           class="fixed inset-0 z-50 flex items-center justify-center p-4 cursor-zoom-out"
+           style="background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(6px);"
+           @click="zoomedImage = null">
+        <button @click.stop="zoomedImage = null"
+                class="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-colors hover:bg-white/20"
+                style="background: rgba(255,255,255,0.1); color: #fff;">
+          <AppIcon name="x" :size="22" />
+        </button>
+        <img :src="zoomedImage"
+             class="max-w-full max-h-full object-contain rounded-lg shadow-2xl anim-in"
+             @click.stop>
+      </div>
+    </Transition>
+
+    <!-- Exam fail modal -->
+    <Transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0">
+      <div v-if="examFailModal"
+           class="fixed inset-0 z-50 flex items-center justify-center p-4"
+           style="background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(4px);">
+        <div class="card p-8 max-w-md w-full text-center anim-in" style="background: var(--surface);">
+          <div class="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-5"
+               style="background: rgba(244,63,94,0.12);">
+            <AppIcon name="x" :size="36" class="text-rose-500" />
+          </div>
+          <div class="text-2xl font-bold text-ink-900 mb-2">
+            {{ i18n.t({ uz: 'Yiqildingiz', kr: 'Йиқилдингиз' }) }}
+          </div>
+          <div class="text-sm text-ink-500 mb-6 leading-relaxed">
+            {{ i18n.t({
+              uz: 'Imtihonda 3 ta xato javob berdingiz. Test tugatildi.',
+              kr: 'Имтиҳонда 3 та хато жавоб бердингиз. Тест тугатилди.'
+            }) }}
+          </div>
+          <button @click="finalizeAndExit"
+                  :disabled="submitting"
+                  class="btn-primary btn-lg w-full">
+            <span v-if="submitting" class="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+            <span v-else>{{ i18n.t({ uz: 'Tushundim', kr: 'Тушундим' }) }}</span>
+          </button>
+        </div>
+      </div>
+    </Transition>
   </div>
 
   <template #fallback>

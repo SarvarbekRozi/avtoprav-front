@@ -39,6 +39,14 @@ const modeLabels: Record<string, { uz: string, kr: string }> = {
 }
 const modeLabel = computed(() => a.value ? i18n.t(modeLabels[a.value.mode] ?? { uz: a.value.mode, kr: a.value.mode }) : '')
 
+const retakeLink = computed(() => {
+  if (!a.value) return '/'
+  const base = `/test/start/${a.value.mode}`
+  if (a.value.mode === 'topic' && a.value.topic_id) return `${base}?topic_id=${a.value.topic_id}`
+  if (a.value.mode === 'ticket' && a.value.ticket_id) return `${base}?ticket_id=${a.value.ticket_id}`
+  return base
+})
+
 function chosenLetter(ans: any) {
   if (!ans.chosen_option_id) return null
   const idx = ans.question.options.findIndex((o: any) => o.id === ans.chosen_option_id)
@@ -170,7 +178,7 @@ function gradeLabel(p: number) {
 
     <!-- Action buttons -->
     <div class="flex flex-wrap gap-2">
-      <NuxtLink :to="`/test/start/${a.mode}`" class="btn-primary btn-lg flex-1 min-w-fit">
+      <NuxtLink :to="retakeLink" class="btn-primary btn-lg flex-1 min-w-fit">
         {{ i18n.t({ uz: 'Qayta urinish', kr: 'Қайта уриниш' }) }}
         <AppIcon name="arrow" :size="14" />
       </NuxtLink>
