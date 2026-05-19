@@ -93,6 +93,17 @@ const modeLabels: Record<string, { uz: string, kr: string }> = {
 }
 function modeLabel(m: string) { return modeLabels[m] ? i18n.t(modeLabels[m]) : m }
 
+const toneColors: Record<string, string> = {
+  brand:   '#3f5894',
+  emerald: '#10b981',
+  amber:   '#f59e0b',
+  rose:    '#f43f5e',
+  violet:  '#8b5cf6',
+  sky:     '#0ea5e9',
+  ink:     '#1f2937',
+}
+function toneColor(t: string) { return toneColors[t] || toneColors.brand }
+
 function timeAgo(iso: string) {
   const d = new Date(iso)
   const diffMs = Date.now() - d.getTime()
@@ -120,9 +131,9 @@ function timeAgo(iso: string) {
             <span v-else-if="examDaysLeft === 0" class="text-rose-600">
               {{ i18n.t({ uz: 'Imtihon bugun!', kr: 'Имтиҳон бугун!' }) }}
             </span>
-            <span v-else class="text-ink-500">
+            <NuxtLink v-else to="/me/profile" class="text-ink-500 underline decoration-ink-300 underline-offset-4 hover:decoration-ink-900 hover:text-ink-900 transition-colors">
               {{ i18n.t({ uz: 'Profilingizdan imtihon kunini qo\'shing.', kr: 'Профилингиздан имтиҳон кунини қўшинг.' }) }}
-            </span>
+            </NuxtLink>
           </h1>
 
           <div class="flex flex-wrap items-center gap-2.5 mt-5">
@@ -190,20 +201,41 @@ function timeAgo(iso: string) {
         <h2 class="text-xl sm:text-2xl font-semibold tracking-tightish text-ink-900 mt-1">
           {{ i18n.t({ uz: 'Bugungi rejangizni tanlang', kr: 'Бугунги режангизни танланг' }) }}
         </h2>
+        <p class="text-sm text-ink-500 mt-1.5">
+          {{ i18n.t({ uz: 'Quyidagi rejimlardan birini tanlang', kr: 'Қуйидаги режимлардан бирини танланг' }) }}
+        </p>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
         <NuxtLink v-for="m in practiceModes" :key="m.id" :to="m.to"
-          class="card card-hover p-5 group relative block">
-          <div class="flex items-start gap-3.5">
-            <IconTile :icon="m.icon" :tone="(m.tone as any)" :size="44" />
-            <div class="flex-1 min-w-0">
-              <div class="font-semibold leading-snug text-ink-900">{{ m.title }}</div>
-              <div class="text-sm mt-1 leading-relaxed text-ink-500">{{ m.desc }}</div>
-              <div class="text-2xs mt-2.5 font-medium text-ink-400">{{ m.meta }}</div>
+          class="practice-card group relative block rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-1"
+          :style="{
+            background: 'var(--surface)',
+            border: '1px solid var(--border-soft)',
+            boxShadow: 'var(--shadow-card)',
+          }">
+          <!-- Colored accent strip -->
+          <div class="absolute top-0 left-0 bottom-0 w-1 transition-all group-hover:w-1.5"
+               :style="{ background: toneColor(m.tone) }"></div>
+
+          <div class="p-5 pl-6">
+            <div class="flex items-start gap-3.5">
+              <IconTile :icon="m.icon" :tone="(m.tone as any)" :size="48" />
+              <div class="flex-1 min-w-0">
+                <div class="font-semibold text-base leading-snug text-ink-900 mb-1">{{ m.title }}</div>
+                <div class="text-sm leading-relaxed text-ink-500">{{ m.desc }}</div>
+              </div>
             </div>
-            <AppIcon name="chev-r" :size="16"
-              class="text-ink-300 group-hover:translate-x-0.5 transition-transform flex-shrink-0 mt-1" />
+
+            <div class="mt-4 pt-3 flex items-center justify-between" style="border-top: 1px dashed var(--border-soft);">
+              <div class="text-2xs font-medium uppercase tracking-wider" :style="{ color: toneColor(m.tone) }">
+                {{ m.meta }}
+              </div>
+              <div class="text-xs font-semibold text-ink-600 flex items-center gap-1 group-hover:gap-2 transition-all">
+                <span>{{ i18n.t({ uz: 'Tanlash', kr: 'Танлаш' }) }}</span>
+                <AppIcon name="arrow" :size="13" class="group-hover:translate-x-0.5 transition-transform" />
+              </div>
+            </div>
           </div>
         </NuxtLink>
       </div>

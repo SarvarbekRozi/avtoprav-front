@@ -7,6 +7,16 @@ async function changeLocale(value: 'uz_latn' | 'uz_cyrl') {
   await i18n.setLocale(value)
 }
 
+const statBlobs: Record<string, string> = {
+  brand:   'rgba(63,88,148,0.35)',
+  emerald: 'rgba(16,185,129,0.30)',
+  amber:   'rgba(245,158,11,0.30)',
+  violet:  'rgba(139,92,246,0.30)',
+  rose:    'rgba(244,63,94,0.30)',
+  sky:     'rgba(14,165,233,0.30)',
+}
+function statBlob(t: string) { return statBlobs[t] || statBlobs.brand }
+
 const features = computed(() => [
   { tone: 'emerald', icon: 'stat',    title: i18n.t({ uz: 'Statistika',         kr: 'Статистика' }),         desc: i18n.t({ uz: 'Mavzular bo\'yicha kuchli/zaif tomonlaringizni tahlil bilan ko\'ring.', kr: 'Мавзулар бўйича кучли/заиф томонларингизни таҳлил билан кўринг.' }) },
   { tone: 'amber',   icon: 'flame-outline', title: i18n.t({ uz: 'Kunlik seriya',     kr: 'Кунлик серия' }),     desc: i18n.t({ uz: 'Har kuni 20 savol — odat shakllantiring va seriyangizni saqlang.', kr: 'Ҳар куни 20 савол — одат шакллантиринг ва серияни сақланг.' }) },
@@ -186,17 +196,163 @@ const pricingFeatures = computed(() => ({
         </div>
       </section>
 
-      <!-- Stats strip -->
-      <section class="max-w-6xl mx-auto px-4 sm:px-6 py-12">
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
-          <div v-for="s in [
-            { v: '48 217', l: i18n.t({ uz: 'faol o\'quvchi', kr: 'фаол ўқувчи' }) },
-            { v: '92%',    l: i18n.t({ uz: 'birinchi urinishda o\'tdi', kr: 'биринчи уринишда ўтди' }) },
-            { v: '1 247',  l: i18n.t({ uz: 'rasmiy savol', kr: 'расмий савол' }) },
-            { v: '4.9',    l: i18n.t({ uz: 'App Store reytingi', kr: 'App Store рейтинги' }) },
-          ]" :key="s.v">
-            <div class="text-3xl font-semibold tracking-tightest text-ink-900 tabular-nums">{{ s.v }}</div>
-            <div class="text-sm text-ink-500 mt-1">{{ s.l }}</div>
+      <!-- Stats — Bento grid -->
+      <section class="max-w-6xl mx-auto px-4 sm:px-6 py-16">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-8">
+          <div>
+            <div class="inline-flex items-center gap-2 px-2.5 h-7 rounded-full text-2xs font-bold uppercase tracking-[0.12em]"
+                 style="background: linear-gradient(90deg, rgba(139,92,246,0.12), rgba(6,182,212,0.12)); color: #6d28d9;">
+              <span class="w-1.5 h-1.5 rounded-full" style="background: linear-gradient(90deg, #8b5cf6, #06b6d4);"></span>
+              {{ i18n.t({ uz: 'Raqamlarda', kr: 'Рақамларда' }) }}
+            </div>
+            <h2 class="text-3xl sm:text-4xl font-semibold tracking-tightest text-ink-900 mt-3 leading-[1.1]">
+              {{ i18n.t({ uz: 'Minglab o\'quvchi', kr: 'Минглаб ўқувчи' }) }}
+              <span class="bg-clip-text text-transparent" style="background-image: linear-gradient(135deg, #8b5cf6, #6366f1, #06b6d4);">
+                {{ i18n.t({ uz: 'bizga ishonadi', kr: 'бизга ишонади' }) }}
+              </span>
+            </h2>
+          </div>
+          <p class="text-sm text-ink-500 max-w-xs">
+            {{ i18n.t({
+              uz: 'Avtoprav O\'zbekiston bo\'ylab haydovchilik imtihoniga tayyorlanish uchun birinchi tanlov.',
+              kr: 'Авторrav Ўзбекистон бўйлаб ҳайдовчилик имтиҳонига тайёрланиш учун биринчи танлов.'
+            }) }}
+          </p>
+        </div>
+
+        <!-- Bento grid -->
+        <div class="grid grid-cols-12 gap-3 sm:gap-4">
+          <!-- Hero stat: 48,217 active users -->
+          <div class="col-span-12 sm:col-span-7 relative overflow-hidden rounded-3xl p-7 sm:p-9 transition-all hover:-translate-y-1"
+               style="background: linear-gradient(135deg, #0e1016 0%, #1e1b3a 50%, #1e293b 100%); color: #fff; min-height: 220px;">
+            <!-- decorative dot pattern -->
+            <div aria-hidden="true" class="absolute inset-0 opacity-30 pointer-events-none"
+                 style="background-image: radial-gradient(rgba(255,255,255,0.18) 1px, transparent 1px); background-size: 18px 18px;"></div>
+            <!-- glow blobs -->
+            <div aria-hidden="true" class="absolute -top-20 -right-20 w-60 h-60 rounded-full blur-3xl pulse-slow" style="background: rgba(139,92,246,0.45);"></div>
+            <div aria-hidden="true" class="absolute -bottom-24 -left-16 w-72 h-72 rounded-full blur-3xl pulse-slow" style="background: rgba(6,182,212,0.30); animation-delay: 1.5s;"></div>
+
+            <div class="relative h-full flex flex-col">
+              <div class="flex items-center gap-2 mb-auto">
+                <div class="w-9 h-9 rounded-xl grid place-items-center"
+                     style="background: rgba(255,255,255,0.08); backdrop-filter: blur(8px);">
+                  <AppIcon name="user" :size="16" class="text-violet-300" />
+                </div>
+                <span class="text-xs font-medium tracking-wider uppercase text-white/55">
+                  {{ i18n.t({ uz: 'Faol o\'quvchi', kr: 'Фаол ўқувчи' }) }}
+                </span>
+                <span class="ml-auto inline-flex items-center gap-1 text-2xs font-bold px-2 h-6 rounded-full"
+                      style="background: rgba(16,185,129,0.18); color: #6ee7b7;">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  LIVE
+                </span>
+              </div>
+
+              <div class="mt-8">
+                <div class="text-6xl sm:text-7xl font-bold tracking-tightest tabular-nums leading-[0.9] bg-clip-text text-transparent"
+                     style="background-image: linear-gradient(135deg, #fff 0%, #c4b5fd 50%, #67e8f9 100%);">
+                  48 217
+                </div>
+                <div class="text-sm text-white/60 mt-3 leading-relaxed">
+                  {{ i18n.t({
+                    uz: 'va har kuni o\'sib bormoqda',
+                    kr: 'ва ҳар куни ўсиб бормоқда'
+                  }) }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 92% passed -->
+          <div class="col-span-6 sm:col-span-5 relative overflow-hidden rounded-3xl p-6 transition-all hover:-translate-y-1"
+               style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1px solid rgba(16,185,129,0.20); min-height: 220px;">
+            <div aria-hidden="true" class="absolute -bottom-12 -right-12 w-48 h-48 rounded-full blur-2xl" style="background: rgba(16,185,129,0.25);"></div>
+            <div class="relative h-full flex flex-col justify-between">
+              <div class="flex items-start justify-between">
+                <div class="w-10 h-10 rounded-xl grid place-items-center"
+                     style="background: rgba(16,185,129,0.18); color: #047857;">
+                  <AppIcon name="check" :size="18" />
+                </div>
+                <!-- mini ring -->
+                <svg class="w-12 h-12" viewBox="0 0 36 36">
+                  <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(16,185,129,0.15)" stroke-width="3"/>
+                  <circle cx="18" cy="18" r="15" fill="none" stroke="#10b981" stroke-width="3"
+                          stroke-dasharray="94.25" stroke-dashoffset="7.54" stroke-linecap="round"
+                          transform="rotate(-90 18 18)"/>
+                </svg>
+              </div>
+              <div class="mt-4">
+                <div class="text-5xl sm:text-6xl font-bold tracking-tightest tabular-nums leading-none"
+                     style="color: #065f46;">
+                  92<span class="text-3xl sm:text-4xl">%</span>
+                </div>
+                <div class="text-sm text-emerald-900/70 mt-2 leading-snug font-medium">
+                  {{ i18n.t({ uz: 'birinchi urinishda imtihondan o\'tdi', kr: 'биринчи уринишда имтиҳондан ўтди' }) }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 1 247 questions -->
+          <div class="col-span-6 sm:col-span-4 relative overflow-hidden rounded-3xl p-6 transition-all hover:-translate-y-1"
+               style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 1px solid rgba(245,158,11,0.22); min-height: 170px;">
+            <div aria-hidden="true" class="absolute -top-10 -right-10 w-36 h-36 rounded-full blur-2xl" style="background: rgba(245,158,11,0.25);"></div>
+            <div class="relative h-full flex flex-col justify-between">
+              <div class="w-10 h-10 rounded-xl grid place-items-center"
+                   style="background: rgba(245,158,11,0.18); color: #b45309;">
+                <AppIcon name="book" :size="18" />
+              </div>
+              <div class="mt-4">
+                <div class="text-4xl sm:text-5xl font-bold tracking-tightest tabular-nums leading-none"
+                     style="color: #78350f;">1 247</div>
+                <div class="text-sm text-amber-900/70 mt-2 leading-snug font-medium">
+                  {{ i18n.t({ uz: 'rasmiy GAI savoli', kr: 'расмий ГАИ саволи' }) }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4.9 rating -->
+          <div class="col-span-6 sm:col-span-4 relative overflow-hidden rounded-3xl p-6 transition-all hover:-translate-y-1"
+               style="background: linear-gradient(135deg, #faf5ff 0%, #ede9fe 100%); border: 1px solid rgba(139,92,246,0.22); min-height: 170px;">
+            <div aria-hidden="true" class="absolute -top-10 -left-10 w-36 h-36 rounded-full blur-2xl" style="background: rgba(139,92,246,0.25);"></div>
+            <div class="relative h-full flex flex-col justify-between">
+              <div class="w-10 h-10 rounded-xl grid place-items-center"
+                   style="background: rgba(139,92,246,0.18); color: #6d28d9;">
+                <AppIcon name="star" :size="18" />
+              </div>
+              <div class="mt-4">
+                <div class="flex items-end gap-2">
+                  <div class="text-4xl sm:text-5xl font-bold tracking-tightest tabular-nums leading-none"
+                       style="color: #4c1d95;">4.9</div>
+                  <div class="flex gap-0.5 mb-1">
+                    <AppIcon v-for="i in 5" :key="i" name="star" :size="11" class="text-amber-500" />
+                  </div>
+                </div>
+                <div class="text-sm text-violet-900/70 mt-2 leading-snug font-medium">
+                  {{ i18n.t({ uz: 'App Store reytingi', kr: 'App Store рейтинги' }) }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Trust ticker -->
+          <div class="col-span-6 sm:col-span-4 relative overflow-hidden rounded-3xl p-6 transition-all hover:-translate-y-1"
+               style="background: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%); border: 1px solid rgba(6,182,212,0.22); min-height: 170px;">
+            <div aria-hidden="true" class="absolute -bottom-10 -right-10 w-36 h-36 rounded-full blur-2xl" style="background: rgba(6,182,212,0.25);"></div>
+            <div class="relative h-full flex flex-col justify-between">
+              <div class="w-10 h-10 rounded-xl grid place-items-center"
+                   style="background: rgba(6,182,212,0.18); color: #0e7490;">
+                <AppIcon name="flame" :size="18" />
+              </div>
+              <div class="mt-4">
+                <div class="text-4xl sm:text-5xl font-bold tracking-tightest tabular-nums leading-none"
+                     style="color: #155e75;">14<span class="text-2xl ml-1">{{ i18n.t({ uz: 'kun', kr: 'кун' }) }}</span></div>
+                <div class="text-sm text-cyan-900/70 mt-2 leading-snug font-medium">
+                  {{ i18n.t({ uz: 'o\'rtacha tayyorgarlik', kr: 'ўртача тайёргарлик' }) }}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -446,3 +602,13 @@ const pricingFeatures = computed(() => ({
     </footer>
   </div>
 </template>
+
+<style scoped>
+.pulse-slow {
+  animation: pulse-slow 5s ease-in-out infinite;
+}
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.1); }
+}
+</style>
