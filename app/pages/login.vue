@@ -30,7 +30,7 @@ async function submit() {
           {{ i18n.t({ uz: 'Hisobingizga kiring', kr: 'Ҳисобингизга киринг' }) }}
         </h1>
         <p class="text-sm text-ink-500 mt-1.5">
-          {{ i18n.t({ uz: 'Login va parolingiz bilan davom eting', kr: 'Логин ва паролингиз билан давом этинг' }) }}
+          {{ i18n.t({ uz: 'Haydovchilik imtihoniga tayyorlaning — har kuni 2 ta bepul test', kr: 'Ҳайдовчилик имтиҳонига тайёрланинг — ҳар куни 2 та бепул тест' }) }}
         </p>
       </div>
 
