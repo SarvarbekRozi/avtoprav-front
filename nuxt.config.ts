@@ -52,16 +52,4 @@ export default defineNuxtConfig({
   tailwindcss: {
     cssPath: '~/assets/css/main.css',
   },
-
-  vite: {
-    optimizeDeps: {
-      include: [
-        'three',
-        'three/examples/jsm/controls/OrbitControls.js',
-        'three/examples/jsm/geometries/RoundedBoxGeometry.js',
-        'three/examples/jsm/environments/RoomEnvironment.js',
-        'three/examples/jsm/loaders/GLTFLoader.js',
-      ],
-    },
-  },
 })

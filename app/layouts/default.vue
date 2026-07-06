@@ -25,7 +25,6 @@ const navLinks = computed(() => {
     { to: '/test/start/exam', icon: 'exam', label: i18n.t({ uz: 'Imtihon', kr: 'Имтиҳон' }) },
     { to: '/tickets',  icon: 'ticket', label: i18n.t({ uz: 'Biletlar',    kr: 'Билетлар' }) },
     { to: '/topics',   icon: 'book',   label: i18n.t({ uz: 'Mavzular',    kr: 'Мавзулар' }) },
-    { to: '/poligon',  icon: 'car',    label: i18n.t({ uz: 'Poligon',     kr: 'Полигон' }), premium: true },
     { to: '/me/stats', icon: 'stat',   label: i18n.t({ uz: 'Statistika',  kr: 'Статистика' }) },
     { to: '/pricing',  icon: 'card',   label: i18n.t({ uz: 'Tariflar',    kr: 'Тарифлар' }) },
   ]
@@ -130,7 +129,6 @@ const { data: streak } = useAsyncData('sidebar-streak', async () => {
                 style="background: var(--accent);"></span>
           <AppIcon :name="link.icon" :size="20" />
           <span v-if="!collapsed" class="truncate">{{ link.label }}</span>
-          <AppIcon v-if="(link as any).premium && !collapsed" name="spark" :size="13" class="ml-auto text-amber-500" />
         </NuxtLink>
       </nav>
 
@@ -369,7 +367,6 @@ const { data: streak } = useAsyncData('sidebar-streak', async () => {
                   style="background: var(--accent);"></span>
             <AppIcon :name="link.icon" :size="20" />
             <span>{{ link.label }}</span>
-            <AppIcon v-if="(link as any).premium" name="spark" :size="13" class="ml-auto text-amber-500" />
           </NuxtLink>
         </nav>
 
