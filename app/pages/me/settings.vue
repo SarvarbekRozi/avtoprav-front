@@ -103,14 +103,21 @@ async function logout() {
         </div>
         <div class="flex items-center justify-between flex-wrap gap-3">
           <div class="text-sm text-ink-500">
-            @{{ auth.user.login }}
+            <template v-if="auth.user.is_guest">{{ i18n.t({ uz: 'Mehmon hisobi', kr: 'Меҳмон ҳисоби' }) }}</template>
+            <template v-else>@{{ auth.user.login }}</template>
             <span v-if="auth.user.is_premium" class="badge-warn ml-1"><AppIcon name="spark" :size="10" /> Premium</span>
           </div>
           <div class="flex items-center gap-2">
-            <NuxtLink to="/me/profile" class="btn-outline">{{ i18n.t({ uz: 'Profil', kr: 'Профил' }) }}</NuxtLink>
-            <button type="button" @click="logout" class="btn-outline text-rose-600 border-rose-200 hover:border-rose-400">
-              {{ i18n.t({ uz: 'Chiqish', kr: 'Чиқиш' }) }}
-            </button>
+            <template v-if="auth.user.is_guest">
+              <NuxtLink to="/register" class="btn-primary">{{ i18n.t({ uz: 'Ro\'yxatdan o\'tish', kr: 'Рўйхатдан ўтиш' }) }}</NuxtLink>
+              <NuxtLink to="/login" class="btn-outline">{{ i18n.t({ uz: 'Hisobga kirish', kr: 'Ҳисобга кириш' }) }}</NuxtLink>
+            </template>
+            <template v-else>
+              <NuxtLink to="/me/profile" class="btn-outline">{{ i18n.t({ uz: 'Profil', kr: 'Профил' }) }}</NuxtLink>
+              <button type="button" @click="logout" class="btn-outline text-rose-600 border-rose-200 hover:border-rose-400">
+                {{ i18n.t({ uz: 'Chiqish', kr: 'Чиқиш' }) }}
+              </button>
+            </template>
           </div>
         </div>
       </div>

@@ -16,8 +16,8 @@ const steps = computed(() => [
     icon: 'exam', tone: 'brand',
     title: i18n.t({ uz: 'Xush kelibsiz!', kr: 'Хуш келибсиз!' }),
     text: i18n.t({
-      uz: 'Haydovchilik imtihoniga tayyorlaning: imtihon, mavzu, bilet, marafon va yodlash rejimlarida mashq qiling.',
-      kr: 'Ҳайдовчилик имтиҳонига тайёрланинг: имтиҳон, мавзу, билет, марафон ва ёдлаш режимларида машқ қилинг.',
+      uz: 'Ro\'yxatdan o\'tish shart emas — darhol boshlang! Imtihon, mavzu, bilet, marafon va yodlash rejimlarida mashq qiling.',
+      kr: 'Рўйхатдан ўтиш шарт эмас — дарҳол бошланг! Имтиҳон, мавзу, билет, марафон ва ёдлаш режимларида машқ қилинг.',
     }),
   },
   {

@@ -3,6 +3,7 @@ definePageMeta({ middleware: 'guest' })
 
 const auth = useAuthStore()
 const i18n = useI18n()
+const route = useRoute()
 
 const form = reactive({
   login: '',
@@ -15,12 +16,17 @@ const form = reactive({
 const errors = ref<Record<string, string[]>>({})
 const error = ref('')
 
+// A guest upgrading keeps all their progress (same account, same token)
+const isUpgrade = computed(() => auth.user?.is_guest ?? false)
+
 async function submit() {
   errors.value = {}
   error.value = ''
   try {
-    await auth.register({ ...form, locale: i18n.locale.value })
-    await navigateTo('/')
+    const payload = { ...form, locale: i18n.locale.value }
+    if (isUpgrade.value) await auth.completeRegistration(payload)
+    else await auth.register(payload)
+    await navigateTo((route.query.redirect as string) || '/')
   } catch (e: any) {
     if (e?.data?.errors) errors.value = e.data.errors
     else error.value = e?.data?.message || i18n.t({ uz: 'Xatolik yuz berdi', kr: 'Хатолик юз берди' })
@@ -34,10 +40,12 @@ async function submit() {
       <div class="text-center mb-8">
         <div class="inline-flex w-11 h-11 rounded-2xl bg-ink-900 text-white items-center justify-center text-lg font-bold tracking-tight mb-4">A</div>
         <h1 class="text-2xl font-semibold tracking-tightish text-ink-900">
-          {{ i18n.t({ uz: 'Ro\'yxatdan o\'tish', kr: 'Рўйхатдан ўтиш' }) }}
+          {{ isUpgrade ? i18n.t({ uz: 'Hisobingizni saqlang', kr: 'Ҳисобингизни сақланг' }) : i18n.t({ uz: 'Ro\'yxatdan o\'tish', kr: 'Рўйхатдан ўтиш' }) }}
         </h1>
         <p class="text-sm text-ink-500 mt-1.5">
-          {{ i18n.t({ uz: 'Bepul hisob yarating va testlarni boshlang', kr: 'Бепул ҳисоб яратинг ва тестларни бошланг' }) }}
+          {{ isUpgrade
+            ? i18n.t({ uz: 'Barcha progressingiz (ballar, seriya, natijalar) saqlanib qoladi', kr: 'Барча прогрессингиз (баллар, серия, натижалар) сақланиб қолади' })
+            : i18n.t({ uz: 'Bepul hisob yarating va testlarni boshlang', kr: 'Бепул ҳисоб яратинг ва тестларни бошланг' }) }}
         </p>
       </div>
 

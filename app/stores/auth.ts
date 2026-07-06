@@ -8,6 +8,7 @@ export interface AuthUser {
   phone: string | null
   role: 'user' | 'admin'
   locale: 'uz_latn' | 'uz_cyrl'
+  is_guest: boolean
   is_premium: boolean
   premium_until: string | null
   daily_tests: { limit: number | null, used_today: number } | null
@@ -60,6 +61,43 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // Anonymous session — visitors start solving without registering.
+  async function startGuest() {
+    loading.value = true
+    try {
+      const locale = useCookie<string | null>('locale').value
+      const res = await apiFetch<{ token: string, user: AuthUser }>('/auth/guest', {
+        method: 'POST',
+        body: { locale: locale === 'uz_cyrl' ? 'uz_cyrl' : 'uz_latn' },
+      })
+      tokenCookie.value = res.token
+      user.value = res.user
+      return res
+    }
+    catch {
+      return null
+    }
+    finally {
+      loading.value = false
+    }
+  }
+
+  // Upgrade the guest account to a full one — progress is kept (same user row).
+  async function completeRegistration(payload: any) {
+    loading.value = true
+    try {
+      const res = await apiFetch<{ user: AuthUser }>('/auth/complete', {
+        method: 'POST',
+        body: payload,
+      })
+      user.value = res.user
+      return res
+    }
+    finally {
+      loading.value = false
+    }
+  }
+
   async function fetchMe() {
     if (!tokenCookie.value) return null
     try {
@@ -86,5 +124,5 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
   }
 
-  return { user, token, isAuthenticated, loading, login, register, fetchMe, logout, clear }
+  return { user, token, isAuthenticated, loading, login, register, startGuest, completeRegistration, fetchMe, logout, clear }
 })

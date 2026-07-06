@@ -19,9 +19,12 @@ const todayLabel = computed(() => {
 })
 
 const firstName = computed(() => {
-  const src = auth.user?.full_name || auth.user?.login || ''
+  if (!auth.user || auth.user.is_guest) return ''
+  const src = auth.user.full_name || auth.user.login || ''
   return src.split(/\s+/).filter(Boolean)[0] || ''
 })
+
+const isGuest = computed(() => auth.user?.is_guest ?? false)
 
 const greeting = computed(() => {
   const h = new Date().getHours()
@@ -176,6 +179,11 @@ function timeAgo(iso: string) {
               <AppIcon name="spark" :size="12" />
               {{ i18n.t({ uz: 'Bugungi bepul testlar tugadi — ertaga yana! Premium: cheksiz', kr: 'Бугунги бепул тестлар тугади — эртага яна! Премиум: чексиз' }) }}
             </NuxtLink>
+            <div v-if="isGuest" class="mt-2">
+              <NuxtLink to="/register" class="text-xs text-ink-500 hover:text-ink-900 underline decoration-ink-300 underline-offset-4 transition-colors">
+                {{ i18n.t({ uz: 'Natijalaringiz saqlanishi uchun ro\'yxatdan o\'ting →', kr: 'Натижаларингиз сақланиши учун рўйхатдан ўтинг →' }) }}
+              </NuxtLink>
+            </div>
           </div>
         </div>
 
@@ -307,5 +315,18 @@ function timeAgo(iso: string) {
         </div>
       </div>
     </section>
+  </div>
+
+  <!-- First visit: guest session is being created client-side -->
+  <div v-else class="min-h-[70vh] grid place-items-center">
+    <div class="text-center">
+      <div class="inline-flex w-12 h-12 rounded-2xl bg-ink-900 text-white items-center justify-center mb-4">
+        <svg class="w-5 h-5 animate-spin" viewBox="0 0 20 20" fill="none">
+          <circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="2" stroke-opacity="0.25"/>
+          <path d="M17.5 10A7.5 7.5 0 0 0 10 2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="text-sm text-ink-500">{{ i18n.t({ uz: 'Yuklanmoqda...', kr: 'Юкланмоқда...' }) }}</div>
+    </div>
   </div>
 </template>

@@ -102,8 +102,22 @@ function medalColor(rank: number) {
         </div>
       </div>
 
+      <!-- Guest: rating needs an account -->
+      <NuxtLink v-if="me?.is_guest" to="/register" class="flex items-center gap-3 px-5 py-3 transition-opacity hover:opacity-80"
+           style="background: var(--accent-soft); border-top: 1px solid var(--divider);">
+        <div class="w-8 h-8 rounded-full grid place-items-center text-xs font-semibold flex-shrink-0"
+             style="background: var(--text-1); color: var(--surface);">·</div>
+        <div class="flex-1 min-w-0 text-sm font-medium" style="color: var(--accent);">
+          {{ i18n.t({ uz: 'Reytingda qatnashish uchun ro\'yxatdan o\'ting →', kr: 'Рейтингда қатнашиш учун рўйхатдан ўтинг →' }) }}
+        </div>
+        <div class="text-sm font-semibold tabular-nums flex items-baseline gap-1" style="color: var(--text-1);">
+          {{ (me.points ?? 0).toLocaleString() }}
+          <span class="text-2xs font-medium" style="color: var(--text-4);">XP</span>
+        </div>
+      </NuxtLink>
+
       <!-- "You" row if not in top -->
-      <div v-if="me && !meInTop" class="flex items-center gap-3 px-5 py-3"
+      <div v-else-if="me && !meInTop" class="flex items-center gap-3 px-5 py-3"
            style="background: var(--accent-soft); border-top: 1px solid var(--divider);">
         <div class="w-7 h-7 rounded-full grid place-items-center text-2xs font-semibold tabular-nums flex-shrink-0"
              style="background: var(--surface-inset); color: var(--text-3);">

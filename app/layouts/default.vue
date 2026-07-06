@@ -52,9 +52,16 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
 
 watch(() => route.fullPath, () => { mobileSidebar.value = false })
 
+const isGuest = computed(() => auth.user?.is_guest ?? false)
+
+const displayName = computed(() => {
+  if (!auth.user) return ''
+  if (auth.user.is_guest) return i18n.t({ uz: 'Mehmon', kr: 'Меҳмон' })
+  return auth.user.full_name || auth.user.login
+})
+
 const initials = computed(() => {
-  const src = auth.user?.full_name || auth.user?.login || ''
-  return src
+  return displayName.value
     .split(/\s+/).filter(Boolean).slice(0, 2)
     .map(s => s[0]?.toUpperCase()).join('') || '·'
 })
@@ -207,7 +214,7 @@ const { data: streak } = useAsyncData('sidebar-streak', async () => {
           @click="profileMenu = !profileMenu"
           @mouseenter="(e: any) => e.currentTarget.style.background = 'var(--surface-inset)'"
           @mouseleave="(e: any) => e.currentTarget.style.background = ''"
-          :title="collapsed ? (auth.user.full_name || auth.user.login) : ''"
+          :title="collapsed ? displayName : ''"
         >
           <div class="w-8 h-8 rounded-full grid place-items-center text-xs font-semibold shrink-0"
                style="background: var(--text-1); color: var(--surface);">
@@ -216,10 +223,10 @@ const { data: streak } = useAsyncData('sidebar-streak', async () => {
           <template v-if="!collapsed">
             <div class="flex-1 min-w-0 text-left">
               <div class="text-sm font-medium truncate" style="color: var(--text-1);">
-                {{ auth.user.full_name || auth.user.login }}
+                {{ displayName }}
               </div>
               <div class="text-2xs truncate" style="color: var(--text-4);">
-                {{ auth.user.email || auth.user.login }}
+                {{ isGuest ? i18n.t({ uz: 'Hisob saqlanmagan', kr: 'Ҳисоб сақланмаган' }) : (auth.user.email || auth.user.login) }}
               </div>
             </div>
             <svg class="w-3.5 h-3.5 transition-transform shrink-0"
@@ -273,7 +280,23 @@ const { data: streak } = useAsyncData('sidebar-streak', async () => {
               {{ i18n.t({ uz: 'Sozlamalar', kr: 'Созламалар' }) }}
             </NuxtLink>
             <div class="my-1 divider"></div>
-            <button @click="logout"
+            <template v-if="isGuest">
+              <NuxtLink to="/register" @click="profileMenu = false"
+                class="block px-3 py-2 text-sm font-semibold transition-colors"
+                style="color: var(--accent);"
+                @mouseenter="(e: any) => e.currentTarget.style.background = 'var(--accent-soft)'"
+                @mouseleave="(e: any) => e.currentTarget.style.background = ''">
+                {{ i18n.t({ uz: 'Ro\'yxatdan o\'tish', kr: 'Рўйхатдан ўтиш' }) }}
+              </NuxtLink>
+              <NuxtLink to="/login" @click="profileMenu = false"
+                class="block px-3 py-2 text-sm transition-colors"
+                style="color: var(--text-2);"
+                @mouseenter="(e: any) => e.currentTarget.style.background = 'var(--surface-inset)'"
+                @mouseleave="(e: any) => e.currentTarget.style.background = ''">
+                {{ i18n.t({ uz: 'Hisobga kirish', kr: 'Ҳисобга кириш' }) }}
+              </NuxtLink>
+            </template>
+            <button v-else @click="logout"
               class="w-full text-left px-3 py-2 text-sm text-rose-600 transition-colors"
               @mouseenter="(e: any) => e.currentTarget.style.background = 'rgba(244,63,94,0.10)'"
               @mouseleave="(e: any) => e.currentTarget.style.background = ''">
@@ -408,9 +431,19 @@ const { data: streak } = useAsyncData('sidebar-streak', async () => {
             class="flex items-center gap-2.5 px-2 h-11 rounded-md text-sm" style="color: var(--text-2);">
             <div class="w-8 h-8 rounded-full grid place-items-center text-xs font-semibold"
                  style="background: var(--text-1); color: var(--surface);">{{ initials }}</div>
-            <span class="truncate">{{ auth.user.full_name || auth.user.login }}</span>
+            <span class="truncate">{{ displayName }}</span>
           </NuxtLink>
-          <button @click="logout"
+          <template v-if="isGuest">
+            <NuxtLink to="/register"
+              class="w-full block px-2 h-11 leading-[44px] rounded-md text-sm font-semibold" style="color: var(--accent);">
+              {{ i18n.t({ uz: 'Ro\'yxatdan o\'tish', kr: 'Рўйхатдан ўтиш' }) }}
+            </NuxtLink>
+            <NuxtLink to="/login"
+              class="w-full block px-2 h-11 leading-[44px] rounded-md text-sm" style="color: var(--text-2);">
+              {{ i18n.t({ uz: 'Hisobga kirish', kr: 'Ҳисобга кириш' }) }}
+            </NuxtLink>
+          </template>
+          <button v-else @click="logout"
             class="w-full text-left px-2 h-11 rounded-md text-sm text-rose-600">
             {{ i18n.t({ uz: 'Chiqish', kr: 'Чиқиш' }) }}
           </button>

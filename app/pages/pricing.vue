@@ -3,10 +3,21 @@ const i18n = useI18n()
 const auth = useAuthStore()
 
 const isPremium = computed(() => auth.user?.is_premium ?? false)
+const isGuest = computed(() => auth.user?.is_guest ?? false)
 const dailyLimit = computed(() => auth.user?.daily_tests?.limit ?? 2)
 
 // Payment isn't wired up yet — the CTA reveals a "coming soon" note instead.
+// Guests must register first (progress is kept), per the product flow.
 const showSoon = ref(false)
+
+async function onPremiumClick() {
+  // No account (or anonymous guest) → register first, then come back here
+  if (!auth.user || auth.user.is_guest) {
+    await navigateTo('/register?redirect=/pricing')
+    return
+  }
+  showSoon.value = !showSoon.value
+}
 
 const freeFeatures = computed(() => [
   i18n.t({ uz: `Har kuni ${dailyLimit.value} ta test`, kr: `Ҳар куни ${dailyLimit.value} та тест` }),
@@ -90,13 +101,20 @@ const premiumFeatures = computed(() => [
           {{ i18n.t({ uz: 'Sizda Premium faol', kr: 'Сизда Премиум фаол' }) }}
         </div>
         <template v-else>
-          <button @click="showSoon = !showSoon"
+          <button @click="onPremiumClick"
                   class="btn-lg w-full mt-5 inline-flex items-center justify-center gap-2 px-4 rounded-xl font-medium text-base"
                   style="background: #fff; color: #0e1016;">
             <AppIcon name="spark" :size="15" />
             {{ i18n.t({ uz: 'Premium olish', kr: 'Премиум олиш' }) }}
           </button>
-          <div v-if="showSoon" class="mt-3 px-3.5 py-2.5 rounded-lg text-xs leading-relaxed"
+          <div v-if="isGuest" class="mt-3 px-3.5 py-2.5 rounded-lg text-xs leading-relaxed"
+               style="background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.75);">
+            {{ i18n.t({
+              uz: 'Premium olish uchun avval ro\'yxatdan o\'tasiz — progressingiz to\'liq saqlanib qoladi.',
+              kr: 'Премиум олиш учун аввал рўйхатдан ўтасиз — прогрессингиз тўлиқ сақланиб қолади.'
+            }) }}
+          </div>
+          <div v-else-if="showSoon" class="mt-3 px-3.5 py-2.5 rounded-lg text-xs leading-relaxed"
                style="background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.75);">
             {{ i18n.t({
               uz: 'Onlayn to\'lov tez orada ishga tushadi. Hozircha Premium administrator orqali faollashtiriladi.',

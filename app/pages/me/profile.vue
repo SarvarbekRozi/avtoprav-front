@@ -39,6 +39,7 @@ async function saveExamDate() {
 const presets = [10, 15, 20, 30, 50]
 
 const initials = computed(() => {
+  if (auth.user?.is_guest) return 'M'
   const src = auth.user?.full_name || auth.user?.login || ''
   return src.split(/\s+/).filter(Boolean).slice(0, 2).map(s => s[0]?.toUpperCase()).join('') || '·'
 })
@@ -66,15 +67,20 @@ const examHours = computed(() => examDaysLeft.value ? examDaysLeft.value * 24 : 
         <div class="flex-1 min-w-0">
           <div class="flex flex-wrap items-center gap-2">
             <h1 class="text-2xl font-semibold tracking-tightish text-ink-900">
-              {{ auth.user.full_name || auth.user.login }}
+              {{ auth.user.is_guest ? i18n.t({ uz: 'Mehmon', kr: 'Меҳмон' }) : (auth.user.full_name || auth.user.login) }}
             </h1>
             <span v-if="auth.user.is_premium" class="badge-warn">
               <AppIcon name="spark" :size="10" /> Premium
             </span>
           </div>
           <div class="text-sm text-ink-500 mt-1">
-            <span v-if="auth.user.email">{{ auth.user.email }} · </span>
-            @{{ auth.user.login }}
+            <template v-if="auth.user.is_guest">
+              {{ i18n.t({ uz: 'Hisob hali saqlanmagan', kr: 'Ҳисоб ҳали сақланмаган' }) }}
+            </template>
+            <template v-else>
+              <span v-if="auth.user.email">{{ auth.user.email }} · </span>
+              @{{ auth.user.login }}
+            </template>
           </div>
           <div class="flex flex-wrap items-center gap-2 mt-3">
             <span class="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-lg bg-amber-50 text-amber-700 text-sm font-semibold tabular-nums">
@@ -85,11 +91,33 @@ const examHours = computed(() => examDaysLeft.value ? examDaysLeft.value * 24 : 
             </span>
           </div>
         </div>
-        <NuxtLink to="/pricing" v-if="!auth.user.is_premium" class="btn-outline">
+        <NuxtLink v-if="auth.user.is_guest" to="/register" class="btn-primary">
+          {{ i18n.t({ uz: 'Ro\'yxatdan o\'tish', kr: 'Рўйхатдан ўтиш' }) }}
+        </NuxtLink>
+        <NuxtLink v-else-if="!auth.user.is_premium" to="/pricing" class="btn-outline">
           <AppIcon name="spark" :size="14" />
           {{ i18n.t({ uz: 'Premium olish', kr: 'Премиум олиш' }) }}
         </NuxtLink>
       </div>
+    </div>
+
+    <!-- Guest: nudge to save the account -->
+    <div v-if="auth.user.is_guest" class="card p-5 mb-5 flex flex-col sm:flex-row sm:items-center gap-3"
+         style="background: var(--accent-soft); border-color: transparent;">
+      <div class="flex-1">
+        <div class="text-sm font-semibold" style="color: var(--accent);">
+          {{ i18n.t({ uz: 'Natijalaringiz vaqtinchalik saqlanmoqda', kr: 'Натижаларингиз вақтинчалик сақланмоқда' }) }}
+        </div>
+        <div class="text-sm mt-0.5 text-ink-600">
+          {{ i18n.t({
+            uz: 'Brauzer tozalansa progress yo\'qoladi. Ro\'yxatdan o\'ting — ballar, seriya va natijalar doimiy saqlanadi.',
+            kr: 'Браузер тозаланса прогресс йўқолади. Рўйхатдан ўтинг — баллар, серия ва натижалар доимий сақланади.'
+          }) }}
+        </div>
+      </div>
+      <NuxtLink to="/register" class="btn-primary shrink-0">
+        {{ i18n.t({ uz: 'Hisobni saqlash', kr: 'Ҳисобни сақлаш' }) }}
+      </NuxtLink>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
