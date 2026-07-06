@@ -17,6 +17,7 @@ interface AnswerInfo {
 
 interface QuestionItem {
   position: number
+  is_bookmarked?: boolean
   question: {
     id: number
     text: string
@@ -67,6 +68,7 @@ let timerId: any = null
 const auth = useAuthStore()
 const lastPointsDelta = ref<number | null>(null)
 const previousPoints = ref<number>(auth.user?.points ?? 0)
+const bookmarked = ref<Set<number>>(new Set())
 
 const currentItem = computed<QuestionItem | null>(() => {
   return questions.value.find(q => q.position === currentPosition.value) ?? null
@@ -80,6 +82,22 @@ function optionLetter(i: number) { return String.fromCharCode(65 + i) }
 function explanationText() {
   if (!lastAnswer.value) return ''
   return i18n.locale.value === 'uz_cyrl' ? lastAnswer.value.explanation_kr : lastAnswer.value.explanation_uz
+}
+
+function isBookmarked(id: number) { return bookmarked.value.has(id) }
+async function toggleBookmark(id: number) {
+  const had = bookmarked.value.has(id)
+  // optimistic toggle
+  if (had) bookmarked.value.delete(id); else bookmarked.value.add(id)
+  bookmarked.value = new Set(bookmarked.value)
+  try {
+    const res = await apiFetch<{ bookmarked: boolean }>(`/questions/${id}/bookmark`, { method: 'POST' })
+    if (res.bookmarked) bookmarked.value.add(id); else bookmarked.value.delete(id)
+  } catch {
+    // revert on failure
+    if (had) bookmarked.value.add(id); else bookmarked.value.delete(id)
+  }
+  bookmarked.value = new Set(bookmarked.value)
 }
 
 function hydrateFromAnswer(item: QuestionItem) {
@@ -109,6 +127,9 @@ async function load() {
     }
     attemptInfo.value = res.current?.attempt ?? null
     questions.value = res.questions ?? []
+    bookmarked.value = new Set(
+      (questions.value as QuestionItem[]).filter(q => q.is_bookmarked).map(q => q.question.id),
+    )
     progress.value = res.progress ?? []
     currentPosition.value = res.current?.position ?? 1
     remainingSec.value = attemptInfo.value?.remaining_sec ?? null
@@ -245,6 +266,12 @@ async function finalizeAndExit() {
     if (typeof res.user_points === 'number' && auth.user) {
       auth.user.points = res.user_points
     }
+    // Hand newly-unlocked achievements to the result page to celebrate
+    try {
+      if (res.newly_unlocked?.length) {
+        sessionStorage.setItem('testRewards:' + attemptId, JSON.stringify(res.newly_unlocked))
+      }
+    } catch {}
     finished.value = true
     await navigateTo(`/test/result/${attemptId}`, { replace: true })
   } catch (e: any) {
@@ -440,7 +467,15 @@ onBeforeUnmount(() => {
 
           <!-- Question -->
           <div v-else-if="currentItem" class="space-y-5 anim-in" :key="currentItem.question.id">
-            <div v-if="currentItem.question.topic" class="eyebrow">{{ currentItem.question.topic }}</div>
+            <div class="flex items-center justify-between gap-3">
+              <div v-if="currentItem.question.topic" class="eyebrow">{{ currentItem.question.topic }}</div>
+              <button type="button" @click="toggleBookmark(currentItem.question.id)"
+                      class="ml-auto inline-flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-2xs font-medium transition-colors flex-shrink-0"
+                      :class="isBookmarked(currentItem.question.id) ? 'bg-amber-100 text-amber-700' : 'text-ink-500 hover:bg-ink-100'">
+                <AppIcon :name="isBookmarked(currentItem.question.id) ? 'bookmark-check' : 'bookmark'" :size="14" />
+                {{ isBookmarked(currentItem.question.id) ? i18n.t({ uz: 'Saqlangan', kr: 'Сақланган' }) : i18n.t({ uz: 'Saqlash', kr: 'Сақлаш' }) }}
+              </button>
+            </div>
 
             <!-- Question text (top, full width) -->
             <div class="card p-6 lg:p-7">

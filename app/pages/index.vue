@@ -53,14 +53,14 @@ const practiceModes = computed(() => [
     to:    '/test/start/random',
   },
   {
-    id: 'mistakes', icon: 'refresh', tone: 'rose',
+    id: 'mistakes', icon: 'refresh', tone: 'rose', premium: true,
     title: i18n.t({ uz: 'Xato ustida ishlash', kr: 'Хато устида ишлаш' }),
     desc:  i18n.t({ uz: 'Faqat siz xato qilgan savollar', kr: 'Фақат сиз хато қилган саволлар' }),
     meta:  computed(() => stats.value ? `${stats.value.totals.mistakes_pending} ${i18n.t({ uz: 'ta xato', kr: 'та хато' })}` : '').value,
     to:    '/test/start/mistakes',
   },
   {
-    id: 'marathon', icon: 'bolt', tone: 'violet',
+    id: 'marathon', icon: 'bolt', tone: 'violet', premium: true,
     title: i18n.t({ uz: 'Marafon', kr: 'Марафон' }),
     desc:  i18n.t({ uz: 'To\'xtamasdan ko\'p savol yeching', kr: 'Тўхтамасдан кўп савол ечинг' }),
     meta:  i18n.t({ uz: 'Cheklovsiz', kr: 'Чекловсиз' }),
@@ -76,11 +76,28 @@ const practiceModes = computed(() => [
   {
     id: 'tickets', icon: 'ticket', tone: 'brand',
     title: i18n.t({ uz: 'Bilet bo\'yicha', kr: 'Билет бўйича' }),
-    desc:  i18n.t({ uz: 'GAI biletlari · 1—100', kr: 'ГАИ билетлари · 1—100' }),
+    desc:  i18n.t({ uz: 'Rasmiy biletlar · 1—63', kr: 'Расмий билетлар · 1—63' }),
     meta:  i18n.t({ uz: 'Katalog', kr: 'Каталог' }),
     to:    '/tickets',
   },
+  {
+    id: 'poligon', icon: 'car', tone: 'rose', premium: true,
+    title: i18n.t({ uz: 'Haydovchilik poligoni', kr: 'Ҳайдовчилик полигони' }),
+    desc:  i18n.t({ uz: '3D mashinada amaliy imtihon mashqi', kr: '3D машинада амалий имтиҳон машқи' }),
+    meta:  i18n.t({ uz: '3D o\'yin', kr: '3D ўйин' }),
+    to:    '/poligon',
+  },
+  {
+    id: 'priority', icon: 'sign', tone: 'sky',
+    title: i18n.t({ uz: 'Chorrahada ustunlik', kr: 'Чорраҳада устунлик' }),
+    desc:  i18n.t({ uz: 'Kim birinchi yuradi? Ustunlik qoidalari o\'yini', kr: 'Ким биринчи юради? Устунлик қоидалари ўйини' }),
+    meta:  i18n.t({ uz: '2D o\'yin', kr: '2D ўйин' }),
+    to:    '/games/priority',
+  },
 ])
+
+const isPremiumUser = computed(() => auth.user?.is_premium ?? false)
+function modeLocked(m: any) { return m.premium && !isPremiumUser.value }
 
 const modeLabels: Record<string, { uz: string, kr: string }> = {
   exam:     { uz: 'Imtihon',     kr: 'Имтиҳон' },
@@ -118,6 +135,8 @@ function timeAgo(iso: string) {
 
 <template>
   <div v-if="auth.user">
+    <OnboardingModal />
+
     <!-- Hero greeting + countdown -->
     <section class="max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-6">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
@@ -207,7 +226,7 @@ function timeAgo(iso: string) {
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-        <NuxtLink v-for="m in practiceModes" :key="m.id" :to="m.to"
+        <NuxtLink v-for="m in practiceModes" :key="m.id" :to="modeLocked(m) ? '/pricing' : m.to"
           class="practice-card group relative block rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-1"
           :style="{
             background: 'var(--surface)',
@@ -217,6 +236,9 @@ function timeAgo(iso: string) {
           <!-- Colored accent strip -->
           <div class="absolute top-0 left-0 bottom-0 w-1 transition-all group-hover:w-1.5"
                :style="{ background: toneColor(m.tone) }"></div>
+          <span v-if="modeLocked(m)" class="absolute top-3 right-3 z-10 badge-warn">
+            <AppIcon name="spark" :size="10" /> Premium
+          </span>
 
           <div class="p-5 pl-6">
             <div class="flex items-start gap-3.5">

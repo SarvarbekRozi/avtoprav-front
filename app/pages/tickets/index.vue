@@ -84,10 +84,10 @@ const filters = computed(() => [
 
     <!-- Grid -->
     <div v-else class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2 sm:gap-3">
-      <component v-for="t in filtered" :key="t.id"
-        :is="(t.is_locked || !t.is_ready) ? 'div' : 'NuxtLink'"
-        :to="(t.is_locked || !t.is_ready) ? undefined : `/test/start/ticket?ticket_id=${t.id}`"
+      <NuxtLink v-for="t in filtered" :key="t.id"
+        :to="(t.is_locked || !t.is_ready) ? '' : `/test/start/ticket?ticket_id=${t.id}`"
         class="relative aspect-square flex flex-col items-center justify-center border rounded-xl transition-all duration-150 hover:-translate-y-0.5"
+        :class="{ 'pointer-events-none': t.is_locked || !t.is_ready }"
         :style="{
           background: tileStyle(t).bg,
           borderColor: tileStyle(t).border,
@@ -99,7 +99,7 @@ const filters = computed(() => [
         <div class="text-xl font-semibold tracking-tightish">{{ t.number }}</div>
         <div v-if="t.best_score !== null" class="text-2xs mt-0.5 font-medium opacity-80 tabular-nums">{{ t.best_score }}/20</div>
         <div v-else class="text-2xs mt-0.5 opacity-60">{{ t.questions_count }} {{ i18n.t({ uz: 's.', kr: 'с.' }) }}</div>
-      </component>
+      </NuxtLink>
     </div>
 
     <!-- Legend -->

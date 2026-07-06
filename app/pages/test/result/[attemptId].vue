@@ -13,6 +13,26 @@ const answers = computed(() => data.value?.answers || [])
 const wrongAnswers = computed(() => answers.value.filter((x: any) => !x.is_correct))
 const firstWrong = computed(() => wrongAnswers.value[0])
 
+// AI instructor explanation (generated + cached on first request)
+const explaining = ref<Record<number, boolean>>({})
+const explainErr = ref<Record<number, string>>({})
+async function explain(q: any) {
+  if (explaining.value[q.id]) return
+  explaining.value[q.id] = true
+  explainErr.value[q.id] = ''
+  try {
+    const r = await apiFetch<{ explanation_uz: string, explanation_kr: string }>(`/questions/${q.id}/explain`, { method: 'POST' })
+    q.explanation_uz = r.explanation_uz
+    q.explanation_kr = r.explanation_kr
+  }
+  catch (e: any) {
+    explainErr.value[q.id] = e?.data?.message || i18n.t({ uz: 'Xatolik yuz berdi', kr: 'Хатолик юз берди' })
+  }
+  finally {
+    explaining.value[q.id] = false
+  }
+}
+
 function fmtTime(sec: number) {
   const m = Math.floor(sec / 60), s = sec % 60
   return `${m}:${s.toString().padStart(2, '0')}`
@@ -74,6 +94,20 @@ function gradeLabel(p: number) {
   if (p >= 70) return i18n.t({ uz: 'O\'rtacha', kr: 'Ўртача' })
   return i18n.t({ uz: 'Past', kr: 'Паст' })
 }
+
+const pointsEarned = computed(() => a.value?.points_earned ?? 0)
+
+// Achievements unlocked by this attempt (handed over from the play page)
+const newAchievements = ref<any[]>([])
+onMounted(() => {
+  try {
+    const raw = sessionStorage.getItem('testRewards:' + attemptId)
+    if (raw) {
+      newAchievements.value = JSON.parse(raw)
+      sessionStorage.removeItem('testRewards:' + attemptId)
+    }
+  } catch {}
+})
 </script>
 
 <template>
@@ -92,6 +126,28 @@ function gradeLabel(p: number) {
       </h1>
       <div class="mt-2 text-ink-500">
         {{ modeLabel }} · {{ fmtTimeWord(a.time_spent_sec) }} · {{ percent }}%
+      </div>
+      <div v-if="pointsEarned > 0" class="mt-3 inline-flex items-center gap-1.5 px-3 h-8 rounded-full bg-amber-100 text-amber-700 font-semibold text-sm">
+        <AppIcon name="spark" :size="14" /> +{{ pointsEarned }} {{ i18n.t({ uz: 'ball', kr: 'балл' }) }}
+      </div>
+    </div>
+
+    <!-- Newly unlocked achievements -->
+    <div v-if="newAchievements.length" class="card p-5 mb-6"
+         style="background: rgba(251,191,36,0.08); border-color: rgba(251,191,36,0.35);">
+      <div class="text-sm font-semibold mb-3 flex items-center gap-2 text-amber-700">
+        <AppIcon name="trophy" :size="16" />
+        {{ i18n.t({ uz: 'Yangi yutuq qo\'lga kiritildi!', kr: 'Янги ютуқ қўлга киритилди!' }) }}
+      </div>
+      <div class="flex flex-wrap gap-3">
+        <div v-for="ach in newAchievements" :key="ach.id"
+             class="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/70 border border-amber-200">
+          <IconTile :icon="ach.icon" :tone="ach.tone" :size="36" />
+          <div>
+            <div class="text-sm font-semibold text-ink-900">{{ i18n.t(ach.title) }}</div>
+            <div class="text-2xs font-semibold text-amber-600">+{{ ach.reward }} {{ i18n.t({ uz: 'ball', kr: 'балл' }) }}</div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -169,9 +225,16 @@ function gradeLabel(p: number) {
           </span>
         </div>
 
-        <div v-if="ans.question.explanation" class="mt-3 px-3.5 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-sm flex gap-2.5">
+        <div v-if="ans.question.explanation_uz" class="mt-3 px-3.5 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-sm flex gap-2.5">
           <AppIcon name="info" :size="16" class="text-amber-600 flex-shrink-0 mt-0.5" />
-          <div class="text-amber-800 leading-relaxed">{{ ans.question.explanation }}</div>
+          <div class="text-amber-800 leading-relaxed">{{ i18n.t({ uz: ans.question.explanation_uz, kr: ans.question.explanation_kr }) }}</div>
+        </div>
+        <div v-else class="mt-3">
+          <button @click="explain(ans.question)" :disabled="explaining[ans.question.id]"
+            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-violet-50 border border-violet-200 text-violet-700 text-sm font-medium hover:bg-violet-100 disabled:opacity-60">
+            {{ explaining[ans.question.id] ? i18n.t({ uz: 'Tushuntirilmoqda…', kr: 'Тушунтирилмоқда…' }) : i18n.t({ uz: '🤖 AI tushuntirish', kr: '🤖 AI тушунтириш' }) }}
+          </button>
+          <div v-if="explainErr[ans.question.id]" class="mt-1.5 text-xs text-rose-600">{{ explainErr[ans.question.id] }}</div>
         </div>
       </div>
     </div>

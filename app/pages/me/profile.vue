@@ -76,6 +76,14 @@ const examHours = computed(() => examDaysLeft.value ? examDaysLeft.value * 24 : 
             <span v-if="auth.user.email">{{ auth.user.email }} · </span>
             @{{ auth.user.login }}
           </div>
+          <div class="flex flex-wrap items-center gap-2 mt-3">
+            <span class="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-lg bg-amber-50 text-amber-700 text-sm font-semibold tabular-nums">
+              <AppIcon name="spark" :size="12" /> {{ (auth.user.points ?? 0).toLocaleString() }} {{ i18n.t({ uz: 'ball', kr: 'балл' }) }}
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-lg bg-orange-50 text-orange-700 text-sm font-semibold tabular-nums">
+              <AppIcon name="flame" :size="12" /> {{ auth.user.streak_current ?? 0 }} {{ i18n.t({ uz: 'kun', kr: 'кун' }) }}
+            </span>
+          </div>
         </div>
         <NuxtLink to="/pricing" v-if="!auth.user.is_premium" class="btn-outline">
           <AppIcon name="spark" :size="14" />

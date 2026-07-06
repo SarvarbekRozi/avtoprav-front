@@ -1,15 +1,7 @@
 <script setup lang="ts">
 const i18n = useI18n()
-const auth = useAuthStore()
+const { items, earned } = useAchievements()
 
-const { data: stats } = await useAsyncData('me-stats-ach', async () => {
-  if (!auth.token) return null
-  try { return await apiFetch<any>('/me/stats') } catch { return null }
-}, { server: false })
-
-const items = useAchievements(stats)
-
-const earned = computed(() => items.value.filter(a => a.on))
 const totalCount = computed(() => items.value.length)
 </script>
 
@@ -32,7 +24,7 @@ const totalCount = computed(() => items.value.length)
            class="flex flex-col items-center text-center p-3 rounded-xl transition-all"
            :class="b.on ? 'card-hover' : ''"
            :style="{
-             background: b.on ? 'var(--surface-soft)' : 'var(--surface-soft)',
+             background: 'var(--surface-soft)',
              opacity: b.on ? '1' : '0.5',
              filter: b.on ? 'none' : 'grayscale(0.6)',
            }">
@@ -44,8 +36,9 @@ const totalCount = computed(() => items.value.length)
             <div class="h-full rounded-full" style="background: var(--text-3);"
                  :style="{ width: Math.min(100, (b.progress.value / b.progress.target) * 100) + '%' }"></div>
           </div>
-          <div class="text-2xs mt-1 tabular-nums" style="color: var(--text-4);">
-            {{ b.progress.value }} / {{ b.progress.target }}
+          <div class="text-2xs mt-1 tabular-nums flex items-center justify-between" style="color: var(--text-4);">
+            <span>{{ b.progress.value }} / {{ b.progress.target }}</span>
+            <span v-if="b.reward" class="font-semibold text-amber-600">+{{ b.reward }}</span>
           </div>
         </div>
         <div v-else-if="b.on" class="mt-2 badge-success">

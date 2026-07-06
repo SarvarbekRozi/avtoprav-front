@@ -20,31 +20,52 @@ function statBlob(t: string) { return statBlobs[t] || statBlobs.brand }
 const features = computed(() => [
   { tone: 'emerald', icon: 'stat',    title: i18n.t({ uz: 'Statistika',         kr: 'Статистика' }),         desc: i18n.t({ uz: 'Mavzular bo\'yicha kuchli/zaif tomonlaringizni tahlil bilan ko\'ring.', kr: 'Мавзулар бўйича кучли/заиф томонларингизни таҳлил билан кўринг.' }) },
   { tone: 'amber',   icon: 'flame-outline', title: i18n.t({ uz: 'Kunlik seriya',     kr: 'Кунлик серия' }),     desc: i18n.t({ uz: 'Har kuni 20 savol — odat shakllantiring va seriyangizni saqlang.', kr: 'Ҳар куни 20 савол — одат шакллантиринг ва серияни сақланг.' }) },
-  { tone: 'brand',   icon: 'ticket',  title: i18n.t({ uz: '100 ta rasmiy bilet', kr: '100 та расмий билет' }), desc: i18n.t({ uz: 'GAI\'ning to\'liq biletlari, har birida 20 ta savol.', kr: 'ГАИнинг тўлиқ билетлари, ҳар бирида 20 та савол.' }) },
-  { tone: 'violet',  icon: 'sparkle', title: i18n.t({ uz: 'AI yordamchi',       kr: 'AI ёрдамчи' }),         desc: i18n.t({ uz: 'Tushuntirishlar, shaxsiy reja va savol-javob — shaxsiy o\'qituvchingiz.', kr: 'Тушунтиришлар, шахсий режа ва савол-жавоб — шахсий ўқитувчингиз.' }) },
+  { tone: 'brand',   icon: 'ticket',  title: i18n.t({ uz: '63 ta rasmiy bilet', kr: '63 та расмий билет' }), desc: i18n.t({ uz: 'Rasmiy biletlar to\'plami — jami 1248 ta savol.', kr: 'Расмий билетлар тўплами — жами 1248 та савол.' }) },
+  { tone: 'violet',  icon: 'sparkle', title: i18n.t({ uz: 'AI tahlil',          kr: 'AI таҳлил' }),          desc: i18n.t({ uz: 'Zaif mavzularingizni aniqlab, shaxsiy mashq tavsiyalarini beradi.', kr: 'Заиф мавзуларингизни аниқлаб, шахсий машқ тавсияларини беради.' }) },
   { tone: 'sky',     icon: 'refresh', title: i18n.t({ uz: 'Xatolar ustida ish', kr: 'Хатолар устида иш' }), desc: i18n.t({ uz: 'Yo\'l qo\'ygan xatolar avtomatik takrorlanadi — to\'liq o\'zlashtiringizcha.', kr: 'Йўл қўйган хатолар автоматик такрорланади — тўлиқ ўзлаштирингизча.' }) },
 ])
 
 const pricingFeatures = computed(() => ({
   free: [
-    i18n.t({ uz: 'Kuniga 10 ta savol', kr: 'Кунига 10 та савол' }),
-    i18n.t({ uz: 'Asosiy mavzular',     kr: 'Асосий мавзулар' }),
-    i18n.t({ uz: 'Tilni o\'zgartirish',   kr: 'Тилни ўзгартириш' }),
+    i18n.t({ uz: 'Kuniga 50 ta savol',     kr: 'Кунига 50 та савол' }),
+    i18n.t({ uz: '1–10 biletlar bepul',    kr: '1–10 билетлар бепул' }),
+    i18n.t({ uz: 'Mavzular bo\'yicha mashq', kr: 'Мавзулар бўйича машқ' }),
   ],
   premium: [
-    i18n.t({ uz: 'Cheksiz testlar',                       kr: 'Чексиз тестлар' }),
-    i18n.t({ uz: '100 ta rasmiy bilet',                   kr: '100 та расмий билет' }),
-    i18n.t({ uz: 'AI tahlil va izohlar',                   kr: 'AI таҳлил ва изоҳлар' }),
-    i18n.t({ uz: 'Xatolar ustida avtomatik mashq',        kr: 'Хатолар устида автоматик машқ' }),
-    i18n.t({ uz: 'Statistika va eksport',                  kr: 'Статистика ва экспорт' }),
+    i18n.t({ uz: 'Cheksiz savollar',                      kr: 'Чексиз саволлар' }),
+    i18n.t({ uz: 'Barcha 63 bilet',                       kr: 'Барча 63 билет' }),
+    i18n.t({ uz: 'Marafon va xatolar rejimi',             kr: 'Марафон ва хатолар режими' }),
+    i18n.t({ uz: 'AI tahlil va tavsiyalar',               kr: 'AI таҳлил ва тавсиялар' }),
+    i18n.t({ uz: 'Kengaytirilgan statistika',             kr: 'Кенгайтирилган статистика' }),
   ],
   yearly: [
     i18n.t({ uz: 'Premium\'ning hammasi',                  kr: 'Премиумнинг ҳаммаси' }),
-    i18n.t({ uz: '29% chegirma',                            kr: '29% чегирма' }),
+    i18n.t({ uz: 'Yillik — qulayroq narx',                 kr: 'Йиллик — қулайроқ нарх' }),
     i18n.t({ uz: 'Imtihon kuni hisoblagichi',              kr: 'Имтиҳон куни ҳисоблагичи' }),
-    i18n.t({ uz: 'Do\'st taklif qilish bonusi',            kr: 'Дўст таклиф қилиш бонуси' }),
+    i18n.t({ uz: 'Barcha kelajak yangilanishlar',          kr: 'Барча келажак янгиланишлар' }),
   ],
 }))
+
+// Subtle interactive 3D tilt on hover (used via v-tilt on cards)
+const vTilt = {
+  mounted(el: HTMLElement) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    el.style.transition = 'transform .18s ease-out'
+    el.style.willChange = 'transform'
+    const MAX = 7
+    const onMove = (e: MouseEvent) => {
+      const r = el.getBoundingClientRect()
+      const px = (e.clientX - r.left) / r.width - 0.5
+      const py = (e.clientY - r.top) / r.height - 0.5
+      el.style.transform = `perspective(820px) rotateX(${(-py * MAX).toFixed(2)}deg) rotateY(${(px * MAX).toFixed(2)}deg) translateY(-5px)`
+    }
+    const onLeave = () => { el.style.transform = '' }
+    el.addEventListener('mousemove', onMove)
+    el.addEventListener('mouseleave', onLeave)
+    ;(el as any)._tilt = () => { el.removeEventListener('mousemove', onMove); el.removeEventListener('mouseleave', onLeave) }
+  },
+  unmounted(el: any) { el._tilt?.() },
+}
 </script>
 
 <template>
@@ -99,8 +120,8 @@ const pricingFeatures = computed(() => ({
               </h1>
               <p class="mt-5 text-lg text-ink-500 max-w-2xl leading-relaxed text-balance">
                 {{ i18n.t({
-                  uz: 'Rasmiy GAI biletlari, mavzular bo\'yicha mashq, shaxsiy xatolar tahlili va AI yordamchisi — bir joyda, birinchi 7 kun bepul.',
-                  kr: 'Расмий ГАИ билетлари, мавзулар бўйича машқ, шахсий хатолар таҳлили ва AI ёрдамчиси — бир жойда, биринчи 7 кун бепул.'
+                  uz: 'Rasmiy biletlar, mavzular bo\'yicha mashq, xatolar ustida ish va shaxsiy AI tahlil — hammasi bir joyda. Bepul boshlang.',
+                  kr: 'Расмий билетлар, мавзулар бўйича машқ, хатолар устида иш ва шахсий AI таҳлил — ҳаммаси бир жойда. Бепул бошланг.'
                 }) }}
               </p>
 
@@ -118,9 +139,9 @@ const pricingFeatures = computed(() => ({
               <div class="mt-7 flex flex-wrap items-center gap-x-7 gap-y-2 text-sm text-ink-600">
                 <div v-for="t in [
                   i18n.t({ uz: 'Reklama yo\'q', kr: 'Реклама йўқ' }),
-                  i18n.t({ uz: '1200+ savol', kr: '1200+ савол' }),
+                  i18n.t({ uz: '1248 ta savol', kr: '1248 та савол' }),
                   i18n.t({ uz: '2 tilda · lotin + kirill', kr: '2 тилда · лотин + кирилл' }),
-                  i18n.t({ uz: 'Offline rejim', kr: 'Оффлайн режим' }),
+                  i18n.t({ uz: 'Yutuqlar va reyting', kr: 'Ютуқлар ва рейтинг' }),
                 ]" :key="t" class="flex items-center gap-2">
                   <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 grid place-items-center">
                     <AppIcon name="check" :size="12" />
@@ -132,44 +153,14 @@ const pricingFeatures = computed(() => ({
 
             <!-- Floating demo -->
             <div class="col-span-12 lg:col-span-5 relative min-h-[420px]">
-              <div class="card p-5 relative" style="box-shadow: 0 30px 60px -20px rgba(15,23,42,0.18), 0 8px 24px -8px rgba(15,23,42,0.08);">
-                <div class="flex items-center justify-between mb-3 text-xs">
-                  <span class="eyebrow">{{ i18n.t({ uz: 'Savol 5 / 20', kr: 'Савол 5 / 20' }) }}</span>
-                  <span class="font-mono tabular-nums px-2 h-6 rounded-md bg-ink-100 text-ink-700 inline-flex items-center gap-1">
-                    <AppIcon name="clock" :size="11" /> 18:42
-                  </span>
-                </div>
-                <div class="h-1 bg-ink-100 rounded-full overflow-hidden mb-4">
-                  <div class="h-full bg-ink-900" style="width: 25%"></div>
-                </div>
-                <div class="text-[15px] font-medium text-ink-900 leading-relaxed mb-4 text-balance">
-                  {{ i18n.t({
-                    uz: 'Quyidagi belgi qanday talab qo\'yadi: chap tomonga harakat bo\'yicha haydovchining xatti-harakatini ko\'rsating.',
-                    kr: 'Қуйидаги белги қандай талаб қўяди: чап томонга ҳаракат бўйича ҳайдовчининг хатти-ҳаракатини кўрсатинг.'
-                  }) }}
-                </div>
-                <!-- placeholder -->
-                <div class="w-full rounded-xl h-[120px] flex items-center justify-center border border-ink-200 font-mono text-[11px] tracking-wider text-ink-400"
-                     style="background: repeating-linear-gradient(135deg, #eef0f4 0 8px, #f6f7fa 8px 16px);">
-                  [ {{ i18n.t({ uz: 'yo\'l belgisi · 4.1.3', kr: 'йўл белгиси · 4.1.3' }) }} ]
-                </div>
-                <div class="space-y-1.5 mt-4">
-                  <div v-for="(o, i) in [
-                    { l: 'A', t: i18n.t({ uz: 'Faqat to\'g\'riga yurish', kr: 'Фақат тўғрига юриш' }),                 sel: false },
-                    { l: 'B', t: i18n.t({ uz: 'Chapga burilish va to\'g\'riga yurish', kr: 'Чапга бурилиш ва тўғрига юриш' }), sel: true },
-                    { l: 'C', t: i18n.t({ uz: 'Faqat chapga burilish', kr: 'Фақат чапга бурилиш' }),                  sel: false },
-                    { l: 'D', t: i18n.t({ uz: 'Burilishlar taqiqlanadi', kr: 'Бурилишлар тақиқланади' }),              sel: false },
-                  ]" :key="i" class="flex items-start gap-2.5 px-3 py-2.5 rounded-lg border text-sm transition"
-                       :style="o.sel
-                         ? 'background: rgba(14,16,22,0.03); border-color: #0e1016;'
-                         : 'background: #fff; border-color: #d9dade;'">
-                    <span class="w-6 h-6 rounded-md flex items-center justify-center text-xs font-semibold flex-shrink-0"
-                          :style="o.sel ? 'background: #0e1016; color: #fff' : 'background: #eeeef1; color: #2f3340'">
-                      {{ o.l }}
-                    </span>
-                    <span class="text-ink-900 leading-snug pt-0.5">{{ o.t }}</span>
-                  </div>
-                </div>
+              <ClientOnly>
+                <Car3D height="440px" />
+                <template #fallback>
+                  <div class="rounded-3xl w-full" style="height: 440px; background: linear-gradient(160deg, #312e81 0%, #6d28d9 45%, #be185d 100%);"></div>
+                </template>
+              </ClientOnly>
+              <div class="mt-3 text-center text-2xs text-ink-400">
+                {{ i18n.t({ uz: 'Aylantirish uchun sudrang ↻', kr: 'Айлантириш учун судранг ↻' }) }}
               </div>
 
               <!-- floating chip top-right -->
@@ -206,16 +197,16 @@ const pricingFeatures = computed(() => ({
               {{ i18n.t({ uz: 'Raqamlarda', kr: 'Рақамларда' }) }}
             </div>
             <h2 class="text-3xl sm:text-4xl font-semibold tracking-tightest text-ink-900 mt-3 leading-[1.1]">
-              {{ i18n.t({ uz: 'Minglab o\'quvchi', kr: 'Минглаб ўқувчи' }) }}
+              {{ i18n.t({ uz: 'Tayyorgarlik uchun', kr: 'Тайёргарлик учун' }) }}
               <span class="bg-clip-text text-transparent" style="background-image: linear-gradient(135deg, #8b5cf6, #6366f1, #06b6d4);">
-                {{ i18n.t({ uz: 'bizga ishonadi', kr: 'бизга ишонади' }) }}
+                {{ i18n.t({ uz: 'kerakli hamma narsa', kr: 'керакли ҳамма нарса' }) }}
               </span>
             </h2>
           </div>
           <p class="text-sm text-ink-500 max-w-xs">
             {{ i18n.t({
-              uz: 'Avtoprav O\'zbekiston bo\'ylab haydovchilik imtihoniga tayyorlanish uchun birinchi tanlov.',
-              kr: 'Авторrav Ўзбекистон бўйлаб ҳайдовчилик имтиҳонига тайёрланиш учун биринчи танлов.'
+              uz: 'Avtoprav — haydovchilik imtihoniga tayyorlanishning qulay va bepul yo\'li.',
+              kr: 'Avtoprav — ҳайдовчилик имтиҳонига тайёрланишнинг қулай ва бепул йўли.'
             }) }}
           </p>
         </div>
@@ -239,24 +230,24 @@ const pricingFeatures = computed(() => ({
                   <AppIcon name="user" :size="16" class="text-violet-300" />
                 </div>
                 <span class="text-xs font-medium tracking-wider uppercase text-white/55">
-                  {{ i18n.t({ uz: 'Faol o\'quvchi', kr: 'Фаол ўқувчи' }) }}
+                  {{ i18n.t({ uz: 'Savollar bazasi', kr: 'Саволлар базаси' }) }}
                 </span>
                 <span class="ml-auto inline-flex items-center gap-1 text-2xs font-bold px-2 h-6 rounded-full"
                       style="background: rgba(16,185,129,0.18); color: #6ee7b7;">
                   <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                  LIVE
+                  2026
                 </span>
               </div>
 
               <div class="mt-8">
                 <div class="text-6xl sm:text-7xl font-bold tracking-tightest tabular-nums leading-[0.9] bg-clip-text text-transparent"
                      style="background-image: linear-gradient(135deg, #fff 0%, #c4b5fd 50%, #67e8f9 100%);">
-                  48 217
+                  1 248
                 </div>
                 <div class="text-sm text-white/60 mt-3 leading-relaxed">
                   {{ i18n.t({
-                    uz: 'va har kuni o\'sib bormoqda',
-                    kr: 'ва ҳар куни ўсиб бормоқда'
+                    uz: 'rasmiy GAI savollari — 63 bilet, 42 mavzuda',
+                    kr: 'расмий ГАИ саволлари — 63 билет, 42 мавзуда'
                   }) }}
                 </div>
               </div>
@@ -277,17 +268,17 @@ const pricingFeatures = computed(() => ({
                 <svg class="w-12 h-12" viewBox="0 0 36 36">
                   <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(16,185,129,0.15)" stroke-width="3"/>
                   <circle cx="18" cy="18" r="15" fill="none" stroke="#10b981" stroke-width="3"
-                          stroke-dasharray="94.25" stroke-dashoffset="7.54" stroke-linecap="round"
+                          stroke-dasharray="94.25" stroke-dashoffset="0" stroke-linecap="round"
                           transform="rotate(-90 18 18)"/>
                 </svg>
               </div>
               <div class="mt-4">
                 <div class="text-5xl sm:text-6xl font-bold tracking-tightest tabular-nums leading-none"
                      style="color: #065f46;">
-                  92<span class="text-3xl sm:text-4xl">%</span>
+                  100<span class="text-3xl sm:text-4xl">%</span>
                 </div>
                 <div class="text-sm text-emerald-900/70 mt-2 leading-snug font-medium">
-                  {{ i18n.t({ uz: 'birinchi urinishda imtihondan o\'tdi', kr: 'биринчи уринишда имтиҳондан ўтди' }) }}
+                  {{ i18n.t({ uz: 'reklamasiz, sof o\'quv tajribasi', kr: 'рекламасиз, соф ўқув тажрибаси' }) }}
                 </div>
               </div>
             </div>
@@ -300,13 +291,13 @@ const pricingFeatures = computed(() => ({
             <div class="relative h-full flex flex-col justify-between">
               <div class="w-10 h-10 rounded-xl grid place-items-center"
                    style="background: rgba(245,158,11,0.18); color: #b45309;">
-                <AppIcon name="book" :size="18" />
+                <AppIcon name="ticket" :size="18" />
               </div>
               <div class="mt-4">
                 <div class="text-4xl sm:text-5xl font-bold tracking-tightest tabular-nums leading-none"
-                     style="color: #78350f;">1 247</div>
+                     style="color: #78350f;">63</div>
                 <div class="text-sm text-amber-900/70 mt-2 leading-snug font-medium">
-                  {{ i18n.t({ uz: 'rasmiy GAI savoli', kr: 'расмий ГАИ саволи' }) }}
+                  {{ i18n.t({ uz: 'rasmiy bilet', kr: 'расмий билет' }) }}
                 </div>
               </div>
             </div>
@@ -319,18 +310,13 @@ const pricingFeatures = computed(() => ({
             <div class="relative h-full flex flex-col justify-between">
               <div class="w-10 h-10 rounded-xl grid place-items-center"
                    style="background: rgba(139,92,246,0.18); color: #6d28d9;">
-                <AppIcon name="star" :size="18" />
+                <AppIcon name="book" :size="18" />
               </div>
               <div class="mt-4">
-                <div class="flex items-end gap-2">
-                  <div class="text-4xl sm:text-5xl font-bold tracking-tightest tabular-nums leading-none"
-                       style="color: #4c1d95;">4.9</div>
-                  <div class="flex gap-0.5 mb-1">
-                    <AppIcon v-for="i in 5" :key="i" name="star" :size="11" class="text-amber-500" />
-                  </div>
-                </div>
+                <div class="text-4xl sm:text-5xl font-bold tracking-tightest tabular-nums leading-none"
+                     style="color: #4c1d95;">42</div>
                 <div class="text-sm text-violet-900/70 mt-2 leading-snug font-medium">
-                  {{ i18n.t({ uz: 'App Store reytingi', kr: 'App Store рейтинги' }) }}
+                  {{ i18n.t({ uz: 'mavzu (bo\'lim)', kr: 'мавзу (бўлим)' }) }}
                 </div>
               </div>
             </div>
@@ -343,13 +329,13 @@ const pricingFeatures = computed(() => ({
             <div class="relative h-full flex flex-col justify-between">
               <div class="w-10 h-10 rounded-xl grid place-items-center"
                    style="background: rgba(6,182,212,0.18); color: #0e7490;">
-                <AppIcon name="flame" :size="18" />
+                <AppIcon name="globe" :size="18" />
               </div>
               <div class="mt-4">
                 <div class="text-4xl sm:text-5xl font-bold tracking-tightest tabular-nums leading-none"
-                     style="color: #155e75;">14<span class="text-2xl ml-1">{{ i18n.t({ uz: 'kun', kr: 'кун' }) }}</span></div>
+                     style="color: #155e75;">2<span class="text-2xl ml-1">{{ i18n.t({ uz: 'til', kr: 'тил' }) }}</span></div>
                 <div class="text-sm text-cyan-900/70 mt-2 leading-snug font-medium">
-                  {{ i18n.t({ uz: 'o\'rtacha tayyorgarlik', kr: 'ўртача тайёргарлик' }) }}
+                  {{ i18n.t({ uz: 'lotin + kirill', kr: 'лотин + кирилл' }) }}
                 </div>
               </div>
             </div>
@@ -419,7 +405,7 @@ const pricingFeatures = computed(() => ({
                   {{ i18n.t({ uz: 'Haftalik reyting', kr: 'Ҳафталик рейтинг' }) }}
                 </div>
                 <div class="text-2xs text-white/45">
-                  {{ i18n.t({ uz: '4 217 ishtirokchi', kr: '4 217 иштирокчи' }) }}
+                  {{ i18n.t({ uz: 'namuna', kr: 'намуна' }) }}
                 </div>
               </div>
               <div class="space-y-1.5">
@@ -508,7 +494,7 @@ const pricingFeatures = computed(() => ({
           </div>
 
           <!-- Feature cells -->
-          <div v-for="f in features" :key="f.title" class="card card-hover p-5">
+          <div v-for="f in features" :key="f.title" v-tilt class="card card-hover p-5">
             <IconTile :icon="f.icon" :tone="(f.tone as any)" :size="40" />
             <div class="mt-4 font-semibold text-ink-900">{{ f.title }}</div>
             <div class="text-sm text-ink-500 mt-1 leading-relaxed">{{ f.desc }}</div>

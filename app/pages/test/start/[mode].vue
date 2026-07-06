@@ -7,6 +7,7 @@ const mode = route.params.mode as string
 
 const error = ref('')
 const starting = ref(true)
+const premiumRequired = ref(false)
 
 const params: Record<string, any> = { mode }
 if (route.query.topic_id)  params.topic_id  = Number(route.query.topic_id)
@@ -18,6 +19,7 @@ onMounted(async () => {
     const res = await apiFetch<{ attempt_id: number }>('/test/start', { method: 'POST', body: params })
     await navigateTo(`/test/play/${res.attempt_id}`)
   } catch (e: any) {
+    if (e?.statusCode === 403 || e?.response?.status === 403) premiumRequired.value = true
     error.value = e?.data?.message || i18n.t({ uz: 'Test boshlanmadi', kr: 'Тест бошланмади' })
     starting.value = false
   }
@@ -39,6 +41,22 @@ onMounted(async () => {
       <p class="text-sm text-ink-500">
         {{ i18n.t({ uz: 'Savollarni yuklayapmiz...', kr: 'Саволларни юклаяпмиз...' }) }}
       </p>
+    </template>
+
+    <template v-else-if="premiumRequired">
+      <div class="inline-flex w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 items-center justify-center mb-6">
+        <AppIcon name="spark" :size="22" />
+      </div>
+      <div class="text-lg font-semibold text-ink-900 mb-1">
+        {{ i18n.t({ uz: 'Premium funksiya', kr: 'Премиум функция' }) }}
+      </div>
+      <p class="text-sm text-ink-500 mb-6">{{ error }}</p>
+      <div class="flex items-center justify-center gap-2">
+        <NuxtLink to="/pricing" class="btn-primary">
+          <AppIcon name="spark" :size="14" /> {{ i18n.t({ uz: 'Premium olish', kr: 'Премиум олиш' }) }}
+        </NuxtLink>
+        <NuxtLink to="/" class="btn-outline">{{ i18n.t({ uz: 'Bosh sahifa', kr: 'Бош саҳифа' }) }}</NuxtLink>
+      </div>
     </template>
 
     <template v-else>
