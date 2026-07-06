@@ -107,6 +107,8 @@ onMounted(() => {
       sessionStorage.removeItem('testRewards:' + attemptId)
     }
   } catch {}
+  // Refresh points + daily free-test allowance shown on the home page
+  useAuthStore().fetchMe().catch(() => {})
 })
 </script>
 

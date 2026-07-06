@@ -70,31 +70,6 @@ const strengthBadge: Record<string, string> = {
       </div>
     </div>
 
-    <!-- Premium teaser (recommendation locked for non-premium) -->
-    <div v-else-if="data.recommendation_locked" class="relative overflow-hidden rounded-2xl p-5"
-         style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 1px solid rgba(251,191,36,0.3);">
-      <div class="flex items-start gap-4">
-        <div class="w-11 h-11 rounded-xl grid place-items-center flex-shrink-0 bg-amber-400 text-white">
-          <AppIcon name="spark" :size="20" />
-        </div>
-        <div class="flex-1 min-w-0">
-          <div class="text-sm font-semibold text-ink-900 mb-1">
-            {{ i18n.t({ uz: 'Shaxsiy AI tavsiyalar', kr: 'Шахсий AI тавсиялар' }) }}
-          </div>
-          <div class="text-sm text-ink-600 leading-relaxed">
-            {{ i18n.t({
-              uz: 'Zaif mavzularingiz bo\'yicha shaxsiy tavsiyalar Premium\'da ochiladi.',
-              kr: 'Заиф мавзуларингиз бўйича шахсий тавсиялар Премиумда очилади.'
-            }) }}
-          </div>
-          <NuxtLink to="/pricing"
-                    class="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-white hover:bg-amber-600 transition-colors">
-            <AppIcon name="spark" :size="12" /> {{ i18n.t({ uz: 'Premium olish', kr: 'Премиум олиш' }) }}
-          </NuxtLink>
-        </div>
-      </div>
-    </div>
-
     <!-- Empty -->
     <div v-if="data.topics.length === 0" class="card p-8 text-center text-ink-500 text-sm">
       {{ i18n.t({

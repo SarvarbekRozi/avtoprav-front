@@ -1,11 +1,8 @@
 <script setup lang="ts">
+definePageMeta({ middleware: 'auth' })
+
 const auth = useAuthStore()
 const i18n = useI18n()
-
-// Redirect logged-out visitors to landing page (works on SSR + client)
-if (!auth.token) {
-  await navigateTo('/welcome', { replace: true })
-}
 
 const { data: stats } = await useAsyncData('home-stats', async () => {
   if (!auth.token) return null
@@ -37,6 +34,13 @@ const examDaysLeft = computed(() => auth.user?.exam_days_left ?? null)
 
 const current = computed(() => stats.value?.current_attempt as { id: number, mode: string, answered: number, total: number } | null)
 
+const dailyTests = computed(() => auth.user?.daily_tests ?? null)
+const freeTestsLeft = computed(() => {
+  const d = dailyTests.value
+  if (!d || d.limit === null) return 0
+  return Math.max(0, d.limit - d.used_today)
+})
+
 const practiceModes = computed(() => [
   {
     id: 'topics', icon: 'book', tone: 'emerald',
@@ -53,14 +57,14 @@ const practiceModes = computed(() => [
     to:    '/test/start/random',
   },
   {
-    id: 'mistakes', icon: 'refresh', tone: 'rose', premium: true,
+    id: 'mistakes', icon: 'refresh', tone: 'rose',
     title: i18n.t({ uz: 'Xato ustida ishlash', kr: 'Хато устида ишлаш' }),
     desc:  i18n.t({ uz: 'Faqat siz xato qilgan savollar', kr: 'Фақат сиз хато қилган саволлар' }),
     meta:  computed(() => stats.value ? `${stats.value.totals.mistakes_pending} ${i18n.t({ uz: 'ta xato', kr: 'та хато' })}` : '').value,
     to:    '/test/start/mistakes',
   },
   {
-    id: 'marathon', icon: 'bolt', tone: 'violet', premium: true,
+    id: 'marathon', icon: 'bolt', tone: 'violet',
     title: i18n.t({ uz: 'Marafon', kr: 'Марафон' }),
     desc:  i18n.t({ uz: 'To\'xtamasdan ko\'p savol yeching', kr: 'Тўхтамасдан кўп савол ечинг' }),
     meta:  i18n.t({ uz: 'Cheklovsiz', kr: 'Чекловсиз' }),
@@ -80,24 +84,7 @@ const practiceModes = computed(() => [
     meta:  i18n.t({ uz: 'Katalog', kr: 'Каталог' }),
     to:    '/tickets',
   },
-  {
-    id: 'poligon', icon: 'car', tone: 'rose', premium: true,
-    title: i18n.t({ uz: 'Haydovchilik poligoni', kr: 'Ҳайдовчилик полигони' }),
-    desc:  i18n.t({ uz: '3D mashinada amaliy imtihon mashqi', kr: '3D машинада амалий имтиҳон машқи' }),
-    meta:  i18n.t({ uz: '3D o\'yin', kr: '3D ўйин' }),
-    to:    '/poligon',
-  },
-  {
-    id: 'priority', icon: 'sign', tone: 'sky',
-    title: i18n.t({ uz: 'Chorrahada ustunlik', kr: 'Чорраҳада устунлик' }),
-    desc:  i18n.t({ uz: 'Kim birinchi yuradi? Ustunlik qoidalari o\'yini', kr: 'Ким биринчи юради? Устунлик қоидалари ўйини' }),
-    meta:  i18n.t({ uz: '2D o\'yin', kr: '2D ўйин' }),
-    to:    '/games/priority',
-  },
 ])
-
-const isPremiumUser = computed(() => auth.user?.is_premium ?? false)
-function modeLocked(m: any) { return m.premium && !isPremiumUser.value }
 
 const modeLabels: Record<string, { uz: string, kr: string }> = {
   exam:     { uz: 'Imtihon',     kr: 'Имтиҳон' },
@@ -170,6 +157,26 @@ function timeAgo(iso: string) {
               {{ current ? i18n.t({ uz: 'Imtihon rejimi', kr: 'Имтиҳон режими' }) : i18n.t({ uz: 'Biletlar', kr: 'Билетлар' }) }}
             </NuxtLink>
           </div>
+
+          <!-- Daily free-test allowance (free users only) -->
+          <div v-if="dailyTests && dailyTests.limit !== null" class="mt-4">
+            <div v-if="freeTestsLeft > 0"
+                 class="inline-flex items-center gap-2 h-8 px-3 rounded-full text-xs font-medium"
+                 style="background: var(--accent-soft); color: var(--accent);">
+              <span class="flex gap-1" aria-hidden="true">
+                <span v-for="n in dailyTests.limit" :key="n"
+                      class="w-1.5 h-1.5 rounded-full"
+                      :style="{ background: n <= freeTestsLeft ? 'var(--accent)' : 'var(--border-1)' }"></span>
+              </span>
+              {{ i18n.t({ uz: `Bugun ${freeTestsLeft} ta bepul test bor`, kr: `Бугун ${freeTestsLeft} та бепул тест бор` }) }}
+            </div>
+            <NuxtLink v-else to="/pricing"
+                 class="inline-flex items-center gap-2 h-8 px-3 rounded-full text-xs font-medium transition-colors hover:opacity-80"
+                 style="background: rgba(251,191,36,0.14); color: #b45309;">
+              <AppIcon name="spark" :size="12" />
+              {{ i18n.t({ uz: 'Bugungi bepul testlar tugadi — ertaga yana! Premium: cheksiz', kr: 'Бугунги бепул тестлар тугади — эртага яна! Премиум: чексиз' }) }}
+            </NuxtLink>
+          </div>
         </div>
 
         <div class="lg:col-span-5">
@@ -226,7 +233,7 @@ function timeAgo(iso: string) {
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-        <NuxtLink v-for="m in practiceModes" :key="m.id" :to="modeLocked(m) ? '/pricing' : m.to"
+        <NuxtLink v-for="m in practiceModes" :key="m.id" :to="m.to"
           class="practice-card group relative block rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-1"
           :style="{
             background: 'var(--surface)',
@@ -236,9 +243,6 @@ function timeAgo(iso: string) {
           <!-- Colored accent strip -->
           <div class="absolute top-0 left-0 bottom-0 w-1 transition-all group-hover:w-1.5"
                :style="{ background: toneColor(m.tone) }"></div>
-          <span v-if="modeLocked(m)" class="absolute top-3 right-3 z-10 badge-warn">
-            <AppIcon name="spark" :size="10" /> Premium
-          </span>
 
           <div class="p-5 pl-6">
             <div class="flex items-start gap-3.5">

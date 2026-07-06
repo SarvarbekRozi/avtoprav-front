@@ -56,14 +56,9 @@ function progressColor(p: number) {
     <!-- Grid -->
     <div v-else class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
       <NuxtLink v-for="(t, i) in topics" :key="t.id"
-        :to="t.is_locked || t.questions_count === 0 ? '' : `/test/start/topic?topic_id=${t.id}`"
+        :to="t.questions_count === 0 ? '' : `/test/start/topic?topic_id=${t.id}`"
         class="card card-hover p-5 group block relative"
-        :class="{ 'opacity-70 pointer-events-none': t.is_locked }">
-        <span v-if="t.is_premium" class="badge-warn absolute top-4 right-4">
-          <AppIcon name="spark" :size="10" />
-          Premium
-        </span>
-
+        :class="{ 'opacity-70 pointer-events-none': t.questions_count === 0 }">
         <IconTile icon="sign" :tone="toneFor(i)" :size="40" />
 
         <div class="font-semibold mt-4 leading-snug pr-12 text-ink-900">{{ name(t) }}</div>
@@ -85,8 +80,8 @@ function progressColor(p: number) {
         </div>
 
         <div class="mt-4 pt-4 border-t border-ink-200/70 flex items-center justify-between">
-          <span class="text-sm font-medium" :class="t.is_locked ? 'text-amber-700' : 'text-ink-700'">
-            {{ t.is_locked ? i18n.t({ uz: 'Premium kerak', kr: 'Премиум керак' }) : i18n.t({ uz: 'Mashq qilish', kr: 'Машқ қилиш' }) }}
+          <span class="text-sm font-medium text-ink-700">
+            {{ i18n.t({ uz: 'Mashq qilish', kr: 'Машқ қилиш' }) }}
           </span>
           <AppIcon name="arrow" :size="14" class="text-ink-300 group-hover:translate-x-0.5 transition-transform" />
         </div>

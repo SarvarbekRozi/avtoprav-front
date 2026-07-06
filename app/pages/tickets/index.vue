@@ -8,14 +8,13 @@ const tickets = computed(() => ticketsRes.value?.data || [])
 const filter = ref<'all' | 'ready' | 'unfinished' | 'mastered'>('all')
 
 const filtered = computed(() => {
-  if (filter.value === 'ready')      return tickets.value.filter(t => t.is_ready && !t.is_locked)
+  if (filter.value === 'ready')      return tickets.value.filter(t => t.is_ready)
   if (filter.value === 'unfinished') return tickets.value.filter(t => t.attempts === 0 && t.is_ready)
   if (filter.value === 'mastered')   return tickets.value.filter(t => t.best_score >= 18)
   return tickets.value
 })
 
 function tileStyle(t: any) {
-  if (t.is_locked)         return { bg: 'var(--surface-soft)', border: 'var(--surface-inset)', fg: 'var(--text-4)',  cursor: 'not-allowed' }
   if (!t.is_ready)         return { bg: 'var(--surface-soft)', border: 'var(--surface-inset)', fg: 'var(--text-muted)', cursor: 'not-allowed' }
   if (t.best_score >= 18)  return { bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)', fg: '#047857', cursor: 'pointer' }
   if (t.best_score >= 16)  return { bg: 'var(--surface)',       border: 'rgba(16,185,129,0.3)', fg: 'var(--text-1)', cursor: 'pointer' }
@@ -25,7 +24,7 @@ function tileStyle(t: any) {
 
 const counts = computed(() => ({
   all:        tickets.value.length,
-  ready:      tickets.value.filter(t => t.is_ready && !t.is_locked).length,
+  ready:      tickets.value.filter(t => t.is_ready).length,
   unfinished: tickets.value.filter(t => t.attempts === 0 && t.is_ready).length,
   mastered:   tickets.value.filter(t => t.best_score >= 18).length,
 }))
@@ -85,17 +84,16 @@ const filters = computed(() => [
     <!-- Grid -->
     <div v-else class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2 sm:gap-3">
       <NuxtLink v-for="t in filtered" :key="t.id"
-        :to="(t.is_locked || !t.is_ready) ? '' : `/test/start/ticket?ticket_id=${t.id}`"
+        :to="!t.is_ready ? '' : `/test/start/ticket?ticket_id=${t.id}`"
         class="relative aspect-square flex flex-col items-center justify-center border rounded-xl transition-all duration-150 hover:-translate-y-0.5"
-        :class="{ 'pointer-events-none': t.is_locked || !t.is_ready }"
+        :class="{ 'pointer-events-none': !t.is_ready }"
         :style="{
           background: tileStyle(t).bg,
           borderColor: tileStyle(t).border,
           color: tileStyle(t).fg,
           cursor: tileStyle(t).cursor,
         }">
-        <AppIcon v-if="t.is_locked" name="lock" :size="10" class="absolute top-1.5 right-1.5 text-ink-400" />
-        <AppIcon v-else-if="t.best_score >= 18" name="star" :size="10" class="absolute top-1.5 right-1.5 text-amber-500" />
+        <AppIcon v-if="t.best_score >= 18" name="star" :size="10" class="absolute top-1.5 right-1.5 text-amber-500" />
         <div class="text-xl font-semibold tracking-tightish">{{ t.number }}</div>
         <div v-if="t.best_score !== null" class="text-2xs mt-0.5 font-medium opacity-80 tabular-nums">{{ t.best_score }}/20</div>
         <div v-else class="text-2xs mt-0.5 opacity-60">{{ t.questions_count }} {{ i18n.t({ uz: 's.', kr: 'с.' }) }}</div>
@@ -115,10 +113,6 @@ const filters = computed(() => [
       <span class="flex items-center gap-2">
         <span class="w-4 h-4 rounded-md" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3);"></span>
         {{ i18n.t({ uz: 'Mukammal · ≥18',     kr: 'Мукаммал · ≥18' }) }}
-      </span>
-      <span class="flex items-center gap-2">
-        <span class="w-4 h-4 rounded-md" style="background: var(--surface-soft); border: 1px solid var(--border-1);"></span>
-        {{ i18n.t({ uz: 'Yopiq · Premium',    kr: 'Ёпиқ · Премиум' }) }}
       </span>
     </div>
 

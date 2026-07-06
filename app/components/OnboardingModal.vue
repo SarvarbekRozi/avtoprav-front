@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const i18n = useI18n()
-const seen = useCookie<string | null>('onboarded_v1', {
+const seen = useCookie<string | null>('onboarded_v2', {
   default: () => null,
   maxAge: 60 * 60 * 24 * 365,
   sameSite: 'lax',
@@ -30,10 +30,10 @@ const steps = computed(() => [
   },
   {
     icon: 'spark', tone: 'violet',
-    title: i18n.t({ uz: 'Bepul va Premium', kr: 'Бепул ва Премиум' }),
+    title: i18n.t({ uz: 'Har kuni 2 ta bepul test', kr: 'Ҳар куни 2 та бепул тест' }),
     text: i18n.t({
-      uz: 'Birinchi 10 ta bilet bepul. Premium bilan barcha biletlar, marafon, xatolar ustida ishlash va batafsil tahlil ochiladi.',
-      kr: 'Биринчи 10 та билет бепул. Премиум билан барча билетлар, марафон, хатолар устида ишлаш ва батафсил таҳлил очилади.',
+      uz: 'Barcha rejimlar va biletlar hammaga ochiq. Har kuni 2 ta testni bepul boshlaysiz — Premium bilan esa cheksiz.',
+      kr: 'Барча режимлар ва билетлар ҳаммага очиқ. Ҳар куни 2 та тестни бепул бошлайсиз — Премиум билан эса чексиз.',
     }),
   },
 ])

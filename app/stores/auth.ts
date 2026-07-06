@@ -10,6 +10,7 @@ export interface AuthUser {
   locale: 'uz_latn' | 'uz_cyrl'
   is_premium: boolean
   premium_until: string | null
+  daily_tests: { limit: number | null, used_today: number } | null
   avatar: string | null
   daily_goal: number
   streak_current: number
