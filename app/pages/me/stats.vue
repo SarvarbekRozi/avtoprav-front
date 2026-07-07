@@ -135,7 +135,21 @@ function fmtTime(sec: number) {
       </div>
     </div>
 
-    <!-- Leaderboard -->
+    <!-- Mode leaderboards: daily challenge + blitz records -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+      <ScoreLeaderboard
+        endpoint="/leaderboard/daily"
+        :title="{ uz: 'Bugungi challenge · TOP 10', kr: 'Бугунги челлендж · ТОП 10' }"
+        :subtitle="{ uz: '20 savoldan nechta to\'g\'ri', kr: '20 саволдан нечта тўғри' }"
+        icon="star" tone="violet" />
+      <ScoreLeaderboard
+        endpoint="/leaderboard/blitz"
+        :title="{ uz: 'Blits rekordlar · TOP 10', kr: 'Блиц рекордлар · ТОП 10' }"
+        :subtitle="{ uz: '60 soniyada eng ko\'p to\'g\'ri', kr: '60 сонияда энг кўп тўғри' }"
+        icon="bolt" tone="amber" />
+    </div>
+
+    <!-- XP Leaderboard -->
     <div class="mb-6">
       <LeaderboardCard />
     </div>

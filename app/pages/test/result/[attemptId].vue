@@ -174,6 +174,22 @@ onMounted(() => {
       </div>
     </div>
 
+    <!-- Compete: daily / blitz leaderboard right after playing -->
+    <div v-if="a.mode === 'daily' || a.mode === 'blitz'" class="mb-6">
+      <ScoreLeaderboard v-if="a.mode === 'daily'"
+        endpoint="/leaderboard/daily"
+        :board-key="`daily-result-${attemptId}`"
+        :title="{ uz: 'Bugungi challenge · TOP 10', kr: 'Бугунги челлендж · ТОП 10' }"
+        :subtitle="{ uz: '20 savoldan nechta to\'g\'ri', kr: '20 саволдан нечта тўғри' }"
+        icon="star" tone="violet" />
+      <ScoreLeaderboard v-else
+        endpoint="/leaderboard/blitz"
+        :board-key="`blitz-result-${attemptId}`"
+        :title="{ uz: 'Blits rekordlar · TOP 10', kr: 'Блиц рекордлар · ТОП 10' }"
+        :subtitle="{ uz: '60 soniyada eng ko\'p to\'g\'ri', kr: '60 сонияда энг кўп тўғри' }"
+        icon="bolt" tone="amber" />
+    </div>
+
     <!-- Per-question matrix -->
     <div class="card p-5 mb-6">
       <div class="flex items-center justify-between mb-3">
