@@ -52,14 +52,14 @@ const mistakesPending = computed(() => stats.value?.totals?.mistakes_pending ?? 
 
 // Compact tile grid — every mode one tap away (mobile-first dashboard)
 const tiles = computed(() => [
-  { icon: 'ticket',   tone: 'brand',   title: i18n.t({ uz: 'Biletlar',   kr: 'Билетлар' }),   to: '/tickets' },
-  { icon: 'book',     tone: 'emerald', title: i18n.t({ uz: 'Mavzular',   kr: 'Мавзулар' }),   to: '/topics' },
-  { icon: 'shuffle',  tone: 'amber',   title: i18n.t({ uz: 'Tasodifiy',  kr: 'Тасодифий' }),  to: '/test/start/random' },
-  { icon: 'refresh',  tone: 'rose',    title: i18n.t({ uz: 'Xatolarim',  kr: 'Хатоларим' }),  to: '/test/start/mistakes', badge: mistakesPending.value || null },
-  { icon: 'bolt',     tone: 'violet',  title: i18n.t({ uz: 'Marafon',    kr: 'Марафон' }),    to: '/test/start/marathon' },
-  { icon: 'bulb',     tone: 'sky',     title: i18n.t({ uz: 'Yodlash',    kr: 'Ёдлаш' }),      to: '/test/start/memorize' },
-  { icon: 'stat',     tone: 'violet',  title: i18n.t({ uz: 'Statistika', kr: 'Статистика' }), to: '/me/stats' },
-  { icon: 'bookmark', tone: 'amber',   title: i18n.t({ uz: 'Saqlangan',  kr: 'Сақланган' }),  to: '/me/bookmarks' },
+  { icon: 'exam',    tone: 'brand',   title: i18n.t({ uz: 'Imtihon',    kr: 'Имтиҳон' }),    to: '/test/start/exam' },
+  { icon: 'star',    tone: 'violet',  title: i18n.t({ uz: 'Kunlik',     kr: 'Кунлик' }),     to: '/test/start/daily',    tag: i18n.t({ uz: 'Yangi', kr: 'Янги' }) },
+  { icon: 'bolt',    tone: 'amber',   title: i18n.t({ uz: 'Blits',      kr: 'Блиц' }),       to: '/test/start/blitz',    tag: '60s' },
+  { icon: 'ticket',  tone: 'sky',     title: i18n.t({ uz: 'Biletlar',   kr: 'Билетлар' }),   to: '/tickets' },
+  { icon: 'book',    tone: 'emerald', title: i18n.t({ uz: 'Mavzular',   kr: 'Мавзулар' }),   to: '/topics' },
+  { icon: 'shuffle', tone: 'ink',     title: i18n.t({ uz: 'Tasodifiy',  kr: 'Тасодифий' }),  to: '/test/start/random' },
+  { icon: 'refresh', tone: 'rose',    title: i18n.t({ uz: 'Xatolarim',  kr: 'Хатоларим' }),  to: '/test/start/mistakes', badge: mistakesPending.value || null },
+  { icon: 'stat',    tone: 'brand',   title: i18n.t({ uz: 'Statistika', kr: 'Статистика' }), to: '/me/stats' },
 ])
 
 const modeLabels: Record<string, { uz: string, kr: string }> = {
@@ -70,6 +70,8 @@ const modeLabels: Record<string, { uz: string, kr: string }> = {
   mistakes: { uz: 'Xatolar',     kr: 'Хатолар' },
   marathon: { uz: 'Marafon',     kr: 'Марафон' },
   memorize: { uz: 'Yodlash',     kr: 'Ёдлаш' },
+  daily:    { uz: 'Kunlik',      kr: 'Кунлик' },
+  blitz:    { uz: 'Blits',       kr: 'Блиц' },
 }
 function modeLabel(m: string) { return modeLabels[m] ? i18n.t(modeLabels[m]) : m }
 
@@ -77,10 +79,12 @@ const modeMeta: Record<string, { icon: string, tone: string }> = {
   exam:     { icon: 'exam',    tone: 'brand' },
   topic:    { icon: 'book',    tone: 'emerald' },
   ticket:   { icon: 'ticket',  tone: 'brand' },
-  random:   { icon: 'shuffle', tone: 'amber' },
+  random:   { icon: 'shuffle', tone: 'ink' },
   mistakes: { icon: 'refresh', tone: 'rose' },
   marathon: { icon: 'bolt',    tone: 'violet' },
   memorize: { icon: 'bulb',    tone: 'sky' },
+  daily:    { icon: 'star',    tone: 'violet' },
+  blitz:    { icon: 'bolt',    tone: 'amber' },
 }
 function modeIcon(m: string) { return modeMeta[m]?.icon ?? 'exam' }
 function modeTone(m: string) { return modeMeta[m]?.tone ?? 'brand' }
@@ -207,7 +211,12 @@ function timeAgo(iso: string) {
         <div class="min-w-0 flex-1">
           <div class="font-semibold text-[15px] leading-tight text-ink-900 truncate">{{ t.title }}</div>
         </div>
-        <span v-if="(t as any).badge"
+        <span v-if="(t as any).tag"
+              class="absolute top-2 right-2 px-1.5 h-[18px] rounded-full text-[10px] font-bold grid place-items-center whitespace-nowrap"
+              style="background: var(--accent-soft); color: var(--accent);">
+          {{ (t as any).tag }}
+        </span>
+        <span v-else-if="(t as any).badge"
               class="absolute top-2 right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold grid place-items-center tabular-nums">
           {{ (t as any).badge }}
         </span>

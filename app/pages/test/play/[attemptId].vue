@@ -83,8 +83,9 @@ watch(currentPosition, (pos) => {
 })
 
 const isExam = computed(() => attemptInfo.value?.mode === 'exam')
+const isBlitz = computed(() => attemptInfo.value?.mode === 'blitz')
 const canNavigate = computed(() => !!attemptInfo.value)
-const showExplanation = computed(() => !!lastAnswer.value && !isExam.value)
+const showExplanation = computed(() => !!lastAnswer.value && !isExam.value && !isBlitz.value)
 
 function optionLetter(i: number) { return String.fromCharCode(65 + i) }
 function explanationText() {
@@ -253,9 +254,12 @@ function submitAnswer() {
     return
   }
 
-  // Topic mode: auto-advance only on correct
-  // Exam mode: never auto-advance — user navigates manually
-  if (!isExam.value && isCorrect) {
+  // Blitz: race the clock — jump to the next question after any answer.
+  // Topic/etc: auto-advance only on a correct answer. Exam: manual navigation.
+  if (isBlitz.value) {
+    if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer)
+    autoAdvanceTimer = setTimeout(() => goNext(), 450)
+  } else if (!isExam.value && isCorrect) {
     if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer)
     autoAdvanceTimer = setTimeout(() => goNext(), 1500)
   }

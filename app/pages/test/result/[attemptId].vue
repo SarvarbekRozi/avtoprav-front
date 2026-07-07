@@ -56,6 +56,8 @@ const modeLabels: Record<string, { uz: string, kr: string }> = {
   mistakes: { uz: 'Xatolar ustida ish', kr: 'Хатолар устида иш' },
   marathon: { uz: 'Marafon',             kr: 'Марафон' },
   memorize: { uz: 'Yodlash',             kr: 'Ёдлаш' },
+  daily:    { uz: 'Kunlik challenge',    kr: 'Кунлик челлендж' },
+  blitz:    { uz: 'Blits · 60 soniya',   kr: 'Блиц · 60 сония' },
 }
 const modeLabel = computed(() => a.value ? i18n.t(modeLabels[a.value.mode] ?? { uz: a.value.mode, kr: a.value.mode }) : '')
 
