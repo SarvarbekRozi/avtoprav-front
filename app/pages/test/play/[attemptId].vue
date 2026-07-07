@@ -66,12 +66,20 @@ const error = ref('')
 let timerId: any = null
 
 const auth = useAuthStore()
-const lastPointsDelta = ref<number | null>(null)
-const previousPoints = ref<number>(auth.user?.points ?? 0)
+const theme = useTheme()
 const bookmarked = ref<Set<number>>(new Set())
+const stripRef = ref<HTMLElement | null>(null)
 
 const currentItem = computed<QuestionItem | null>(() => {
   return questions.value.find(q => q.position === currentPosition.value) ?? null
+})
+
+// Keep the active number centered in the horizontal strip as you navigate
+watch(currentPosition, (pos) => {
+  nextTick(() => {
+    const el = stripRef.value?.querySelector(`[data-pos="${pos}"]`) as HTMLElement | null
+    el?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+  })
 })
 
 const isExam = computed(() => attemptInfo.value?.mode === 'exam')
@@ -136,7 +144,7 @@ async function load() {
     if (currentItem.value) hydrateFromAnswer(currentItem.value)
     startTimer()
   } catch (e: any) {
-    error.value = e?.data?.message || 'Xatolik'
+    error.value = e?.data?.message || i18n.t({ uz: 'Xatolik', kr: 'Хатолик' })
   } finally {
     loading.value = false
   }
@@ -275,7 +283,7 @@ async function finalizeAndExit() {
     finished.value = true
     await navigateTo(`/test/result/${attemptId}`, { replace: true })
   } catch (e: any) {
-    error.value = e?.data?.message || 'Xatolik'
+    error.value = e?.data?.message || i18n.t({ uz: 'Xatolik', kr: 'Хатолик' })
     submitting.value = false
   }
 }
@@ -340,8 +348,8 @@ function tileStyleFor(p: ProgressEntry, isCurrent: boolean) {
   switch (p.status) {
     case 'correct':  return { background: '#10b981', color: '#fff', borderColor: '#10b981', ring: 'none' }
     case 'wrong':    return { background: '#f43f5e', color: '#fff', borderColor: '#f43f5e', ring: 'none' }
-    case 'skipped':  return { background: 'rgba(251,191,36,0.18)', color: '#b45309', borderColor: 'rgba(251,191,36,0.4)', ring: 'none' }
-    case 'answered': return { background: 'rgba(63,88,148,0.18)', color: '#1e3a8a', borderColor: 'rgba(63,88,148,0.4)', ring: 'none' }
+    case 'skipped':  return { background: 'rgba(251,191,36,0.18)', color: theme.isDark.value ? '#fcd34d' : '#b45309', borderColor: 'rgba(251,191,36,0.4)', ring: 'none' }
+    case 'answered': return { background: 'rgba(63,88,148,0.18)', color: theme.isDark.value ? '#9eaecf' : '#1e3a8a', borderColor: 'rgba(63,88,148,0.4)', ring: 'none' }
     default:         return { background: 'var(--surface)', color: 'var(--text-3)', borderColor: 'var(--border-1)', ring: 'none' }
   }
 }
@@ -356,74 +364,54 @@ onBeforeUnmount(() => {
 <template>
   <ClientOnly>
   <div class="min-h-screen flex flex-col">
-    <!-- Top bar -->
-    <header class="border-b sticky top-0 z-10"
-            style="background: var(--surface); border-color: var(--border-soft);">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-3">
-        <button @click="exitConfirm" class="btn-ghost btn-sm">
-          <AppIcon name="chev-l" :size="14" />
-          {{ i18n.t({ uz: 'Chiqish', kr: 'Чиқиш' }) }}
-        </button>
+    <!-- Sticky: top bar + progress + question strip (always visible, no scroll to navigate) -->
+    <div class="sticky top-0 z-10" style="background: var(--surface);">
+      <header class="border-b" style="border-color: var(--border-soft);">
+        <div class="max-w-3xl mx-auto px-3 sm:px-6 h-14 flex items-center gap-2">
+          <button @click="exitConfirm" :aria-label="i18n.t({ uz: 'Chiqish', kr: 'Чиқиш' })" class="btn-ghost btn-sm shrink-0 px-2">
+            <AppIcon name="chev-l" :size="18" />
+            <span class="hidden sm:inline">{{ i18n.t({ uz: 'Chiqish', kr: 'Чиқиш' }) }}</span>
+          </button>
+          <button v-if="currentItem" type="button" @click="toggleBookmark(currentItem.question.id)"
+                  :aria-label="i18n.t({ uz: 'Saqlash', kr: 'Сақлаш' })"
+                  :aria-pressed="isBookmarked(currentItem.question.id)"
+                  class="h-9 w-9 rounded-lg grid place-items-center shrink-0 transition-colors"
+                  :class="isBookmarked(currentItem.question.id) ? 'text-amber-500 bg-amber-50' : 'text-ink-400 hover:bg-ink-100'">
+            <AppIcon :name="isBookmarked(currentItem.question.id) ? 'bookmark-check' : 'bookmark'" :size="17" />
+          </button>
 
-        <div v-if="attemptInfo" class="flex items-center gap-3">
-          <div class="text-sm font-medium tabular-nums" style="color: var(--text-2);">
+          <div v-if="attemptInfo" class="flex-1 text-center text-sm font-medium tabular-nums" style="color: var(--text-2);">
             <span class="font-semibold" style="color: var(--text-1);">{{ currentPosition }}</span>
-            <span class="mx-1" style="color: var(--text-4);">/</span>
-            <span>{{ attemptInfo.total }}</span>
+            <span class="mx-0.5" style="color: var(--text-4);">/</span>{{ attemptInfo.total }}
           </div>
-          <div v-if="auth.user"
-               class="relative flex items-center gap-1.5 h-7 px-2 rounded-full text-xs"
-               style="background: linear-gradient(90deg, rgba(63,88,148,0.10), rgba(251,191,36,0.10)); border: 1px solid rgba(63,88,148,0.20);">
+          <div v-else class="flex-1"></div>
+
+          <div v-if="auth.user" class="hidden sm:flex items-center gap-1.5 h-7 px-2 rounded-full text-xs shrink-0"
+               style="background: var(--surface-inset);">
             <AppIcon name="trophy" :size="11" class="text-amber-500" />
             <span class="font-semibold tabular-nums" style="color: var(--text-1);">{{ (auth.user.points ?? 0).toLocaleString() }}</span>
-            <Transition
-              enter-active-class="transition duration-300 ease-out"
-              enter-from-class="opacity-0 -translate-y-1"
-              enter-to-class="opacity-100 translate-y-0"
-              leave-active-class="transition duration-500 ease-in"
-              leave-from-class="opacity-100"
-              leave-to-class="opacity-0 -translate-y-2">
-              <span v-if="lastPointsDelta"
-                    class="absolute -top-4 right-0 text-sm font-bold text-emerald-500 tabular-nums whitespace-nowrap">
-                +{{ lastPointsDelta }}
-              </span>
-            </Transition>
           </div>
-        </div>
 
-        <div v-if="remainingSec !== null"
-             class="font-mono text-sm tabular-nums h-8 px-3 rounded-lg flex items-center gap-1.5 transition-all"
-             :class="timerCritical ? 'bg-rose-50 text-rose-700 border border-rose-200 animate-pulse' : 'bg-ink-100 text-ink-700'">
-          <AppIcon name="clock" :size="13" />
-          {{ timerLabel }}
+          <div v-if="remainingSec !== null"
+               class="font-mono text-sm tabular-nums h-8 px-2.5 rounded-lg flex items-center gap-1.5 shrink-0"
+               :class="timerCritical ? 'bg-rose-50 text-rose-700 border border-rose-200 animate-pulse' : 'bg-ink-100 text-ink-700'">
+            <AppIcon name="clock" :size="13" />
+            {{ timerLabel }}
+          </div>
         </div>
-        <div v-else class="text-sm text-ink-300">—</div>
-      </div>
-      <div class="h-1 bg-ink-100">
-        <div class="h-1 bg-ink-900 transition-all duration-300" :style="{ width: progressPercent + '%' }"></div>
-      </div>
-    </header>
+        <div class="h-1 bg-ink-100">
+          <div class="h-1 transition-all duration-300" :style="{ width: progressPercent + '%', background: 'var(--text-1)' }"></div>
+        </div>
+      </header>
 
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-      <!-- Top: Question number grid (full width) -->
-      <section v-if="attemptInfo && progress.length" class="card p-5 lg:p-6">
-        <div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
-          <div class="eyebrow">{{ i18n.t({ uz: 'Savollar', kr: 'Саволлар' }) }}</div>
-          <div v-if="isExam" class="text-xs text-amber-700 flex items-center gap-1">
-            <AppIcon name="lock" :size="12" />
-            {{ i18n.t({ uz: 'Imtihon: tartib bo\'yicha', kr: 'Имтиҳон: тартиб бўйича' }) }}
-          </div>
-          <div v-else class="text-xs text-ink-400">
-            {{ i18n.t({ uz: 'Tugmani bosing va o\'sha savolga o\'ting', kr: 'Тугмани босинг ва ўша саволга ўтинг' }) }}
-          </div>
-        </div>
-        <div class="grid gap-2"
-             style="grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));">
-          <button v-for="p in progress" :key="p.position"
-            :disabled="!canNavigate"
-            @click="jumpTo(p.position)"
-            class="relative aspect-square rounded-lg text-sm font-semibold tabular-nums border transition-all flex items-center justify-center"
-            :class="canNavigate ? 'hover:-translate-y-0.5 hover:shadow-soft cursor-pointer' : 'cursor-not-allowed'"
+      <!-- Question number strip: single row, horizontal scroll, auto-centres current -->
+      <div v-if="attemptInfo && progress.length" ref="stripRef"
+           class="border-b overflow-x-auto scrollbar-thin" style="border-color: var(--border-soft);">
+        <div class="max-w-3xl mx-auto px-3 sm:px-6 py-2 flex gap-1.5 w-max min-w-full">
+          <button v-for="p in progress" :key="p.position" :data-pos="p.position"
+            :disabled="!canNavigate" @click="jumpTo(p.position)"
+            class="shrink-0 w-9 h-9 rounded-lg text-sm font-semibold tabular-nums border flex items-center justify-center transition-all"
+            :class="canNavigate ? 'cursor-pointer' : 'cursor-not-allowed'"
             :style="{
               background: tileStyleFor(p, p.position === currentPosition).background,
               color: tileStyleFor(p, p.position === currentPosition).color,
@@ -433,17 +421,10 @@ onBeforeUnmount(() => {
             {{ p.position }}
           </button>
         </div>
-        <!-- legend -->
-        <div class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-ink-500">
-          <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded border border-ink-900 bg-ink-900"></span>{{ i18n.t({ uz: 'Joriy', kr: 'Жорий' }) }}</span>
-          <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-emerald-500"></span>{{ i18n.t({ uz: 'To\'g\'ri', kr: 'Тўғри' }) }}</span>
-          <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-rose-500"></span>{{ i18n.t({ uz: 'Xato', kr: 'Хато' }) }}</span>
-          <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded border border-ink-200 bg-white"></span>{{ i18n.t({ uz: 'Tegilmagan', kr: 'Тегилмаган' }) }}</span>
-          <span v-if="isExam" class="flex items-center gap-1.5 text-rose-600 font-medium">
-            {{ i18n.t({ uz: 'Imtihon: 3 xato — yiqilish', kr: 'Имтиҳон: 3 хато — йиқилиш' }) }}
-          </span>
-        </div>
-      </section>
+      </div>
+    </div>
+
+    <main class="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 py-4 sm:py-6">
 
       <!-- Main content -->
       <div class="min-w-0">
@@ -461,85 +442,69 @@ onBeforeUnmount(() => {
 
           <!-- Error -->
           <div v-else-if="error" class="card p-8 text-center">
-            <div class="text-rose-600 font-medium mb-4">{{ error }}</div>
+            <div class="text-rose-700 font-medium mb-4">{{ error }}</div>
             <NuxtLink to="/" class="btn-primary">{{ i18n.t({ uz: 'Bosh sahifaga', kr: 'Бош саҳифага' }) }}</NuxtLink>
           </div>
 
           <!-- Question -->
-          <div v-else-if="currentItem" class="space-y-5 anim-in" :key="currentItem.question.id">
-            <div class="flex items-center justify-between gap-3">
-              <div v-if="currentItem.question.topic" class="eyebrow">{{ currentItem.question.topic }}</div>
-              <button type="button" @click="toggleBookmark(currentItem.question.id)"
-                      class="ml-auto inline-flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-2xs font-medium transition-colors flex-shrink-0"
-                      :class="isBookmarked(currentItem.question.id) ? 'bg-amber-100 text-amber-700' : 'text-ink-500 hover:bg-ink-100'">
-                <AppIcon :name="isBookmarked(currentItem.question.id) ? 'bookmark-check' : 'bookmark'" :size="14" />
-                {{ isBookmarked(currentItem.question.id) ? i18n.t({ uz: 'Saqlangan', kr: 'Сақланган' }) : i18n.t({ uz: 'Saqlash', kr: 'Сақлаш' }) }}
+          <div v-else-if="currentItem" class="space-y-4 anim-in" :key="currentItem.question.id">
+            <div v-if="currentItem.question.topic" class="eyebrow">{{ currentItem.question.topic }}</div>
+
+            <!-- Question text -->
+            <h1 class="text-base sm:text-lg font-semibold text-ink-900 leading-snug">{{ currentItem.question.text }}</h1>
+
+            <!-- Image (default placeholder shown when the question has none) -->
+            <div class="relative cursor-zoom-in"
+                 @click="zoomedImage = currentItem.question.image || '/default-pic.png'">
+              <img :src="currentItem.question.image || '/default-pic.png'"
+                   :alt="i18n.t({ uz: 'Savol rasmi', kr: 'Савол расми' })"
+                   class="w-full rounded-xl border max-h-[40vh] sm:max-h-[340px] object-contain"
+                   style="background: var(--surface-inset); border-color: var(--border-soft);">
+              <div class="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center"
+                   style="background: rgba(15,23,42,0.6); color: #fff;">
+                <AppIcon name="plus" :size="15" />
+              </div>
+            </div>
+
+            <!-- Options -->
+            <div class="space-y-2">
+              <button v-for="(o, i) in currentItem.question.options" :key="o.id"
+                      :disabled="!!lastAnswer || submitting"
+                      @click="onOptionClick(o.id)"
+                      class="w-full text-left px-3.5 py-3 rounded-xl border transition-all duration-150 flex items-center gap-3 disabled:cursor-not-allowed"
+                      :class="[
+                        optionState(o) === 'selected' ? 'border-ink-900' :
+                        optionState(o) === 'correct'  ? 'border-emerald-500' :
+                        optionState(o) === 'wrong'    ? 'border-rose-500' :
+                        'border-ink-200 hover:border-ink-400',
+                      ]"
+                      :style="{
+                        background:
+                          optionState(o) === 'selected' ? 'var(--surface-hover)' :
+                          optionState(o) === 'correct'  ? 'rgba(16,185,129,0.12)' :
+                          optionState(o) === 'wrong'    ? 'rgba(244,63,94,0.10)' :
+                          'var(--surface)',
+                      }">
+                <span class="w-7 h-7 rounded-lg flex items-center justify-center font-semibold text-sm flex-shrink-0"
+                      :style="{
+                        background:
+                          optionState(o) === 'selected' ? 'var(--text-1)' :
+                          optionState(o) === 'correct'  ? '#10b981' :
+                          optionState(o) === 'wrong'    ? '#f43f5e' :
+                          'var(--surface-inset)',
+                        color: optionState(o) === 'idle' ? 'var(--text-2)' : '#fff',
+                      }">{{ optionLetter(i) }}</span>
+                <span class="flex-1 text-sm sm:text-base leading-snug"
+                      :class="optionState(o) === 'correct' ? 'text-emerald-900 font-medium' :
+                              optionState(o) === 'wrong' ? 'text-rose-900' : 'text-ink-900'">
+                  {{ o.text }}
+                </span>
+                <span v-if="optionState(o) === 'correct'" class="text-emerald-600 flex-shrink-0"><AppIcon name="check" :size="20" /></span>
+                <span v-else-if="optionState(o) === 'wrong'" class="text-rose-500 flex-shrink-0"><AppIcon name="x" :size="20" /></span>
               </button>
             </div>
 
-            <!-- Question text (top, full width) -->
-            <div class="card p-6 lg:p-7">
-              <div class="text-lg lg:text-xl font-medium text-ink-900 leading-relaxed">{{ currentItem.question.text }}</div>
-            </div>
-
-            <!-- Below: image on left, options on right (stacked on mobile) -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5 items-start">
-              <div class="card p-3 md:sticky md:top-20">
-                <div class="relative group cursor-zoom-in" @click="zoomedImage = currentItem.question.image || '/default-pic.png'">
-                  <img :src="currentItem.question.image || '/default-pic.png'"
-                       class="w-full rounded-lg border border-ink-200 max-h-[420px] object-contain bg-ink-50 transition-opacity group-hover:opacity-90">
-                  <div class="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                       style="background: rgba(15, 23, 42, 0.7); color: #fff;">
-                    <AppIcon name="plus" :size="16" />
-                  </div>
-                </div>
-              </div>
-
-              <div class="space-y-2">
-                <button v-for="(o, i) in currentItem.question.options" :key="o.id"
-                        :disabled="!!lastAnswer || submitting"
-                        @click="onOptionClick(o.id)"
-                        class="w-full text-left px-4 py-3.5 rounded-xl border transition-all duration-150
-                               flex items-start gap-3 disabled:cursor-not-allowed"
-                        :class="[
-                          optionState(o) === 'selected' ? 'border-ink-900' :
-                          optionState(o) === 'correct'  ? 'border-emerald-500' :
-                          optionState(o) === 'wrong'    ? 'border-rose-500' :
-                          'border-ink-200 bg-white hover:border-ink-400',
-                        ]"
-                        :style="{
-                          background:
-                            optionState(o) === 'selected' ? 'var(--surface-hover)' :
-                            optionState(o) === 'correct'  ? 'rgba(16,185,129,0.12)' :
-                            optionState(o) === 'wrong'    ? 'rgba(244,63,94,0.10)' :
-                            'var(--surface)',
-                        }">
-                  <span class="w-7 h-7 rounded-lg flex items-center justify-center font-semibold text-sm flex-shrink-0 transition-all"
-                        :style="{
-                          background:
-                            optionState(o) === 'selected' ? 'var(--text-1)' :
-                            optionState(o) === 'correct'  ? '#10b981' :
-                            optionState(o) === 'wrong'    ? '#f43f5e' :
-                            'var(--surface-inset)',
-                          color: optionState(o) === 'idle' ? 'var(--text-2)' : '#fff',
-                        }">{{ optionLetter(i) }}</span>
-
-                  <span class="flex-1 text-sm md:text-base leading-relaxed pt-0.5"
-                        :class="optionState(o) === 'correct' ? 'text-emerald-900 font-medium' :
-                                optionState(o) === 'wrong' ? 'text-rose-900' : 'text-ink-900'">
-                    {{ o.text }}
-                  </span>
-
-                  <span v-if="optionState(o) === 'correct'" class="text-emerald-600 flex-shrink-0">
-                    <AppIcon name="check" :size="20" />
-                  </span>
-                  <span v-else-if="optionState(o) === 'wrong'" class="text-rose-500 flex-shrink-0">
-                    <AppIcon name="x" :size="20" />
-                  </span>
-                </button>
-              </div>
-            </div>
-
+            <!-- Explanation -->
             <div v-if="showExplanation && explanationText()"
                  class="p-4 rounded-2xl border flex gap-3"
                  style="background: rgba(251,191,36,0.10); border-color: rgba(251,191,36,0.30);">
@@ -550,6 +515,11 @@ onBeforeUnmount(() => {
               </div>
             </div>
 
+            <!-- Exam order-lock hint -->
+            <div v-if="isExam" class="text-2xs flex items-center gap-1.5 pt-1" style="color: var(--text-4);">
+              <AppIcon name="lock" :size="11" />
+              {{ i18n.t({ uz: 'Imtihon: 3 xato — yiqilish.', kr: 'Имтиҳон: 3 хато — йиқилиш.' }) }}
+            </div>
           </div>
       </div>
     </main>
@@ -566,7 +536,7 @@ onBeforeUnmount(() => {
            class="fixed inset-0 z-50 flex items-center justify-center p-4 cursor-zoom-out"
            style="background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(6px);"
            @click="zoomedImage = null">
-        <button @click.stop="zoomedImage = null"
+        <button @click.stop="zoomedImage = null" :aria-label="i18n.t({ uz: 'Yopish', kr: 'Ёпиш' })"
                 class="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-colors hover:bg-white/20"
                 style="background: rgba(255,255,255,0.1); color: #fff;">
           <AppIcon name="x" :size="22" />

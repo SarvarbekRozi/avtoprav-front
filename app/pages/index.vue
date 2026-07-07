@@ -44,49 +44,22 @@ const freeTestsLeft = computed(() => {
   return Math.max(0, d.limit - d.used_today)
 })
 
-const practiceModes = computed(() => [
-  {
-    id: 'topics', icon: 'book', tone: 'emerald',
-    title: i18n.t({ uz: 'Mavzular bo\'yicha', kr: 'Мавзулар бўйича' }),
-    desc:  i18n.t({ uz: 'Bitta mavzuni chuqur o\'rganing', kr: 'Битта мавзуни чуқур ўрганинг' }),
-    meta:  i18n.t({ uz: 'Mashq', kr: 'Машқ' }),
-    to:    '/topics',
-  },
-  {
-    id: 'random', icon: 'shuffle', tone: 'amber',
-    title: i18n.t({ uz: 'Tasodifiy 20', kr: 'Тасодифий 20' }),
-    desc:  i18n.t({ uz: 'Tezkor mashq, vaqt cheklovsiz', kr: 'Тезкор машқ, вақт чекловсиз' }),
-    meta:  i18n.t({ uz: '≈ 12 daqiqa', kr: '≈ 12 дақиқа' }),
-    to:    '/test/start/random',
-  },
-  {
-    id: 'mistakes', icon: 'refresh', tone: 'rose',
-    title: i18n.t({ uz: 'Xato ustida ishlash', kr: 'Хато устида ишлаш' }),
-    desc:  i18n.t({ uz: 'Faqat siz xato qilgan savollar', kr: 'Фақат сиз хато қилган саволлар' }),
-    meta:  computed(() => stats.value ? `${stats.value.totals.mistakes_pending} ${i18n.t({ uz: 'ta xato', kr: 'та хато' })}` : '').value,
-    to:    '/test/start/mistakes',
-  },
-  {
-    id: 'marathon', icon: 'bolt', tone: 'violet',
-    title: i18n.t({ uz: 'Marafon', kr: 'Марафон' }),
-    desc:  i18n.t({ uz: 'To\'xtamasdan ko\'p savol yeching', kr: 'Тўхтамасдан кўп савол ечинг' }),
-    meta:  i18n.t({ uz: 'Cheklovsiz', kr: 'Чекловсиз' }),
-    to:    '/test/start/marathon',
-  },
-  {
-    id: 'memorize', icon: 'bulb', tone: 'sky',
-    title: i18n.t({ uz: 'Yodlash rejimi', kr: 'Ёдлаш режими' }),
-    desc:  i18n.t({ uz: 'Javob va izoh ko\'rinib turadi', kr: 'Жавоб ва изоҳ кўриниб туради' }),
-    meta:  i18n.t({ uz: 'O\'rganish', kr: 'Ўрганиш' }),
-    to:    '/test/start/memorize',
-  },
-  {
-    id: 'tickets', icon: 'ticket', tone: 'brand',
-    title: i18n.t({ uz: 'Bilet bo\'yicha', kr: 'Билет бўйича' }),
-    desc:  i18n.t({ uz: 'Rasmiy biletlar · 1—63', kr: 'Расмий билетлар · 1—63' }),
-    meta:  i18n.t({ uz: 'Katalog', kr: 'Каталог' }),
-    to:    '/tickets',
-  },
+const points = computed(() => auth.user?.points ?? 0)
+const streakCurrent = computed(() => auth.user?.streak_current ?? 0)
+const readiness = computed(() => stats.value?.totals?.readiness_percent ?? 0)
+const accuracy = computed(() => stats.value?.totals?.accuracy_percent ?? 0)
+const mistakesPending = computed(() => stats.value?.totals?.mistakes_pending ?? 0)
+
+// Compact tile grid — every mode one tap away (mobile-first dashboard)
+const tiles = computed(() => [
+  { icon: 'ticket',   tone: 'brand',   title: i18n.t({ uz: 'Biletlar',   kr: 'Билетлар' }),   to: '/tickets' },
+  { icon: 'book',     tone: 'emerald', title: i18n.t({ uz: 'Mavzular',   kr: 'Мавзулар' }),   to: '/topics' },
+  { icon: 'shuffle',  tone: 'amber',   title: i18n.t({ uz: 'Tasodifiy',  kr: 'Тасодифий' }),  to: '/test/start/random' },
+  { icon: 'refresh',  tone: 'rose',    title: i18n.t({ uz: 'Xatolarim',  kr: 'Хатоларим' }),  to: '/test/start/mistakes', badge: mistakesPending.value || null },
+  { icon: 'bolt',     tone: 'violet',  title: i18n.t({ uz: 'Marafon',    kr: 'Марафон' }),    to: '/test/start/marathon' },
+  { icon: 'bulb',     tone: 'sky',     title: i18n.t({ uz: 'Yodlash',    kr: 'Ёдлаш' }),      to: '/test/start/memorize' },
+  { icon: 'stat',     tone: 'violet',  title: i18n.t({ uz: 'Statistika', kr: 'Статистика' }), to: '/me/stats' },
+  { icon: 'bookmark', tone: 'amber',   title: i18n.t({ uz: 'Saqlangan',  kr: 'Сақланган' }),  to: '/me/bookmarks' },
 ])
 
 const modeLabels: Record<string, { uz: string, kr: string }> = {
@@ -99,17 +72,6 @@ const modeLabels: Record<string, { uz: string, kr: string }> = {
   memorize: { uz: 'Yodlash',     kr: 'Ёдлаш' },
 }
 function modeLabel(m: string) { return modeLabels[m] ? i18n.t(modeLabels[m]) : m }
-
-const toneColors: Record<string, string> = {
-  brand:   '#3f5894',
-  emerald: '#10b981',
-  amber:   '#f59e0b',
-  rose:    '#f43f5e',
-  violet:  '#8b5cf6',
-  sky:     '#0ea5e9',
-  ink:     '#1f2937',
-}
-function toneColor(t: string) { return toneColors[t] || toneColors.brand }
 
 function timeAgo(iso: string) {
   const d = new Date(iso)
@@ -124,197 +86,158 @@ function timeAgo(iso: string) {
 </script>
 
 <template>
-  <div v-if="auth.user">
+  <div v-if="auth.user" class="max-w-6xl mx-auto px-4 sm:px-6 pb-20 md:pb-16">
     <OnboardingModal />
 
-    <!-- Hero greeting + countdown -->
-    <section class="max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-6">
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        <div class="lg:col-span-7">
-          <div class="eyebrow">{{ todayLabel }}</div>
-          <h1 class="text-2xl sm:text-[2.25rem] leading-[1.1] font-semibold tracking-tightest mt-1.5 text-ink-900">
-            {{ greeting }}<span v-if="firstName">, {{ firstName }}</span>.<br>
-            <span v-if="examDaysLeft !== null && examDaysLeft > 0" class="text-ink-500">
-              {{ i18n.t({ uz: 'Imtihongacha', kr: 'Имтиҳонгача' }) }} {{ examDaysLeft }} {{ i18n.t({ uz: 'kun qoldi.', kr: 'кун қолди.' }) }}
-            </span>
-            <span v-else-if="examDaysLeft === 0" class="text-rose-600">
-              {{ i18n.t({ uz: 'Imtihon bugun!', kr: 'Имтиҳон бугун!' }) }}
-            </span>
-            <NuxtLink v-else to="/me/profile" class="text-ink-500 underline decoration-ink-300 underline-offset-4 hover:decoration-ink-900 hover:text-ink-900 transition-colors">
-              {{ i18n.t({ uz: 'Profilingizdan imtihon kunini qo\'shing.', kr: 'Профилингиздан имтиҳон кунини қўшинг.' }) }}
-            </NuxtLink>
-          </h1>
-
-          <div class="flex flex-wrap items-center gap-2.5 mt-5">
-            <NuxtLink v-if="current" :to="`/test/play/${current.id}`" class="btn-gradient btn-lg">
-              {{ i18n.t({ uz: 'Davom etish', kr: 'Давом этиш' }) }} ·
-              <span class="tabular-nums">{{ current.answered }} / {{ current.total }}</span>
-              <AppIcon name="arrow" :size="14" />
-            </NuxtLink>
-            <NuxtLink to="/test/start/exam" class="btn-gradient btn-lg" v-else>
-              <AppIcon name="exam" :size="15" />
-              {{ i18n.t({ uz: 'Imtihon rejimi', kr: 'Имтиҳон режими' }) }}
-            </NuxtLink>
-            <NuxtLink :to="current ? '/test/start/exam' : '/tickets'" class="btn-outline btn-lg">
-              <AppIcon v-if="current" name="exam" :size="15" />
-              {{ current ? i18n.t({ uz: 'Imtihon rejimi', kr: 'Имтиҳон режими' }) : i18n.t({ uz: 'Biletlar', kr: 'Билетлар' }) }}
-            </NuxtLink>
-          </div>
-
-          <!-- Daily free-test allowance (free users only) -->
-          <div v-if="dailyTests && dailyTests.limit !== null" class="mt-4">
-            <div v-if="freeTestsLeft > 0"
-                 class="inline-flex items-center gap-2 h-8 px-3 rounded-full text-xs font-medium"
-                 style="background: var(--accent-soft); color: var(--accent);">
-              <span class="flex gap-1" aria-hidden="true">
-                <span v-for="n in dailyTests.limit" :key="n"
-                      class="w-1.5 h-1.5 rounded-full"
-                      :style="{ background: n <= freeTestsLeft ? 'var(--accent)' : 'var(--border-1)' }"></span>
-              </span>
-              {{ i18n.t({ uz: `Bugun ${freeTestsLeft} ta bepul test bor`, kr: `Бугун ${freeTestsLeft} та бепул тест бор` }) }}
-            </div>
-            <NuxtLink v-else to="/pricing"
-                 class="inline-flex items-center gap-2 h-8 px-3 rounded-full text-xs font-medium transition-colors hover:opacity-80"
-                 style="background: rgba(251,191,36,0.14); color: #b45309;">
-              <AppIcon name="spark" :size="12" />
-              {{ i18n.t({ uz: 'Bugungi bepul testlar tugadi — ertaga yana! Premium: cheksiz', kr: 'Бугунги бепул тестлар тугади — эртага яна! Премиум: чексиз' }) }}
-            </NuxtLink>
-            <div v-if="isGuest" class="mt-2">
-              <NuxtLink to="/register" class="text-xs text-ink-500 hover:text-ink-900 underline decoration-ink-300 underline-offset-4 transition-colors">
-                {{ i18n.t({ uz: 'Natijalaringiz saqlanishi uchun ro\'yxatdan o\'ting →', kr: 'Натижаларингиз сақланиши учун рўйхатдан ўтинг →' }) }}
-              </NuxtLink>
-            </div>
-          </div>
-        </div>
-
-        <div class="lg:col-span-5">
-          <StreakBadge />
-        </div>
+    <!-- Header: identity + quick stats (pl clears the mobile hamburger) -->
+    <header class="pt-4 sm:pt-8 pl-14 md:pl-0 flex items-center justify-between gap-3">
+      <div class="min-w-0">
+        <div class="eyebrow">{{ todayLabel }}</div>
+        <h1 class="text-xl sm:text-3xl font-semibold tracking-tightish text-ink-900 mt-0.5 truncate">
+          {{ greeting }}<span v-if="firstName">, {{ firstName }}</span>
+        </h1>
       </div>
-    </section>
-
-    <!-- KPI strip -->
-    <section v-if="stats" class="max-w-6xl mx-auto px-4 sm:px-6 pb-8">
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <!-- XP card (dark accent) -->
+      <div class="flex items-center gap-1.5 shrink-0">
         <NuxtLink to="/me/stats"
-          class="rounded-2xl p-5 relative overflow-hidden block transition-all hover:-translate-y-0.5"
-          style="background: #0e1016; color: #fff; border: 1px solid #0e1016; box-shadow: var(--shadow-card);">
-          <div aria-hidden="true" class="absolute -right-12 -top-12 w-32 h-32 rounded-full blur-2xl" style="background: rgba(251,191,36,0.18);"></div>
-          <div class="absolute top-3 right-3 w-9 h-9 rounded-xl grid place-items-center" style="background: rgba(255,255,255,0.08);">
-            <AppIcon name="trophy" :size="18" class="text-amber-300" />
-          </div>
-          <div class="text-2xs uppercase tracking-[0.12em] font-semibold text-white/55 mb-2">XP</div>
-          <div class="text-2xl font-semibold tracking-tightish tabular-nums text-white">{{ (auth.user?.points ?? 0).toLocaleString() }}</div>
+          class="inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-sm font-semibold tabular-nums"
+          style="background: var(--surface); border: 1px solid var(--border-soft); color: var(--text-1); box-shadow: var(--shadow-soft);">
+          <AppIcon name="trophy" :size="14" class="text-amber-500" />
+          {{ points.toLocaleString() }}
         </NuxtLink>
-        <div class="card p-5 relative overflow-hidden">
-          <div class="absolute top-3 right-3"><IconTile icon="spark" tone="emerald" :size="36" /></div>
-          <div class="eyebrow mb-2">{{ i18n.t({ uz: 'Aniqlik', kr: 'Аниқлик' }) }}</div>
-          <div class="text-2xl font-semibold tracking-tightish tabular-nums text-ink-900">{{ stats.totals.accuracy_percent }}%</div>
-        </div>
-        <div class="card p-5 relative overflow-hidden">
-          <div class="absolute top-3 right-3"><IconTile icon="stat" tone="violet" :size="36" /></div>
-          <div class="eyebrow mb-2">{{ i18n.t({ uz: 'Savollar', kr: 'Саволлар' }) }}</div>
-          <div class="text-2xl font-semibold tracking-tightish tabular-nums text-ink-900">{{ stats.totals.questions_seen }}</div>
-        </div>
-        <div class="card p-5 relative overflow-hidden">
-          <div class="absolute top-3 right-3"><IconTile icon="refresh" tone="rose" :size="36" /></div>
-          <div class="eyebrow mb-2">{{ i18n.t({ uz: 'Hal qilinmagan xato', kr: 'Ҳал қилинмаган хато' }) }}</div>
-          <div class="text-2xl font-semibold tracking-tightish tabular-nums"
-               :class="stats.totals.mistakes_pending ? 'text-rose-600' : 'text-ink-900'">
-            {{ stats.totals.mistakes_pending }}
-          </div>
+        <div v-if="streakCurrent > 0"
+          class="inline-flex items-center gap-1 h-9 px-2.5 rounded-full text-sm font-semibold tabular-nums text-amber-700"
+          style="background: rgba(251,191,36,0.14);">
+          <AppIcon name="flame" :size="14" class="text-amber-500" />
+          {{ streakCurrent }}
         </div>
       </div>
-    </section>
+    </header>
 
-    <!-- Practice modes -->
-    <section class="max-w-6xl mx-auto px-4 sm:px-6 pb-10">
-      <div class="mb-5">
-        <div class="eyebrow">02 · {{ i18n.t({ uz: 'Mashq rejimlari', kr: 'Машқ режимлари' }) }}</div>
-        <h2 class="text-xl sm:text-2xl font-semibold tracking-tightish text-ink-900 mt-1">
-          {{ i18n.t({ uz: 'Bugungi rejangizni tanlang', kr: 'Бугунги режангизни танланг' }) }}
-        </h2>
-        <p class="text-sm text-ink-500 mt-1.5">
-          {{ i18n.t({ uz: 'Quyidagi rejimlardan birini tanlang', kr: 'Қуйидаги режимлардан бирини танланг' }) }}
-        </p>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-        <NuxtLink v-for="m in practiceModes" :key="m.id" :to="m.to"
-          class="practice-card group relative block rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-1"
-          :style="{
-            background: 'var(--surface)',
-            border: '1px solid var(--border-soft)',
-            boxShadow: 'var(--shadow-card)',
-          }">
-          <!-- Colored accent strip -->
-          <div class="absolute top-0 left-0 bottom-0 w-1 transition-all group-hover:w-1.5"
-               :style="{ background: toneColor(m.tone) }"></div>
-
-          <div class="p-5 pl-6">
-            <div class="flex items-start gap-3.5">
-              <IconTile :icon="m.icon" :tone="(m.tone as any)" :size="48" />
-              <div class="flex-1 min-w-0">
-                <div class="font-semibold text-base leading-snug text-ink-900 mb-1">{{ m.title }}</div>
-                <div class="text-sm leading-relaxed text-ink-500">{{ m.desc }}</div>
-              </div>
-            </div>
-
-            <div class="mt-4 pt-3 flex items-center justify-between" style="border-top: 1px dashed var(--border-soft);">
-              <div class="text-2xs font-medium uppercase tracking-wider" :style="{ color: toneColor(m.tone) }">
-                {{ m.meta }}
-              </div>
-              <div class="text-xs font-semibold text-ink-600 flex items-center gap-1 group-hover:gap-2 transition-all">
-                <span>{{ i18n.t({ uz: 'Tanlash', kr: 'Танлаш' }) }}</span>
-                <AppIcon name="arrow" :size="13" class="group-hover:translate-x-0.5 transition-transform" />
-              </div>
-            </div>
-          </div>
+    <!-- Readiness / exam progress -->
+    <div class="card p-4 sm:p-5 mt-4">
+      <div class="flex items-center justify-between gap-3">
+        <div class="text-sm font-medium" style="color: var(--text-3);">
+          {{ i18n.t({ uz: 'Tayyorgarlik', kr: 'Тайёргарлик' }) }}
+        </div>
+        <NuxtLink to="/me/profile" class="inline-flex items-center gap-1 text-xs font-medium" style="color: var(--text-3);">
+          <template v-if="examDaysLeft !== null && examDaysLeft > 0">
+            {{ i18n.t({ uz: 'Imtihongacha', kr: 'Имтиҳонгача' }) }}
+            <b style="color: var(--text-1);">{{ examDaysLeft }} {{ i18n.t({ uz: 'kun', kr: 'кун' }) }}</b>
+          </template>
+          <template v-else-if="examDaysLeft === 0">
+            <b class="text-rose-700">{{ i18n.t({ uz: 'Imtihon bugun!', kr: 'Имтиҳон бугун!' }) }}</b>
+          </template>
+          <template v-else>
+            {{ i18n.t({ uz: 'Sanani belgilash', kr: 'Санани белгилаш' }) }}
+          </template>
+          <AppIcon name="settings" :size="12" />
         </NuxtLink>
       </div>
-    </section>
-
-    <!-- Bottom row -->
-    <section class="max-w-6xl mx-auto px-4 sm:px-6 pb-16">
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        <div class="lg:col-span-7">
-          <TopicStrengthList />
+      <div class="flex items-end justify-between mt-1.5">
+        <div class="text-3xl font-bold tabular-nums text-ink-900">{{ readiness }}%</div>
+        <div class="text-xs mb-1" style="color: var(--text-4);">
+          {{ i18n.t({ uz: 'Aniqlik', kr: 'Аниқлик' }) }}: <span class="tabular-nums">{{ accuracy }}%</span>
         </div>
-        <div class="lg:col-span-5">
-          <div class="card">
-            <div class="px-5 py-4 border-b border-ink-200/70 flex items-center justify-between">
-              <div class="text-sm font-semibold text-ink-900">
-                {{ i18n.t({ uz: 'So\'nggi urinishlar', kr: 'Сўнгги уринишлар' }) }}
-              </div>
-              <NuxtLink to="/me/stats" class="text-xs font-medium text-ink-600 hover:text-ink-900">
-                {{ i18n.t({ uz: 'Hammasi', kr: 'Ҳаммаси' }) }} →
-              </NuxtLink>
+      </div>
+      <div class="h-2 rounded-full overflow-hidden mt-2" style="background: var(--surface-inset);">
+        <div class="h-full rounded-full transition-all duration-500"
+             :style="{ width: readiness + '%', background: 'linear-gradient(90deg, var(--accent), #8b5cf6)' }"></div>
+      </div>
+    </div>
+
+    <!-- Primary CTA -->
+    <NuxtLink :to="current ? `/test/play/${current.id}` : '/test/start/exam'"
+      class="mt-3 flex items-center justify-between gap-4 rounded-2xl p-5 text-white transition-all active:scale-[0.99]"
+      style="background: linear-gradient(120deg, #3f5894, #6d5ac0 55%, #8b5cf6); box-shadow: 0 12px 30px -14px rgba(63,88,148,0.7);">
+      <div class="min-w-0">
+        <div class="text-lg font-bold leading-tight">
+          {{ current ? i18n.t({ uz: 'Davom etish', kr: 'Давом этиш' }) : i18n.t({ uz: 'Imtihonni boshlash', kr: 'Имтиҳонни бошлаш' }) }}
+        </div>
+        <div class="text-sm text-white/80 mt-0.5 truncate">
+          <template v-if="current">{{ current.answered }} / {{ current.total }} · {{ modeLabel(current.mode) }}</template>
+          <template v-else>{{ i18n.t({ uz: '20 savol · 25 daqiqa · real imtihon', kr: '20 савол · 25 дақиқа · реал имтиҳон' }) }}</template>
+        </div>
+      </div>
+      <div class="w-12 h-12 rounded-full grid place-items-center shrink-0" style="background: #fff; color: #3f5894;">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M6 4l11 6-11 6z"/></svg>
+      </div>
+    </NuxtLink>
+
+    <!-- Daily allowance + guest nudge -->
+    <div v-if="(dailyTests && dailyTests.limit !== null) || isGuest" class="mt-3 flex flex-wrap items-center gap-2">
+      <template v-if="dailyTests && dailyTests.limit !== null">
+        <div v-if="freeTestsLeft > 0" class="inline-flex items-center gap-2 h-8 px-3 rounded-full text-xs font-medium"
+             style="background: var(--accent-soft); color: var(--accent);">
+          <span class="flex gap-1" aria-hidden="true">
+            <span v-for="n in dailyTests.limit" :key="n" class="w-1.5 h-1.5 rounded-full"
+                  :style="{ background: n <= freeTestsLeft ? 'var(--accent)' : 'var(--border-1)' }"></span>
+          </span>
+          {{ i18n.t({ uz: `Bugun ${freeTestsLeft} ta bepul test`, kr: `Бугун ${freeTestsLeft} та бепул тест` }) }}
+        </div>
+        <NuxtLink v-else to="/pricing" class="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium text-amber-700"
+             style="background: rgba(251,191,36,0.14);">
+          <AppIcon name="spark" :size="12" />
+          {{ i18n.t({ uz: 'Bugungi limit tugadi — Premium: cheksiz', kr: 'Бугунги лимит тугади — Премиум: чексиз' }) }}
+        </NuxtLink>
+      </template>
+      <NuxtLink v-if="isGuest" to="/register" class="text-xs underline decoration-ink-300 underline-offset-4" style="color: var(--text-3);">
+        {{ i18n.t({ uz: 'Natijani saqlash uchun ro\'yxatdan o\'ting', kr: 'Натижани сақлаш учун рўйхатдан ўтинг' }) }}
+      </NuxtLink>
+    </div>
+
+    <!-- Tile grid: every mode one tap away -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3 mt-5">
+      <NuxtLink v-for="t in tiles" :key="t.to" :to="t.to"
+        class="relative flex items-center gap-3 p-3 rounded-2xl transition-all active:scale-[0.97] hover:-translate-y-0.5"
+        style="background: var(--surface); border: 1px solid var(--border-soft); box-shadow: var(--shadow-card);">
+        <IconTile :icon="t.icon" :tone="(t.tone as any)" :size="42" />
+        <div class="min-w-0 flex-1">
+          <div class="font-semibold text-[15px] leading-tight text-ink-900 truncate">{{ t.title }}</div>
+        </div>
+        <span v-if="(t as any).badge"
+              class="absolute top-2 right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold grid place-items-center tabular-nums">
+          {{ (t as any).badge }}
+        </span>
+      </NuxtLink>
+    </div>
+
+    <!-- Secondary: topic strength + recent attempts -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 mt-6">
+      <div class="lg:col-span-7">
+        <TopicStrengthList />
+      </div>
+      <div class="lg:col-span-5">
+        <div class="card">
+          <div class="px-4 sm:px-5 py-3.5 flex items-center justify-between" style="border-bottom: 1px solid var(--divider);">
+            <div class="text-sm font-semibold text-ink-900">
+              {{ i18n.t({ uz: 'So\'nggi urinishlar', kr: 'Сўнгги уринишлар' }) }}
             </div>
-            <div v-if="!stats?.recent?.length" class="p-8 text-center text-ink-500 text-sm">
-              {{ i18n.t({ uz: 'Hozircha urinishlar yo\'q', kr: 'Ҳозирча уринишлар йўқ' }) }}
-            </div>
-            <div v-else class="divide-y divide-ink-200/70">
-              <NuxtLink v-for="a in stats.recent.slice(0, 5)" :key="a.id" :to="`/test/result/${a.id}`"
-                class="flex items-center justify-between px-5 py-3.5 hover:bg-ink-50 transition-colors group">
-                <div class="flex items-center gap-3 min-w-0">
-                  <div class="w-1.5 h-9 rounded-full flex-shrink-0"
-                       :class="a.is_passed ? 'bg-emerald-500' : 'bg-rose-400'"></div>
-                  <div class="min-w-0">
-                    <div class="flex items-center gap-2">
-                      <span class="badge">{{ modeLabel(a.mode) }}</span>
-                      <span class="font-semibold text-ink-900 tabular-nums">{{ a.correct_count }} / {{ a.total_questions }}</span>
-                    </div>
-                    <div class="text-2xs text-ink-500 mt-0.5">{{ timeAgo(a.created_at) }}</div>
+            <NuxtLink to="/me/stats" class="text-xs font-medium" style="color: var(--text-3);">
+              {{ i18n.t({ uz: 'Hammasi', kr: 'Ҳаммаси' }) }} →
+            </NuxtLink>
+          </div>
+          <div v-if="!stats?.recent?.length" class="p-8 text-center text-sm" style="color: var(--text-3);">
+            {{ i18n.t({ uz: 'Hozircha urinishlar yo\'q', kr: 'Ҳозирча уринишлар йўқ' }) }}
+          </div>
+          <div v-else class="divide-y" style="border-color: var(--divider);">
+            <NuxtLink v-for="a in stats.recent.slice(0, 5)" :key="a.id" :to="`/test/result/${a.id}`"
+              class="flex items-center justify-between px-4 sm:px-5 py-3 transition-colors hover:bg-ink-50">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-1.5 h-9 rounded-full flex-shrink-0" :class="a.is_passed ? 'bg-emerald-500' : 'bg-rose-400'"></div>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2">
+                    <span class="badge">{{ modeLabel(a.mode) }}</span>
+                    <span class="font-semibold text-ink-900 tabular-nums">{{ a.correct_count }} / {{ a.total_questions }}</span>
                   </div>
+                  <div class="text-2xs mt-0.5" style="color: var(--text-4);">{{ timeAgo(a.created_at) }}</div>
                 </div>
-                <AppIcon name="chev-r" :size="14" class="text-ink-300 group-hover:text-ink-900 transition-colors" />
-              </NuxtLink>
-            </div>
+              </div>
+              <AppIcon name="chev-r" :size="14" style="color: var(--text-4);" />
+            </NuxtLink>
           </div>
         </div>
       </div>
-    </section>
+    </div>
   </div>
 
   <!-- First visit: guest session is being created client-side -->
