@@ -7,21 +7,21 @@ const strengthColors: Record<string, string> = {
   strong:     'bg-brand-500',
   practicing: 'bg-amber-500',
   weak:       'bg-rose-500',
-  unknown:    'bg-ink-300',
+  new:        'bg-ink-300',
 }
 const strengthLabels: Record<string, { uz: string, kr: string }> = {
   mastered:   { uz: 'Mukammal',     kr: 'Мукаммал' },
   strong:     { uz: 'Yaxshi',       kr: 'Яхши' },
-  practicing: { uz: 'Mashq kerak',  kr: 'Машқ керак' },
+  practicing: { uz: 'O\'rtacha',    kr: 'Ўртача' },
   weak:       { uz: 'Zaif',         kr: 'Заиф' },
-  unknown:    { uz: 'Kam ma\'lumot', kr: 'Кам маълумот' },
+  new:        { uz: 'Boshlanmagan', kr: 'Бошланмаган' },
 }
 const strengthBadge: Record<string, string> = {
   mastered:   'bg-emerald-50 text-emerald-700',
   strong:     'bg-brand-50 text-brand-700',
   practicing: 'bg-amber-50 text-amber-700',
   weak:       'bg-rose-50 text-rose-700',
-  unknown:    'bg-ink-100 text-ink-500',
+  new:        'bg-ink-100 text-ink-500',
 }
 </script>
 
@@ -114,31 +114,40 @@ const strengthBadge: Record<string, string> = {
                 </span>
               </div>
               <div class="text-2xs text-ink-500 mt-0.5">
-                {{ i18n.t({ uz: 'Aniqlik darajangiz tahlili', kr: 'Аниқлик даражангиз таҳлили' }) }}
+                {{ i18n.t({ uz: 'Har bir mavzuni qancha o\'zlashtirdingiz', kr: 'Ҳар бир мавзуни қанча ўзлаштирдингиз' }) }}
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Rows -->
-        <div class="divide-y" style="--tw-divide-opacity: 1; border-color: rgba(139, 92, 246, 0.1);">
-          <div v-for="t in data.topics" :key="t.topic_id || 'none'"
-               class="px-5 py-3.5 transition-colors hover:bg-white/40"
+        <!-- Rows (scrolls when there are many topics) -->
+        <div class="divide-y max-h-[380px] overflow-y-auto scrollbar-thin"
+             style="--tw-divide-opacity: 1; border-color: rgba(139, 92, 246, 0.1);">
+          <div v-for="t in data.topics" :key="t.topic_id"
+               class="px-5 py-3 transition-colors hover:bg-white/40"
                style="border-top: 1px solid rgba(139, 92, 246, 0.08);">
-            <div class="flex items-center justify-between gap-3 mb-2">
+            <div class="flex items-center justify-between gap-3 mb-1.5">
               <div class="font-medium text-sm text-ink-900 truncate">{{ t.name }}</div>
               <div class="flex items-center gap-2 flex-shrink-0">
-                <span v-if="t.accuracy !== null" class="text-sm font-semibold text-ink-900 tabular-nums">{{ t.accuracy }}%</span>
-                <span class="text-2xs text-ink-500 tabular-nums">{{ t.correct }}/{{ t.correct + t.wrong }}</span>
+                <span class="text-sm font-semibold text-ink-900 tabular-nums">{{ t.mastery }}%</span>
                 <span class="badge text-2xs" :class="strengthBadge[t.strength]">
                   {{ i18n.t(strengthLabels[t.strength]) }}
                 </span>
               </div>
             </div>
-            <div class="h-1.5 rounded-full overflow-hidden" style="background: rgba(139, 92, 246, 0.1);">
+            <div class="h-1.5 rounded-full overflow-hidden mb-1.5" style="background: rgba(139, 92, 246, 0.1);">
               <div class="h-full rounded-full transition-all duration-700"
                    :class="strengthColors[t.strength]"
-                   :style="{ width: (t.accuracy ?? 0) + '%' }"></div>
+                   :style="{ width: t.mastery + '%' }"></div>
+            </div>
+            <div class="text-2xs text-ink-500 tabular-nums">
+              <template v-if="t.answered > 0">
+                {{ t.answered }}/{{ t.total }} {{ i18n.t({ uz: 'ishlangan', kr: 'ишланган' }) }}
+                · {{ t.accuracy }}% {{ i18n.t({ uz: 'to\'g\'ri', kr: 'тўғри' }) }}
+              </template>
+              <template v-else>
+                {{ t.total }} {{ i18n.t({ uz: 'savol · hali boshlanmagan', kr: 'савол · ҳали бошланмаган' }) }}
+              </template>
             </div>
           </div>
         </div>
