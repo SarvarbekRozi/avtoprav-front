@@ -52,6 +52,7 @@ const mistakesPending = computed(() => stats.value?.totals?.mistakes_pending ?? 
 
 // Compact tile grid — every mode one tap away (mobile-first dashboard)
 const tiles = computed(() => [
+  { icon: 'bookmark', tone: 'sky',    title: i18n.t({ uz: 'Saqlangan',  kr: 'Сақланган' }),  to: '/me/bookmarks' },
   { icon: 'exam',    tone: 'brand',   title: i18n.t({ uz: 'Imtihon',    kr: 'Имтиҳон' }),    to: '/test/start/exam' },
   { icon: 'star',    tone: 'violet',  title: i18n.t({ uz: 'Kunlik',     kr: 'Кунлик' }),     to: '/test/start/daily',    tag: i18n.t({ uz: 'Yangi', kr: 'Янги' }) },
   { icon: 'bolt',    tone: 'amber',   title: i18n.t({ uz: 'Blits',      kr: 'Блиц' }),       to: '/test/start/blitz',    tag: '60s' },
@@ -162,23 +163,34 @@ function timeAgo(iso: string) {
       </div>
     </div>
 
-    <!-- Primary CTA -->
-    <NuxtLink :to="current ? `/test/play/${current.id}` : '/test/start/exam'"
-      class="mt-3 flex items-center justify-between gap-4 rounded-2xl p-5 text-white transition-all active:scale-[0.99]"
-      style="background: linear-gradient(120deg, #3f5894, #6d5ac0 55%, #8b5cf6); box-shadow: 0 12px 30px -14px rgba(63,88,148,0.7);">
-      <div class="min-w-0">
-        <div class="text-lg font-bold leading-tight">
-          {{ current ? i18n.t({ uz: 'Davom etish', kr: 'Давом этиш' }) : i18n.t({ uz: 'Imtihonni boshlash', kr: 'Имтиҳонни бошлаш' }) }}
+    <!-- Primary actions: Continue (if in-progress) + Exam — big, side by side -->
+    <div class="mt-3 grid gap-3" :class="current ? 'grid-cols-2' : 'grid-cols-1'">
+      <NuxtLink v-if="current" :to="`/test/play/${current.id}`"
+        class="flex items-center justify-between gap-2 rounded-2xl p-4 sm:p-5 text-white transition-all active:scale-[0.98]"
+        style="background: linear-gradient(120deg, #059669, #10b981); box-shadow: 0 12px 30px -14px rgba(16,185,129,0.55);">
+        <div class="min-w-0">
+          <div class="text-base sm:text-lg font-bold leading-tight">{{ i18n.t({ uz: 'Davom etish', kr: 'Давом этиш' }) }}</div>
+          <div class="text-xs sm:text-sm text-white/85 mt-0.5 truncate tabular-nums">{{ current.answered }}/{{ current.total }} · {{ modeLabel(current.mode) }}</div>
         </div>
-        <div class="text-sm text-white/80 mt-0.5 truncate">
-          <template v-if="current">{{ current.answered }} / {{ current.total }} · {{ modeLabel(current.mode) }}</template>
-          <template v-else>{{ i18n.t({ uz: '20 savol · 25 daqiqa · real imtihon', kr: '20 савол · 25 дақиқа · реал имтиҳон' }) }}</template>
+        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full grid place-items-center shrink-0" style="background: #fff; color: #059669;">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M6 4l11 6-11 6z"/></svg>
         </div>
-      </div>
-      <div class="w-12 h-12 rounded-full grid place-items-center shrink-0" style="background: #fff; color: #3f5894;">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M6 4l11 6-11 6z"/></svg>
-      </div>
-    </NuxtLink>
+      </NuxtLink>
+
+      <NuxtLink to="/test/start/exam"
+        class="flex items-center justify-between gap-2 rounded-2xl p-4 sm:p-5 text-white transition-all active:scale-[0.98]"
+        style="background: linear-gradient(120deg, #3f5894, #6d5ac0 55%, #8b5cf6); box-shadow: 0 12px 30px -14px rgba(63,88,148,0.7);">
+        <div class="min-w-0">
+          <div class="text-base sm:text-lg font-bold leading-tight">{{ i18n.t({ uz: 'Imtihon', kr: 'Имтиҳон' }) }}</div>
+          <div class="text-xs sm:text-sm text-white/85 mt-0.5 truncate">
+            {{ current ? i18n.t({ uz: 'Yangi imtihon', kr: 'Янги имтиҳон' }) : i18n.t({ uz: '20 savol · 25 daqiqa · real imtihon', kr: '20 савол · 25 дақиқа · реал имтиҳон' }) }}
+          </div>
+        </div>
+        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full grid place-items-center shrink-0" style="background: #fff; color: #3f5894;">
+          <AppIcon name="exam" :size="20" />
+        </div>
+      </NuxtLink>
+    </div>
 
     <!-- Daily allowance + guest nudge -->
     <div v-if="(dailyTests && dailyTests.limit !== null) || isGuest" class="mt-3 flex flex-wrap items-center gap-2">
