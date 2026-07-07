@@ -52,14 +52,13 @@ const mistakesPending = computed(() => stats.value?.totals?.mistakes_pending ?? 
 
 // Compact tile grid — every mode one tap away (mobile-first dashboard)
 const tiles = computed(() => [
-  { icon: 'bookmark', tone: 'sky',    title: i18n.t({ uz: 'Saqlangan',  kr: 'Сақланган' }),  to: '/me/bookmarks' },
-  { icon: 'exam',    tone: 'brand',   title: i18n.t({ uz: 'Imtihon',    kr: 'Имтиҳон' }),    to: '/test/start/exam' },
   { icon: 'star',    tone: 'violet',  title: i18n.t({ uz: 'Kunlik',     kr: 'Кунлик' }),     to: '/test/start/daily',    tag: i18n.t({ uz: 'Yangi', kr: 'Янги' }) },
   { icon: 'bolt',    tone: 'amber',   title: i18n.t({ uz: 'Blits',      kr: 'Блиц' }),       to: '/test/start/blitz',    tag: '60s' },
   { icon: 'ticket',  tone: 'sky',     title: i18n.t({ uz: 'Biletlar',   kr: 'Билетлар' }),   to: '/tickets' },
   { icon: 'book',    tone: 'emerald', title: i18n.t({ uz: 'Mavzular',   kr: 'Мавзулар' }),   to: '/topics' },
   { icon: 'shuffle', tone: 'ink',     title: i18n.t({ uz: 'Tasodifiy',  kr: 'Тасодифий' }),  to: '/test/start/random' },
   { icon: 'refresh', tone: 'rose',    title: i18n.t({ uz: 'Xatolarim',  kr: 'Хатоларим' }),  to: '/test/start/mistakes', badge: mistakesPending.value || null },
+  { icon: 'bookmark', tone: 'sky',    title: i18n.t({ uz: 'Saqlangan',  kr: 'Сақланган' }),  to: '/me/bookmarks' },
   { icon: 'stat',    tone: 'brand',   title: i18n.t({ uz: 'Statistika', kr: 'Статистика' }), to: '/me/stats' },
 ])
 
