@@ -113,24 +113,43 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="max-w-3xl mx-auto px-4 sm:px-6 py-10" v-if="a">
-    <!-- Hero result -->
-    <div class="text-center mb-8">
-      <div class="inline-flex items-center gap-1.5 px-3 h-7 rounded-full text-2xs font-semibold uppercase tracking-wider"
-           :class="passed ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'">
-        <AppIcon v-if="passed" name="check" :size="12" />
-        <AppIcon v-else name="x" :size="12" />
-        {{ passed ? i18n.t({ uz: 'Muvaffaqiyatli', kr: 'Муваффақиятли' }) : i18n.t({ uz: 'O\'tilmadi', kr: 'Ўтилмади' }) }}
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-10" v-if="a">
+    <!-- Result summary: hero + stats in one compact card -->
+    <div class="card overflow-hidden mb-6">
+      <div class="px-5 pt-5 pb-4 text-center">
+        <div class="inline-flex items-center gap-1.5 px-2.5 h-6 rounded-full text-2xs font-semibold uppercase tracking-wider"
+             :class="passed ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'">
+          <AppIcon :name="passed ? 'check' : 'x'" :size="11" />
+          {{ passed ? i18n.t({ uz: 'Muvaffaqiyatli', kr: 'Муваффақиятли' }) : i18n.t({ uz: 'O\'tilmadi', kr: 'Ўтилмади' }) }}
+        </div>
+        <div class="text-3xl sm:text-4xl font-semibold tracking-tightest mt-2.5 text-ink-900 tabular-nums">
+          {{ a.correct_count }} <span class="text-ink-300">/ {{ a.total_questions }}</span>
+        </div>
+        <div class="mt-1 text-sm text-ink-500">
+          {{ modeLabel }} · {{ fmtTimeWord(a.time_spent_sec) }} · {{ percent }}%
+        </div>
+        <div v-if="pointsEarned > 0" class="mt-2 inline-flex items-center gap-1 px-2.5 h-6 rounded-full bg-amber-100 text-amber-700 font-semibold text-xs">
+          <AppIcon name="spark" :size="12" /> +{{ pointsEarned }} {{ i18n.t({ uz: 'ball', kr: 'балл' }) }}
+        </div>
       </div>
-
-      <h1 class="text-4xl sm:text-5xl font-semibold tracking-tightest mt-4 text-ink-900 tabular-nums">
-        {{ a.correct_count }} <span class="text-ink-300">/ {{ a.total_questions }}</span>
-      </h1>
-      <div class="mt-2 text-ink-500">
-        {{ modeLabel }} · {{ fmtTimeWord(a.time_spent_sec) }} · {{ percent }}%
-      </div>
-      <div v-if="pointsEarned > 0" class="mt-3 inline-flex items-center gap-1.5 px-3 h-8 rounded-full bg-amber-100 text-amber-700 font-semibold text-sm">
-        <AppIcon name="spark" :size="14" /> +{{ pointsEarned }} {{ i18n.t({ uz: 'ball', kr: 'балл' }) }}
+      <!-- Compact stat strip -->
+      <div class="grid grid-cols-4 border-t" style="border-color: var(--divider);">
+        <div class="py-3 text-center">
+          <div class="text-2xs uppercase tracking-wider" style="color: var(--text-4);">{{ i18n.t({ uz: 'To\'g\'ri', kr: 'Тўғри' }) }}</div>
+          <div class="text-lg font-bold tabular-nums text-emerald-700 mt-0.5">{{ a.correct_count }}</div>
+        </div>
+        <div class="py-3 text-center border-l" style="border-color: var(--divider);">
+          <div class="text-2xs uppercase tracking-wider" style="color: var(--text-4);">{{ i18n.t({ uz: 'Xato', kr: 'Хато' }) }}</div>
+          <div class="text-lg font-bold tabular-nums text-rose-700 mt-0.5">{{ a.wrong_count }}</div>
+        </div>
+        <div class="py-3 text-center border-l" style="border-color: var(--divider);">
+          <div class="text-2xs uppercase tracking-wider" style="color: var(--text-4);">{{ i18n.t({ uz: 'Vaqt', kr: 'Вақт' }) }}</div>
+          <div class="text-lg font-bold tabular-nums text-ink-900 mt-0.5">{{ avgTime }}<span class="text-2xs font-medium" style="color: var(--text-4);">s</span></div>
+        </div>
+        <div class="py-3 text-center border-l" style="border-color: var(--divider);">
+          <div class="text-2xs uppercase tracking-wider" style="color: var(--text-4);">{{ i18n.t({ uz: 'Daraja', kr: 'Даража' }) }}</div>
+          <div class="text-base sm:text-lg font-bold text-ink-900 mt-0.5 leading-tight">{{ gradeLabel(percent) }}</div>
+        </div>
       </div>
     </div>
 
@@ -150,26 +169,6 @@ onMounted(() => {
             <div class="text-2xs font-semibold text-amber-600">+{{ ach.reward }} {{ i18n.t({ uz: 'ball', kr: 'балл' }) }}</div>
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- Stat tiles -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-      <div class="card p-4">
-        <div class="eyebrow mb-1.5">{{ i18n.t({ uz: 'To\'g\'ri', kr: 'Тўғри' }) }}</div>
-        <div class="text-2xl font-semibold tracking-tightish tabular-nums text-emerald-600">{{ a.correct_count }}</div>
-      </div>
-      <div class="card p-4">
-        <div class="eyebrow mb-1.5">{{ i18n.t({ uz: 'Xato', kr: 'Хато' }) }}</div>
-        <div class="text-2xl font-semibold tracking-tightish tabular-nums text-rose-500">{{ a.wrong_count }}</div>
-      </div>
-      <div class="card p-4">
-        <div class="eyebrow mb-1.5">{{ i18n.t({ uz: 'O\'rtacha vaqt', kr: 'Ўртача вақт' }) }}</div>
-        <div class="text-2xl font-semibold tracking-tightish tabular-nums text-ink-900">{{ avgTime }} {{ i18n.t({ uz: 's.', kr: 'с.' }) }}</div>
-      </div>
-      <div class="card p-4">
-        <div class="eyebrow mb-1.5">{{ i18n.t({ uz: 'Daraja', kr: 'Даража' }) }}</div>
-        <div class="text-2xl font-semibold tracking-tightish text-ink-900">{{ gradeLabel(percent) }}</div>
       </div>
     </div>
 
