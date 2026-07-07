@@ -73,6 +73,19 @@ const modeLabels: Record<string, { uz: string, kr: string }> = {
 }
 function modeLabel(m: string) { return modeLabels[m] ? i18n.t(modeLabels[m]) : m }
 
+const modeMeta: Record<string, { icon: string, tone: string }> = {
+  exam:     { icon: 'exam',    tone: 'brand' },
+  topic:    { icon: 'book',    tone: 'emerald' },
+  ticket:   { icon: 'ticket',  tone: 'brand' },
+  random:   { icon: 'shuffle', tone: 'amber' },
+  mistakes: { icon: 'refresh', tone: 'rose' },
+  marathon: { icon: 'bolt',    tone: 'violet' },
+  memorize: { icon: 'bulb',    tone: 'sky' },
+}
+function modeIcon(m: string) { return modeMeta[m]?.icon ?? 'exam' }
+function modeTone(m: string) { return modeMeta[m]?.tone ?? 'brand' }
+function attemptPct(a: any) { return a.total_questions ? Math.round((a.correct_count / a.total_questions) * 100) : 0 }
+
 function timeAgo(iso: string) {
   const d = new Date(iso)
   const diffMs = Date.now() - d.getTime()
@@ -221,18 +234,20 @@ function timeAgo(iso: string) {
           </div>
           <div v-else class="divide-y" style="border-color: var(--divider);">
             <NuxtLink v-for="a in stats.recent.slice(0, 5)" :key="a.id" :to="`/test/result/${a.id}`"
-              class="flex items-center justify-between px-4 sm:px-5 py-3 transition-colors hover:bg-ink-50">
-              <div class="flex items-center gap-3 min-w-0">
-                <div class="w-1.5 h-9 rounded-full flex-shrink-0" :class="a.is_passed ? 'bg-emerald-500' : 'bg-rose-400'"></div>
-                <div class="min-w-0">
-                  <div class="flex items-center gap-2">
-                    <span class="badge">{{ modeLabel(a.mode) }}</span>
-                    <span class="font-semibold text-ink-900 tabular-nums">{{ a.correct_count }} / {{ a.total_questions }}</span>
-                  </div>
-                  <div class="text-2xs mt-0.5" style="color: var(--text-4);">{{ timeAgo(a.created_at) }}</div>
+              class="group flex items-center gap-3 px-4 sm:px-5 py-3 transition-colors hover:bg-ink-50">
+              <IconTile :icon="modeIcon(a.mode)" :tone="(modeTone(a.mode) as any)" :size="38" />
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-semibold text-ink-900 truncate">{{ modeLabel(a.mode) }}</div>
+                <div class="text-2xs mt-0.5" style="color: var(--text-4);">
+                  <span class="tabular-nums">{{ a.correct_count }}/{{ a.total_questions }}</span> · {{ timeAgo(a.created_at) }}
                 </div>
               </div>
-              <AppIcon name="chev-r" :size="14" style="color: var(--text-4);" />
+              <span class="inline-flex items-center gap-1 px-2 h-6 rounded-full text-2xs font-bold tabular-nums shrink-0"
+                    :class="a.is_passed ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'">
+                <AppIcon :name="a.is_passed ? 'check' : 'x'" :size="10" />
+                {{ attemptPct(a) }}%
+              </span>
+              <AppIcon name="chev-r" :size="14" class="text-ink-300 shrink-0 group-hover:translate-x-0.5 transition-transform" />
             </NuxtLink>
           </div>
         </div>
