@@ -218,13 +218,15 @@ onMounted(() => {
         <div class="text-[15px] leading-relaxed mb-3 text-ink-800">{{ ans.question.text }}</div>
         <img v-if="ans.question.image" :src="ans.question.image" class="rounded-lg border border-ink-200 max-h-40 mb-3">
 
-        <div v-if="!ans.is_correct" class="flex flex-wrap items-center gap-2 text-sm">
-          <span class="badge-danger" v-if="ans.chosen_option_id">
-            {{ i18n.t({ uz: 'Sizning javobingiz:', kr: 'Сизнинг жавобингиз:' }) }} {{ chosenLetter(ans) }} · {{ chosenText(ans) }}
-          </span>
-          <span class="badge-success">
-            {{ i18n.t({ uz: 'To\'g\'ri javob:', kr: 'Тўғри жавоб:' }) }} {{ correctLetter(ans) }} · {{ correctText(ans) }}
-          </span>
+        <div v-if="!ans.is_correct" class="space-y-2">
+          <div v-if="ans.chosen_option_id" class="px-3 py-2 rounded-lg bg-rose-50 text-rose-800 text-sm leading-snug">
+            <span class="font-semibold">{{ i18n.t({ uz: 'Sizning javobingiz:', kr: 'Сизнинг жавобингиз:' }) }} {{ chosenLetter(ans) }}</span>
+            · {{ chosenText(ans) }}
+          </div>
+          <div class="px-3 py-2 rounded-lg bg-emerald-50 text-emerald-800 text-sm leading-snug">
+            <span class="font-semibold">{{ i18n.t({ uz: 'To\'g\'ri javob:', kr: 'Тўғри жавоб:' }) }} {{ correctLetter(ans) }}</span>
+            · {{ correctText(ans) }}
+          </div>
         </div>
 
         <div v-if="ans.question.explanation_uz" class="mt-3 px-3.5 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-sm flex gap-2.5">
