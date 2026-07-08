@@ -106,8 +106,8 @@ function timeAgo(iso: string) {
   <div v-if="auth.user" class="max-w-6xl mx-auto px-4 sm:px-6 pb-20 md:pb-16">
     <OnboardingModal />
 
-    <!-- Header: identity + quick stats (pl clears the mobile hamburger) -->
-    <header class="pt-4 sm:pt-8 pl-14 md:pl-0 flex items-center justify-between gap-3">
+    <!-- Header: identity + quick stats (pl clears the mobile hamburger, pr clears the fixed notification bell) -->
+    <header class="pt-4 sm:pt-8 pl-14 md:pl-0 pr-14 flex items-center justify-between gap-3">
       <div class="min-w-0">
         <div class="eyebrow">{{ todayLabel }}</div>
         <h1 class="text-xl sm:text-3xl font-semibold tracking-tightish text-ink-900 mt-0.5 truncate">
