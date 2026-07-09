@@ -61,6 +61,27 @@ function medalColor(rank: number) {
       </div>
     </div>
 
+    <!-- Weekly / monthly prize for 1st place -->
+    <div v-if="period !== 'all'" class="mx-5 mt-4 rounded-xl p-3.5 flex items-center gap-3"
+         style="background: linear-gradient(135deg, rgba(251,191,36,0.20), rgba(245,158,11,0.07)); border: 1px solid rgba(245,158,11,0.35);">
+      <div class="w-11 h-11 rounded-full grid place-items-center shrink-0 shadow-soft"
+           style="background: linear-gradient(135deg, #fbbf24, #d97706);">
+        <AppIcon name="trophy" :size="22" class="text-white" />
+      </div>
+      <div class="min-w-0 flex-1">
+        <div class="text-2xs font-semibold uppercase tracking-wide" style="color: #b45309;">
+          {{ period === 'week'
+             ? i18n.t({ uz: '1-o\'rin · Haftalik sovg\'a', kr: '1-ўрин · Ҳафталик совға' })
+             : i18n.t({ uz: '1-o\'rin · Oylik sovg\'a', kr: '1-ўрин · Ойлик совға' }) }}
+        </div>
+        <div class="text-xl font-bold tabular-nums leading-tight" style="color: var(--text-1);">
+          {{ period === 'week' ? '150 000' : '500 000' }}
+          <span class="text-sm font-semibold" style="color: var(--text-3);">{{ i18n.t({ uz: 'so\'m', kr: 'сўм' }) }}</span>
+        </div>
+      </div>
+      <AppIcon name="spark" :size="18" class="text-amber-400 shrink-0" />
+    </div>
+
     <!-- Loading skeleton -->
     <div v-if="pending && !top.length" class="p-5 space-y-2">
       <div v-for="i in 5" :key="i" class="h-10 rounded-lg animate-pulse" style="background: var(--surface-inset);"></div>
@@ -140,13 +161,32 @@ function medalColor(rank: number) {
       </div>
     </div>
 
-    <!-- Footer: how to earn -->
-    <div v-if="showFooter" class="px-5 py-3 text-2xs" style="border-top: 1px solid var(--divider); color: var(--text-3); background: var(--surface-soft);">
-      <span class="font-semibold" style="color: var(--text-2);">
-        {{ i18n.t({ uz: 'Qanday XP olinadi:', kr: 'Қандай XP олинади:' }) }}
-      </span>
-      {{ i18n.t({ uz: 'to\'g\'ri javob +5 · imtihonda +10 · imtihondan o\'tish +50 · 20/20 +100 · kunlik maqsad +30',
-                   kr: 'тўғри жавоб +5 · имтиҳонда +10 · имтиҳондан ўтиш +50 · 20/20 +100 · кунлик мақсад +30' }) }}
+    <!-- Footer: how XP is earned (and lost) -->
+    <div v-if="showFooter" class="px-5 py-4" style="border-top: 1px solid var(--divider); background: var(--surface-soft);">
+      <div class="text-2xs font-semibold mb-2.5" style="color: var(--text-2);">
+        {{ i18n.t({ uz: 'XP qanday yig\'iladi:', kr: 'XP қандай йиғилади:' }) }}
+      </div>
+      <div class="grid grid-cols-1 gap-y-1.5 text-2xs">
+        <div class="flex items-center justify-between gap-2">
+          <span style="color: var(--text-3);">{{ i18n.t({ uz: 'Yangi savolni o\'zlashtirish', kr: 'Янги саволни ўзлаштириш' }) }}</span>
+          <span class="font-semibold text-emerald-600 tabular-nums">+3</span>
+        </div>
+        <div class="flex items-center justify-between gap-2">
+          <span style="color: var(--text-3);">{{ i18n.t({ uz: 'Imtihondan o\'tish (20/20 → +50)', kr: 'Имтиҳондан ўтиш (20/20 → +50)' }) }}</span>
+          <span class="font-semibold text-emerald-600 tabular-nums">+30</span>
+        </div>
+        <div class="flex items-center justify-between gap-2">
+          <span style="color: var(--text-3);">{{ i18n.t({ uz: 'Kunlik challenge · Blits rekord', kr: 'Кунлик челлендж · Блиц рекорд' }) }}</span>
+          <span class="font-semibold text-emerald-600 tabular-nums">+10</span>
+        </div>
+        <div class="flex items-center justify-between gap-2">
+          <span style="color: var(--text-3);">{{ i18n.t({ uz: 'Imtihondan yiqilish', kr: 'Имтиҳондан йиқилиш' }) }}</span>
+          <span class="font-semibold text-rose-600 tabular-nums">−5</span>
+        </div>
+      </div>
+      <div class="text-2xs mt-2.5 pt-2.5" style="color: var(--text-4); border-top: 1px dashed var(--divider);">
+        {{ i18n.t({ uz: 'Takroriy yechishga XP berilmaydi — faqat yangi bilim sanaladi.', kr: 'Такрорий ечишга XP берилмайди — фақат янги билим саналади.' }) }}
+      </div>
     </div>
   </div>
 </template>

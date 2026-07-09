@@ -288,6 +288,33 @@
 .dark .border-rose-200    { border-color: rgba(244,  63,  94, 0.30) !important; }
 .dark .border-amber-200   { border-color: rgba(251, 191,  36, 0.30) !important; }
 
+/* Exam CTA banner — vivid on light, toned down (not glaring) on dark */
+.exam-cta {
+  background: linear-gradient(120deg, #3f5894, #6d5ac0 55%, #8b5cf6);
+  box-shadow: 0 12px 30px -14px rgba(63, 88, 148, 0.7);
+}
+.dark .exam-cta {
+  background: linear-gradient(120deg, #2e3c66, #3f3a6e 55%, #4a3f7d);
+  box-shadow: 0 12px 30px -14px rgba(0, 0, 0, 0.6);
+}
+
+/* AI recommendation cards — lavender on light, dark violet-tinted surface on dark
+   (so the theme-aware light text stays readable instead of light-on-light). */
+.ai-recommend,
+.ai-topics {
+  background: linear-gradient(135deg, #f5f3ff 0%, #eef2ff 50%, #ecfeff 100%);
+  border: 1px solid rgba(139, 92, 246, 0.18);
+  box-shadow: 0 8px 24px -12px rgba(139, 92, 246, 0.25);
+}
+.dark .ai-recommend,
+.dark .ai-topics {
+  background:
+    linear-gradient(135deg, rgba(139, 92, 246, 0.16) 0%, rgba(99, 102, 241, 0.11) 50%, rgba(6, 182, 212, 0.09) 100%),
+    var(--surface) !important;
+  border-color: rgba(139, 92, 246, 0.30) !important;
+  box-shadow: 0 10px 28px -14px rgba(0, 0, 0, 0.55) !important;
+}
+
 @layer utilities {
   .text-balance { text-wrap: balance; }
   .scrollbar-thin {

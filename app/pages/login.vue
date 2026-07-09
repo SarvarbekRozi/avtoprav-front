@@ -25,7 +25,7 @@ async function submit() {
   <div class="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-12">
     <div class="w-full max-w-md">
       <div class="text-center mb-8">
-        <div class="inline-flex w-11 h-11 rounded-2xl bg-ink-900 text-white items-center justify-center text-lg font-bold tracking-tight mb-4">A</div>
+        <img src="/logo-mark.svg" alt="Avtoprav" class="block mx-auto w-16 h-16 mb-4" />
         <h1 class="text-2xl font-semibold tracking-tightish text-ink-900">
           {{ i18n.t({ uz: 'Hisobingizga kiring', kr: 'Ҳисобингизга киринг' }) }}
         </h1>

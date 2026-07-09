@@ -28,10 +28,7 @@ const strengthBadge: Record<string, string> = {
 <template>
   <div v-if="data" class="space-y-4">
     <!-- AI Recommendation -->
-    <div v-if="data.recommendation" class="ai-recommend relative overflow-hidden rounded-2xl p-5"
-         style="background: linear-gradient(135deg, #f5f3ff 0%, #eef2ff 50%, #ecfeff 100%);
-                border: 1px solid rgba(139, 92, 246, 0.18);
-                box-shadow: 0 8px 24px -12px rgba(139, 92, 246, 0.25);">
+    <div v-if="data.recommendation" class="ai-recommend relative overflow-hidden rounded-2xl p-5">
       <!-- Animated glow blob -->
       <div aria-hidden="true" class="ai-glow absolute -top-12 -right-12 w-40 h-40 rounded-full blur-3xl pointer-events-none"
            style="background: radial-gradient(circle, rgba(139,92,246,0.35), transparent 70%);"></div>
@@ -79,10 +76,7 @@ const strengthBadge: Record<string, string> = {
     </div>
 
     <!-- Topics list (AI-styled) -->
-    <div v-else class="ai-topics relative overflow-hidden rounded-2xl"
-         style="background: linear-gradient(135deg, #f5f3ff 0%, #eef2ff 50%, #ecfeff 100%);
-                border: 1px solid rgba(139, 92, 246, 0.18);
-                box-shadow: 0 8px 24px -12px rgba(139, 92, 246, 0.25);">
+    <div v-else class="ai-topics relative overflow-hidden rounded-2xl">
       <!-- Animated glow blobs -->
       <div aria-hidden="true" class="ai-glow absolute -top-16 -left-16 w-44 h-44 rounded-full blur-3xl pointer-events-none"
            style="background: radial-gradient(circle, rgba(99,102,241,0.28), transparent 70%);"></div>
