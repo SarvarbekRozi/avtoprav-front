@@ -133,6 +133,9 @@ onMounted(() => {
         <div v-if="pointsEarned > 0" class="mt-2 inline-flex items-center gap-1 px-2.5 h-6 rounded-full bg-amber-100 text-amber-700 font-semibold text-xs">
           <AppIcon name="spark" :size="12" /> +{{ pointsEarned }} {{ i18n.t({ uz: 'ball', kr: 'балл' }) }}
         </div>
+        <div v-else-if="pointsEarned < 0" class="mt-2 inline-flex items-center gap-1 px-2.5 h-6 rounded-full bg-rose-100 text-rose-700 font-semibold text-xs">
+          <AppIcon name="x" :size="12" /> {{ pointsEarned }} {{ i18n.t({ uz: 'ball', kr: 'балл' }) }}
+        </div>
       </div>
       <!-- Compact stat strip -->
       <div class="grid grid-cols-4 border-t" style="border-color: var(--divider);">

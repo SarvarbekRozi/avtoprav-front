@@ -88,8 +88,7 @@ const { data: streak } = useAsyncData('sidebar-streak', async () => {
            :class="collapsed ? 'justify-center px-2' : 'justify-between px-4'"
            style="border-color: var(--border-soft);">
         <NuxtLink to="/" class="flex items-center gap-2.5 min-w-0">
-          <div class="w-8 h-8 rounded-lg grid place-items-center text-sm font-bold tracking-tight shrink-0"
-               style="background: var(--text-1); color: var(--surface);">A</div>
+          <img src="/logo-mark.svg" alt="Avtoprav" class="w-8 h-8 shrink-0" />
           <span v-if="!collapsed" class="font-semibold text-[15px] tracking-tightish truncate" style="color: var(--text-1);">Avtoprav</span>
         </NuxtLink>
         <button
@@ -358,8 +357,7 @@ const { data: streak } = useAsyncData('sidebar-streak', async () => {
         <div class="flex items-center justify-between gap-2 h-14 px-4 border-b shrink-0"
              style="border-color: var(--border-soft);">
           <NuxtLink to="/" class="flex items-center gap-2.5" @click="mobileSidebar = false">
-            <div class="w-8 h-8 rounded-lg grid place-items-center text-sm font-bold tracking-tight"
-                 style="background: var(--text-1); color: var(--surface);">A</div>
+            <img src="/logo-mark.svg" alt="Avtoprav" class="w-8 h-8" />
             <span class="font-semibold tracking-tightish" style="color: var(--text-1);">Avtoprav</span>
           </NuxtLink>
           <button @click="theme.toggle()"

@@ -106,8 +106,8 @@ function timeAgo(iso: string) {
   <div v-if="auth.user" class="max-w-6xl mx-auto px-4 sm:px-6 pb-20 md:pb-16">
     <OnboardingModal />
 
-    <!-- Header: identity + quick stats (pl clears the mobile hamburger) -->
-    <header class="pt-4 sm:pt-8 pl-14 md:pl-0 flex items-center justify-between gap-3">
+    <!-- Header: identity + quick stats (pl clears the mobile hamburger, pr clears the fixed notification bell) -->
+    <header class="pt-4 sm:pt-8 pl-14 md:pl-0 pr-14 flex items-center justify-between gap-3">
       <div class="min-w-0">
         <div class="eyebrow">{{ todayLabel }}</div>
         <h1 class="text-xl sm:text-3xl font-semibold tracking-tightish text-ink-900 mt-0.5 truncate">
@@ -177,8 +177,7 @@ function timeAgo(iso: string) {
       </NuxtLink>
 
       <NuxtLink to="/test/start/exam"
-        class="flex items-center justify-between gap-2 rounded-2xl p-4 sm:p-5 text-white transition-all active:scale-[0.98]"
-        style="background: linear-gradient(120deg, #3f5894, #6d5ac0 55%, #8b5cf6); box-shadow: 0 12px 30px -14px rgba(63,88,148,0.7);">
+        class="exam-cta flex items-center justify-between gap-2 rounded-2xl p-4 sm:p-5 text-white transition-all active:scale-[0.98]">
         <div class="min-w-0">
           <div class="text-base sm:text-lg font-bold leading-tight">{{ i18n.t({ uz: 'Imtihon', kr: 'Имтиҳон' }) }}</div>
           <div class="text-xs sm:text-sm text-white/85 mt-0.5 truncate">
@@ -190,6 +189,25 @@ function timeAgo(iso: string) {
         </div>
       </NuxtLink>
     </div>
+
+    <!-- Weekly XP competition teaser -->
+    <NuxtLink to="/me/stats"
+      class="mt-3 flex items-center gap-3 rounded-2xl p-3.5 sm:p-4 transition-all active:scale-[0.99]"
+      style="background: linear-gradient(120deg, rgba(251,191,36,0.16), rgba(245,158,11,0.05)); border: 1px solid rgba(245,158,11,0.32);">
+      <div class="w-10 h-10 rounded-full grid place-items-center shrink-0 shadow-soft"
+           style="background: linear-gradient(135deg, #fbbf24, #d97706);">
+        <AppIcon name="trophy" :size="20" class="text-white" />
+      </div>
+      <div class="min-w-0 flex-1">
+        <div class="text-sm font-bold leading-tight" style="color: var(--text-1);">
+          {{ i18n.t({ uz: 'Haftalik XP musobaqasi', kr: 'Ҳафталик XP мусобақаси' }) }}
+        </div>
+        <div class="text-2xs mt-0.5 tabular-nums" style="color: var(--text-3);">
+          {{ i18n.t({ uz: '1-o\'rin — 150 000 so\'m · oylik 500 000 so\'m', kr: '1-ўрин — 150 000 сўм · ойлик 500 000 сўм' }) }}
+        </div>
+      </div>
+      <AppIcon name="chev-r" :size="18" class="shrink-0" style="color: var(--text-4);" />
+    </NuxtLink>
 
     <!-- Daily allowance + guest nudge -->
     <div v-if="(dailyTests && dailyTests.limit !== null) || isGuest" class="mt-3 flex flex-wrap items-center gap-2">

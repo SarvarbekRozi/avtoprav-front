@@ -42,10 +42,10 @@ function fmtTime(sec: number) {
         </div>
       </div>
       <div class="card p-5">
-        <div class="eyebrow mb-2">{{ i18n.t({ uz: 'Savollar', kr: 'Саволлар' }) }}</div>
-        <div class="text-3xl font-semibold tracking-tightish tabular-nums text-ink-900">{{ stats.totals.questions_seen }}</div>
+        <div class="eyebrow mb-2">{{ i18n.t({ uz: 'Qamrov', kr: 'Қамров' }) }}</div>
+        <div class="text-3xl font-semibold tracking-tightish tabular-nums text-ink-900">{{ stats.totals.coverage_percent }}%</div>
         <div class="text-2xs mt-1 text-ink-500 tabular-nums">
-          <span class="text-emerald-600">{{ stats.totals.correct }}</span> / <span class="text-rose-500">{{ stats.totals.wrong }}</span>
+          {{ stats.totals.distinct_seen }} / {{ stats.totals.bank_total }} {{ i18n.t({ uz: 'savol', kr: 'савол' }) }}
         </div>
       </div>
       <!-- Hero readiness (dark) -->
@@ -54,6 +54,9 @@ function fmtTime(sec: number) {
         <div class="text-3xl font-semibold tracking-tightish tabular-nums text-white">{{ stats.totals.readiness_percent }}%</div>
         <div class="mt-3 h-1.5 rounded-full overflow-hidden bg-white/10">
           <div class="h-full bg-gradient-to-r from-emerald-400 to-emerald-600" :style="{ width: stats.totals.readiness_percent + '%' }"></div>
+        </div>
+        <div class="text-2xs mt-2 tabular-nums text-white/45">
+          {{ stats.totals.mastered }} / {{ stats.totals.bank_total }} {{ i18n.t({ uz: 'o\'zlashtirildi', kr: 'ўзлаштирилди' }) }}
         </div>
       </div>
     </div>
@@ -80,24 +83,24 @@ function fmtTime(sec: number) {
 
       <div class="card lg:col-span-4 p-5 flex flex-col">
         <div class="text-sm font-semibold text-ink-900">{{ i18n.t({ uz: 'Umumiy progress', kr: 'Умумий прогресс' }) }}</div>
-        <div class="text-2xs text-ink-500 mt-0.5">{{ i18n.t({ uz: 'Barcha mavzular bo\'yicha', kr: 'Барча мавзулар бўйича' }) }}</div>
+        <div class="text-2xs text-ink-500 mt-0.5">{{ i18n.t({ uz: 'Butun savollar banki bo\'yicha', kr: 'Бутун саволлар банки бўйича' }) }}</div>
         <div class="flex-1 flex items-center justify-center my-4">
-          <Donut :value="Math.round(stats.totals.accuracy_percent)" />
+          <Donut :value="Math.round(stats.totals.coverage_percent)" :label="i18n.t({ uz: 'o\'rganilgan', kr: 'ўрганилган' })" />
         </div>
         <div class="grid grid-cols-2 gap-2 text-2xs">
           <div class="flex items-center justify-between">
             <span class="flex items-center gap-1.5">
               <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span class="text-ink-600">{{ i18n.t({ uz: 'To\'g\'ri', kr: 'Тўғри' }) }}</span>
+              <span class="text-ink-600">{{ i18n.t({ uz: 'O\'zlashtirilgan', kr: 'Ўзлаштирилган' }) }}</span>
             </span>
-            <span class="tabular-nums font-semibold text-ink-900">{{ stats.totals.correct }}</span>
+            <span class="tabular-nums font-semibold text-ink-900">{{ stats.totals.mastered }}</span>
           </div>
           <div class="flex items-center justify-between">
             <span class="flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-rose-500"></span>
-              <span class="text-ink-600">{{ i18n.t({ uz: 'Xato', kr: 'Хато' }) }}</span>
+              <span class="w-2 h-2 rounded-full bg-ink-300"></span>
+              <span class="text-ink-600">{{ i18n.t({ uz: 'Qolgan', kr: 'Қолган' }) }}</span>
             </span>
-            <span class="tabular-nums font-semibold text-ink-900">{{ stats.totals.wrong }}</span>
+            <span class="tabular-nums font-semibold text-ink-900">{{ stats.totals.bank_total - stats.totals.distinct_seen }}</span>
           </div>
         </div>
       </div>

@@ -54,6 +54,7 @@ const currentPosition = ref<number>(1)
 const progress = ref<ProgressEntry[]>([])
 const localAnswers = ref<Record<number, LocalAnswerBuffer>>({})
 const examFailModal = ref(false)
+const exitModal = ref(false)
 const zoomedImage = ref<string | null>(null)
 const selectedOptionId = ref<number | null>(null)
 const lastAnswer = ref<{ is_correct: boolean, correct_option_id: number, explanation_uz: string | null, explanation_kr: string | null } | null>(null)
@@ -314,9 +315,13 @@ async function finishAttempt() {
 }
 
 function exitConfirm() {
-  if (confirm(i18n.t({ uz: 'Testdan chiqasizmi? Natija saqlanadi.', kr: 'Тестдан чиқасизми? Натижа сақланади.' }))) {
-    finishAttempt()
-  }
+  exitModal.value = true
+}
+
+async function confirmExit() {
+  if (submitting.value) return
+  submitting.value = true
+  await finishAttempt()
 }
 
 const timerLabel = computed(() => {
@@ -582,6 +587,46 @@ onBeforeUnmount(() => {
             <span v-if="submitting" class="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
             <span v-else>{{ i18n.t({ uz: 'Tushundim', kr: 'Тушундим' }) }}</span>
           </button>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Exit confirmation modal -->
+    <Transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0">
+      <div v-if="exitModal"
+           class="fixed inset-0 z-50 flex items-center justify-center p-4"
+           style="background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(4px);"
+           @click.self="exitModal = false">
+        <div class="card p-8 max-w-md w-full text-center anim-in" style="background: var(--surface);">
+          <div class="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-5"
+               style="background: var(--surface-inset);">
+            <AppIcon name="log-out" :size="32" style="color: var(--text-2);" />
+          </div>
+          <div class="text-2xl font-bold text-ink-900 mb-2">
+            {{ i18n.t({ uz: 'Testdan chiqasizmi?', kr: 'Тестдан чиқасизми?' }) }}
+          </div>
+          <div class="text-sm text-ink-500 mb-6 leading-relaxed">
+            {{ i18n.t({ uz: 'Natija saqlanadi.', kr: 'Натижа сақланади.' }) }}
+          </div>
+          <div class="flex gap-3">
+            <button @click="exitModal = false"
+                    :disabled="submitting"
+                    class="btn-ghost btn-lg flex-1">
+              {{ i18n.t({ uz: 'Bekor qilish', kr: 'Бекор қилиш' }) }}
+            </button>
+            <button @click="confirmExit"
+                    :disabled="submitting"
+                    class="btn-primary btn-lg flex-1">
+              <span v-if="submitting" class="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              <span v-else>{{ i18n.t({ uz: 'Chiqish', kr: 'Чиқиш' }) }}</span>
+            </button>
+          </div>
         </div>
       </div>
     </Transition>
