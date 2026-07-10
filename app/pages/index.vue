@@ -291,6 +291,26 @@ function timeAgo(iso: string) {
         </div>
       </div>
     </div>
+
+    <!-- Telegram channel banner -->
+    <a href="https://t.me/avtoprav_uz" target="_blank" rel="noopener"
+       class="card mt-4 sm:mt-5 p-4 sm:p-5 flex items-center gap-3.5 group hover:border-sky-300 transition-colors">
+      <span class="w-11 h-11 rounded-xl grid place-items-center flex-shrink-0 text-white" style="background: #229ED9;">
+        <AppIcon name="send" :size="20" />
+      </span>
+      <div class="min-w-0 flex-1">
+        <div class="text-sm font-semibold text-ink-900">
+          {{ i18n.t({ uz: 'Telegram kanalimiz', kr: 'Telegram каналимиз' }) }} · @avtoprav_uz
+        </div>
+        <div class="text-xs mt-0.5" style="color: var(--text-3);">
+          {{ i18n.t({ uz: 'Taklif va murojaatlar uchun, yangiliklardan xabardor bo\'ling', kr: 'Таклиф ва мурожаатлар учун, янгиликлардан хабардор бўлинг' }) }}
+        </div>
+      </div>
+      <span class="hidden sm:inline-flex items-center gap-1.5 px-3.5 h-9 rounded-lg text-sm font-medium text-white flex-shrink-0 transition-opacity group-hover:opacity-90" style="background: #229ED9;">
+        {{ i18n.t({ uz: 'Obuna bo\'lish', kr: 'Обуна бўлиш' }) }}
+      </span>
+      <AppIcon name="chev-r" :size="16" class="sm:hidden text-ink-300 flex-shrink-0" />
+    </a>
   </div>
 
   <!-- First visit: guest session is being created client-side -->

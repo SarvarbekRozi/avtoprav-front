@@ -121,6 +121,27 @@ async function logout() {
           </div>
         </div>
       </div>
+
+      <!-- Contact / Telegram channel -->
+      <div class="card p-6">
+        <div class="flex items-center gap-2 mb-4">
+          <AppIcon name="send" :size="18" class="text-ink-500" />
+          <div class="text-base font-semibold text-ink-900">{{ i18n.t({ uz: 'Bog\'lanish', kr: 'Боғланиш' }) }}</div>
+        </div>
+        <a href="https://t.me/avtoprav_uz" target="_blank" rel="noopener"
+           class="flex items-center gap-3 -mx-2 px-2 py-2 rounded-xl transition-colors hover:bg-ink-50 group">
+          <span class="w-10 h-10 rounded-xl grid place-items-center flex-shrink-0 text-white" style="background: #229ED9;">
+            <AppIcon name="send" :size="18" />
+          </span>
+          <div class="min-w-0 flex-1">
+            <div class="text-sm font-semibold text-ink-900">@avtoprav_uz</div>
+            <div class="text-xs mt-0.5" style="color: var(--text-3);">
+              {{ i18n.t({ uz: 'Taklif va murojaatlar uchun, yangiliklardan xabardor bo\'ling', kr: 'Таклиф ва мурожаатлар учун, янгиликлардан хабардор бўлинг' }) }}
+            </div>
+          </div>
+          <AppIcon name="chev-r" :size="16" class="text-ink-300 flex-shrink-0 group-hover:translate-x-0.5 transition-transform" />
+        </a>
+      </div>
     </div>
   </div>
 </template>
