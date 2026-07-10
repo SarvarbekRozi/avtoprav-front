@@ -13,17 +13,44 @@ const answers = computed(() => data.value?.answers || [])
 const wrongAnswers = computed(() => answers.value.filter((x: any) => !x.is_correct))
 const firstWrong = computed(() => wrongAnswers.value[0])
 
-// AI instructor explanation (generated + cached on first request)
+// AI instructor explanation. Always behind the button — even when the text is
+// already cached in the DB it "types out" like a live AI response.
 const explaining = ref<Record<number, boolean>>({})
 const explainErr = ref<Record<number, string>>({})
+const aiShown = ref<Record<number, boolean>>({})
+const aiTyping = ref<Record<number, boolean>>({})
+const aiTyped = ref<Record<number, string>>({})
+
+function typewrite(id: number, full: string) {
+  aiTyping.value[id] = true
+  aiTyped.value[id] = ''
+  let i = 0
+  const step = () => {
+    if (!aiTyping.value[id]) return
+    i = Math.min(full.length, i + 3)
+    aiTyped.value[id] = full.slice(0, i)
+    if (i < full.length) setTimeout(step, 24)
+    else aiTyping.value[id] = false
+  }
+  step()
+}
+
 async function explain(q: any) {
-  if (explaining.value[q.id]) return
+  if (explaining.value[q.id] || aiShown.value[q.id]) return
   explaining.value[q.id] = true
   explainErr.value[q.id] = ''
   try {
-    const r = await apiFetch<{ explanation_uz: string, explanation_kr: string }>(`/questions/${q.id}/explain`, { method: 'POST' })
-    q.explanation_uz = r.explanation_uz
-    q.explanation_kr = r.explanation_kr
+    if (q.explanation_uz) {
+      // Cached — brief "thinking" pause so it still feels like the AI is working
+      await new Promise(r => setTimeout(r, 700 + Math.random() * 500))
+    }
+    else {
+      const r = await apiFetch<{ explanation_uz: string, explanation_kr: string }>(`/questions/${q.id}/explain`, { method: 'POST' })
+      q.explanation_uz = r.explanation_uz
+      q.explanation_kr = r.explanation_kr
+    }
+    aiShown.value[q.id] = true
+    typewrite(q.id, i18n.t({ uz: q.explanation_uz, kr: q.explanation_kr }))
   }
   catch (e: any) {
     explainErr.value[q.id] = e?.data?.message || i18n.t({ uz: 'Xatolik yuz berdi', kr: 'Хатолик юз берди' })
@@ -249,14 +276,22 @@ onMounted(() => {
           </div>
         </div>
 
-        <div v-if="ans.question.explanation_uz" class="mt-3 px-3.5 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-sm flex gap-2.5">
-          <AppIcon name="info" :size="16" class="text-amber-600 flex-shrink-0 mt-0.5" />
-          <div class="text-amber-800 leading-relaxed">{{ i18n.t({ uz: ans.question.explanation_uz, kr: ans.question.explanation_kr }) }}</div>
+        <div v-if="aiShown[ans.question.id]" class="mt-3 px-3.5 py-2.5 bg-violet-50 border border-violet-200 rounded-lg text-sm">
+          <div class="flex items-center gap-1.5 text-violet-700 font-semibold text-xs mb-1.5">
+            <span>🤖</span>
+            <span>{{ i18n.t({ uz: 'AI instruktor', kr: 'AI инструктор' }) }}</span>
+          </div>
+          <div class="text-violet-900 leading-relaxed whitespace-pre-line">{{ aiTyping[ans.question.id] ? aiTyped[ans.question.id] : i18n.t({ uz: ans.question.explanation_uz, kr: ans.question.explanation_kr }) }}<span v-if="aiTyping[ans.question.id]" class="inline-block w-0.5 h-4 bg-violet-500 align-middle ml-0.5 animate-pulse" /></div>
         </div>
         <div v-else class="mt-3">
           <button @click="explain(ans.question)" :disabled="explaining[ans.question.id]"
             class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-violet-50 border border-violet-200 text-violet-700 text-sm font-medium hover:bg-violet-100 disabled:opacity-60">
-            {{ explaining[ans.question.id] ? i18n.t({ uz: 'Tushuntirilmoqda…', kr: 'Тушунтирилмоқда…' }) : i18n.t({ uz: '🤖 AI tushuntirish', kr: '🤖 AI тушунтириш' }) }}
+            <span v-if="explaining[ans.question.id]" class="inline-flex gap-1 items-center">
+              <span class="w-1.5 h-1.5 rounded-full bg-violet-500 animate-bounce" style="animation-delay: 0ms" />
+              <span class="w-1.5 h-1.5 rounded-full bg-violet-500 animate-bounce" style="animation-delay: 150ms" />
+              <span class="w-1.5 h-1.5 rounded-full bg-violet-500 animate-bounce" style="animation-delay: 300ms" />
+            </span>
+            {{ explaining[ans.question.id] ? i18n.t({ uz: 'AI o\'ylanmoqda…', kr: 'AI ўйланмоқда…' }) : i18n.t({ uz: '🤖 AI tushuntirish', kr: '🤖 AI тушунтириш' }) }}
           </button>
           <div v-if="explainErr[ans.question.id]" class="mt-1.5 text-xs text-rose-600">{{ explainErr[ans.question.id] }}</div>
         </div>
