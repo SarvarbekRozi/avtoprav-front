@@ -75,7 +75,7 @@ function medalColor(rank: number) {
              : i18n.t({ uz: '1-o\'rin · Oylik sovg\'a', kr: '1-ўрин · Ойлик совға' }) }}
         </div>
         <div class="text-xl font-bold tabular-nums leading-tight" style="color: var(--text-1);">
-          {{ period === 'week' ? '150 000' : '500 000' }}
+          {{ period === 'week' ? '70 000' : '200 000' }}
           <span class="text-sm font-semibold" style="color: var(--text-3);">{{ i18n.t({ uz: 'so\'m', kr: 'сўм' }) }}</span>
         </div>
       </div>
