@@ -1,7 +1,7 @@
 {
-  "name": "AutoTest — Yo'l harakati testlari",
-  "short_name": "AutoTest",
-  "description": "Yo'l harakati qoidalari testlari, biletlar, imtihonga tayyorgarlik",
+  "name": "Avtoprav — Yo'l harakati qoidalari testlari",
+  "short_name": "Avtoprav",
+  "description": "O'zbekiston yo'l harakati qoidalari (YHQ) testlari, biletlar, imtihonga tayyorgarlik",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
