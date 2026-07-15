@@ -276,16 +276,16 @@ onMounted(() => {
           </div>
         </div>
 
-        <div v-if="aiShown[ans.question.id]" class="mt-3 px-3.5 py-2.5 bg-violet-50 border border-violet-200 rounded-lg text-sm">
-          <div class="flex items-center gap-1.5 text-violet-700 font-semibold text-xs mb-1.5">
+        <div v-if="aiShown[ans.question.id]" class="mt-3 px-3.5 py-2.5 bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/30 rounded-lg text-sm">
+          <div class="flex items-center gap-1.5 text-violet-700 dark:text-violet-300 font-semibold text-xs mb-1.5">
             <span>🤖</span>
             <span>{{ i18n.t({ uz: 'AI instruktor', kr: 'AI инструктор' }) }}</span>
           </div>
-          <div class="text-violet-900 leading-relaxed whitespace-pre-line">{{ aiTyping[ans.question.id] ? aiTyped[ans.question.id] : i18n.t({ uz: ans.question.explanation_uz, kr: ans.question.explanation_kr }) }}<span v-if="aiTyping[ans.question.id]" class="inline-block w-0.5 h-4 bg-violet-500 align-middle ml-0.5 animate-pulse" /></div>
+          <div class="text-violet-900 dark:text-violet-200 leading-relaxed whitespace-pre-line">{{ aiTyping[ans.question.id] ? aiTyped[ans.question.id] : i18n.t({ uz: ans.question.explanation_uz, kr: ans.question.explanation_kr }) }}<span v-if="aiTyping[ans.question.id]" class="inline-block w-0.5 h-4 bg-violet-500 align-middle ml-0.5 animate-pulse" /></div>
         </div>
         <div v-else class="mt-3">
           <button @click="explain(ans.question)" :disabled="explaining[ans.question.id]"
-            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-violet-50 border border-violet-200 text-violet-700 text-sm font-medium hover:bg-violet-100 disabled:opacity-60">
+            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/30 text-violet-700 dark:text-violet-300 text-sm font-medium hover:bg-violet-100 dark:hover:bg-violet-500/20 disabled:opacity-60">
             <span v-if="explaining[ans.question.id]" class="inline-flex gap-1 items-center">
               <span class="w-1.5 h-1.5 rounded-full bg-violet-500 animate-bounce" style="animation-delay: 0ms" />
               <span class="w-1.5 h-1.5 rounded-full bg-violet-500 animate-bounce" style="animation-delay: 150ms" />
