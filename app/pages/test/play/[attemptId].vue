@@ -517,8 +517,8 @@ onBeforeUnmount(() => {
             <div v-if="showExplanation && explanationText()"
                  class="p-4 rounded-2xl border flex gap-3"
                  style="background: rgba(251,191,36,0.10); border-color: rgba(251,191,36,0.30);">
-              <AppIcon name="info" :size="18" class="flex-shrink-0 mt-0.5 text-amber-600" />
-              <div class="text-sm leading-relaxed text-amber-900">
+              <AppIcon name="info" :size="18" class="flex-shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+              <div class="text-sm leading-relaxed text-amber-900 dark:text-amber-200">
                 <b>{{ i18n.t({ uz: 'Izoh.', kr: 'Изоҳ.' }) }}</b>
                 {{ explanationText() }}
               </div>
