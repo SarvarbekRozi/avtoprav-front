@@ -322,16 +322,25 @@ function timeAgo(iso: string) {
     </div>
   </div>
 
-  <!-- First visit: guest session is being created client-side -->
-  <div v-else class="min-h-[70vh] grid place-items-center">
-    <div class="text-center">
-      <div class="inline-flex w-12 h-12 rounded-2xl bg-ink-900 text-white items-center justify-center mb-4">
-        <svg class="w-5 h-5 animate-spin" viewBox="0 0 20 20" fill="none">
+  <!-- First visit / SSR: brendli splash. Crawler (Googlebot) shu matnni o'qiydi,
+       shuning uchun bu yerda "Avtoprav" + tavsif haqiqiy, indekslanadigan kontent. -->
+  <div v-else class="min-h-[70vh] grid place-items-center px-6">
+    <div class="text-center max-w-md">
+      <img src="/logo-mark.svg" alt="Avtoprav logotipi" width="64" height="64" class="w-16 h-16 mx-auto mb-4" />
+      <h1 class="text-2xl font-bold tracking-tight" style="color: var(--text-1);">Avtoprav</h1>
+      <p class="mt-2 text-sm leading-relaxed" style="color: var(--text-3);">
+        {{ i18n.t({
+          uz: 'O\'zbekiston yo\'l harakati qoidalari (YHQ) bo\'yicha onlayn testlar, imtihon rejimi, biletlar va AI tushuntirish. Haydovchilik guvohnomasi (prava) imtihoniga bepul tayyorlaning.',
+          kr: 'Ўзбекистон йўл ҳаракати қоидалари (ЙҲҚ) бўйича онлайн тестлар, имтиҳон режими, билетлар ва AI тушунтириш. Ҳайдовчилик гувоҳномаси (права) имтиҳонига бепул тайёрланинг.'
+        }) }}
+      </p>
+      <div class="mt-6 inline-flex items-center gap-2 text-sm" style="color: var(--text-4);">
+        <svg class="w-4 h-4 animate-spin" viewBox="0 0 20 20" fill="none">
           <circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="2" stroke-opacity="0.25"/>
           <path d="M17.5 10A7.5 7.5 0 0 0 10 2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
+        {{ i18n.t({ uz: 'Yuklanmoqda...', kr: 'Юкланмоқда...' }) }}
       </div>
-      <div class="text-sm text-ink-500">{{ i18n.t({ uz: 'Yuklanmoqda...', kr: 'Юкланмоқда...' }) }}</div>
     </div>
   </div>
 </template>

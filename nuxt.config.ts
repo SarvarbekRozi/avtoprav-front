@@ -20,15 +20,34 @@ export default defineNuxtConfig({
   app: {
     head: {
       htmlAttrs: { lang: 'uz' },
-      title: 'AutoTest · Yo\'l harakati qoidalari',
+      // Brend "Avtoprav" sarlavha/tavsifda bo'lishi shart — Google'da "avtoprav"
+      // qidiruvida chiqishi uchun. Sahifa o'z sarlavhasini bersa, brend ortiga qo'shiladi.
+      title: 'Avtoprav — Yo\'l harakati qoidalari (YHQ) testlari onlayn',
+      titleTemplate: (t?: string) =>
+        t && !t.startsWith('Avtoprav') ? `${t} · Avtoprav` : (t || 'Avtoprav — Yo\'l harakati qoidalari (YHQ) testlari onlayn'),
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
-        { name: 'description', content: 'Yo\'l harakati qoidalari testlari — onlayn imtihon, biletlar, statistika' },
+        { name: 'description', content: 'Avtoprav — O\'zbekiston yo\'l harakati qoidalari (YHQ) bo\'yicha onlayn testlar: imtihon rejimi, biletlar, AI tushuntirish va statistika. Haydovchilik guvohnomasi (prava) imtihoniga bepul tayyorlaning.' },
+        { name: 'keywords', content: 'avtoprav, avtoprav uz, yhq test, yo\'l harakati qoidalari, prava test, haydovchilik testi, imtihon, biletlar, avtomaktab, YHQ 2026' },
+        { name: 'author', content: 'Avtoprav' },
+        { name: 'application-name', content: 'Avtoprav' },
         { name: 'theme-color', content: '#f97316' },
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
-        { name: 'apple-mobile-web-app-title', content: 'AutoTest' },
+        { name: 'apple-mobile-web-app-title', content: 'Avtoprav' },
+        // Open Graph (Telegram/Facebook/ijtimoiy ulashishda chiroyli ko'rinish)
+        { property: 'og:type', content: 'website' },
+        { property: 'og:site_name', content: 'Avtoprav' },
+        { property: 'og:title', content: 'Avtoprav — Yo\'l harakati qoidalari (YHQ) testlari onlayn' },
+        { property: 'og:description', content: 'O\'zbekiston YHQ bo\'yicha onlayn testlar, imtihon rejimi, biletlar va AI tushuntirish. Prava imtihoniga bepul tayyorlaning.' },
+        { property: 'og:url', content: 'https://avtoprav.uz' },
+        { property: 'og:image', content: 'https://avtoprav.uz/icon-512.png' },
+        { property: 'og:locale', content: 'uz_UZ' },
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:title', content: 'Avtoprav — YHQ testlari onlayn' },
+        { name: 'twitter:description', content: 'O\'zbekiston yo\'l harakati qoidalari bo\'yicha onlayn testlar va imtihon.' },
+        { name: 'twitter:image', content: 'https://avtoprav.uz/icon-512.png' },
       ],
       link: [
         { rel: 'manifest', href: '/manifest.webmanifest' },

@@ -1,2 +1,9 @@
-User-Agent: *
-Disallow:
+User-agent: *
+Allow: /
+
+# Shaxsiy / foydalanuvchi sahifalarini indekslash shart emas
+Disallow: /me/
+Disallow: /test/play/
+Disallow: /test/result/
+
+Sitemap: https://avtoprav.uz/sitemap.xml
