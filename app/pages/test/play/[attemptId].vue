@@ -61,6 +61,7 @@ const lastAnswer = ref<{ is_correct: boolean, correct_option_id: number, explana
 const loading = ref(true)
 const submitting = ref(false)
 const finished = ref(false)
+const finalizing = ref(false) // natija yuborilyapti — overlay ko'rsatamiz
 const questionStartedAt = ref(Date.now())
 const remainingSec = ref<number | null>(null)
 const error = ref('')
@@ -269,6 +270,7 @@ function submitAnswer() {
 async function finalizeAndExit() {
   if (submitting.value) return
   submitting.value = true
+  finalizing.value = true
   stopTimer()
   try {
     const payload = { answers: Object.values(localAnswers.value) }
@@ -303,6 +305,7 @@ function goNext() {
 }
 
 async function finishAttempt() {
+  finalizing.value = true
   const buffered = Object.values(localAnswers.value)
   try {
     if (buffered.length > 0) {
@@ -372,6 +375,20 @@ onBeforeUnmount(() => {
 
 <template>
   <ClientOnly>
+  <!-- Natija yuborilyapti (vaqt tugagach submit-all) — ekran qotib qolmasin -->
+  <div v-if="finalizing" class="fixed inset-0 z-50 grid place-items-center backdrop-blur-sm"
+       style="background: color-mix(in srgb, var(--canvas) 82%, transparent);">
+    <div class="text-center">
+      <svg class="w-8 h-8 mx-auto animate-spin" viewBox="0 0 20 20" fill="none" style="color: var(--accent);">
+        <circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="2" stroke-opacity="0.25"/>
+        <path d="M17.5 10A7.5 7.5 0 0 0 10 2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <div class="mt-3 text-sm font-medium" style="color: var(--text-2);">
+        {{ i18n.t({ uz: 'Natija hisoblanmoqda...', kr: 'Натижа ҳисобланмоқда...' }) }}
+      </div>
+    </div>
+  </div>
+
   <div class="min-h-screen flex flex-col">
     <!-- Sticky: top bar + progress + question strip (always visible, no scroll to navigate) -->
     <div class="sticky top-0 z-10" style="background: var(--surface);">
