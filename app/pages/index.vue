@@ -303,7 +303,7 @@ function timeAgo(iso: string) {
           {{ i18n.t({ uz: 'Telegram kanalimiz', kr: 'Telegram каналимиз' }) }} · @avtoprav_uz
         </div>
         <div class="text-xs mt-0.5" style="color: var(--text-3);">
-          {{ i18n.t({ uz: 'Taklif va murojaatlar uchun, yangiliklardan xabardor bo\'ling', kr: 'Таклиф ва мурожаатлар учун, янгиликлардан хабардор бўлинг' }) }}
+          {{ i18n.t({ uz: 'Yangiliklar, sovg\'alar va e\'lonlardan xabardor bo\'ling', kr: 'Янгиликлар, совғалар ва эълонлардан хабардор бўлинг' }) }}
         </div>
       </div>
       <span class="hidden sm:inline-flex items-center gap-1.5 px-3.5 h-9 rounded-lg text-sm font-medium text-white flex-shrink-0 transition-opacity group-hover:opacity-90" style="background: #229ED9;">
@@ -311,6 +311,15 @@ function timeAgo(iso: string) {
       </span>
       <AppIcon name="chev-r" :size="16" class="sm:hidden text-ink-300 flex-shrink-0" />
     </a>
+
+    <!-- Taklif va murojaat — bilinar-bilinmas to'g'ridan-to'g'ri admin kontakt -->
+    <div class="mt-6 mb-1 text-center">
+      <a href="https://t.me/avtoprav_admin" target="_blank" rel="noopener"
+         class="inline-flex items-center gap-1 text-2xs opacity-70 hover:opacity-100 transition-opacity"
+         style="color: var(--text-4);">
+        {{ i18n.t({ uz: 'Taklif va murojaatlar uchun', kr: 'Таклиф ва мурожаатлар учун' }) }} — @avtoprav_admin
+      </a>
+    </div>
   </div>
 
   <!-- First visit: guest session is being created client-side -->
