@@ -8,7 +8,6 @@ const route = useRoute()
 const form = reactive({
   login: '',
   full_name: '',
-  email: '',
   phone: '',
   password: '',
   password_confirmation: '',
@@ -70,16 +69,9 @@ async function submit() {
             <label class="label">{{ i18n.t({ uz: 'F.I.Sh.', kr: 'Ф.И.Ш.' }) }}</label>
             <input v-model="form.full_name" class="input" :placeholder="i18n.t({ uz: 'Aliyev Ali Akbarovich', kr: 'Алиев Али Акбарович' })" autocomplete="name">
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="label">Email</label>
-              <input v-model="form.email" type="email" class="input" placeholder="ali@example.com" autocomplete="email">
-              <div v-if="errors.email" class="err">{{ errors.email[0] }}</div>
-            </div>
-            <div>
-              <label class="label">{{ i18n.t({ uz: 'Telefon', kr: 'Телефон' }) }}</label>
-              <input v-model="form.phone" class="input" placeholder="+998 90 123 45 67" autocomplete="tel">
-            </div>
+          <div>
+            <label class="label">{{ i18n.t({ uz: 'Telefon', kr: 'Телефон' }) }}</label>
+            <input v-model="form.phone" class="input" placeholder="+998 90 123 45 67" autocomplete="tel">
           </div>
           <div>
             <label class="label">{{ i18n.t({ uz: 'Parol', kr: 'Парол' }) }} <span class="text-rose-500">*</span></label>

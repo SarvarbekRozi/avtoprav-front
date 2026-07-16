@@ -51,7 +51,7 @@ async function submit() {
 
         <form @submit.prevent="submit" class="space-y-4">
           <div>
-            <label class="label">{{ i18n.t({ uz: 'Login yoki email', kr: 'Логин ёки email' }) }}</label>
+            <label class="label">{{ i18n.t({ uz: 'Login', kr: 'Логин' }) }}</label>
             <input v-model="form.login" required autofocus class="input" autocomplete="username" placeholder="ali2024">
           </div>
           <div>
