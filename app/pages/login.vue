@@ -24,8 +24,14 @@ async function submit() {
 <template>
   <div class="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-12">
     <div class="w-full max-w-md">
+      <NuxtLink to="/" class="inline-flex items-center gap-1 text-sm mb-6 transition-opacity hover:opacity-70" style="color: var(--text-3);">
+        <AppIcon name="chev-l" :size="16" />
+        {{ i18n.t({ uz: 'Bosh sahifaga', kr: 'Бош саҳифага' }) }}
+      </NuxtLink>
       <div class="text-center mb-8">
-        <img src="/logo-mark.svg" alt="Avtoprav" class="block mx-auto w-16 h-16 mb-4" />
+        <NuxtLink to="/" class="inline-block">
+          <img src="/logo-mark.svg" alt="Avtoprav" class="block mx-auto w-16 h-16 mb-4" />
+        </NuxtLink>
         <h1 class="text-2xl font-semibold tracking-tightish text-ink-900">
           {{ i18n.t({ uz: 'Hisobingizga kiring', kr: 'Ҳисобингизга киринг' }) }}
         </h1>
@@ -45,7 +51,7 @@ async function submit() {
 
         <form @submit.prevent="submit" class="space-y-4">
           <div>
-            <label class="label">{{ i18n.t({ uz: 'Login yoki email', kr: 'Логин ёки email' }) }}</label>
+            <label class="label">{{ i18n.t({ uz: 'Login', kr: 'Логин' }) }}</label>
             <input v-model="form.login" required autofocus class="input" autocomplete="username" placeholder="ali2024">
           </div>
           <div>

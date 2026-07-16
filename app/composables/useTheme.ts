@@ -37,7 +37,12 @@ export function useTheme() {
 
   function apply() {
     if (typeof document === 'undefined') return
-    document.documentElement.classList.toggle('dark', isDark.value)
+    const dark = isDark.value
+    document.documentElement.classList.toggle('dark', dark)
+    // Mobil brauzer paneli (theme-color) sayt foniga (--canvas) mos bo'lsin —
+    // aks holda eski to'q sariq rang telefonda "sariq fon" bo'lib ko'rinardi.
+    const meta = document.querySelector('meta[name="theme-color"]')
+    if (meta) meta.setAttribute('content', dark ? '#0b0e15' : '#eef2fb')
   }
 
   function setMode(v: ThemeMode) {
