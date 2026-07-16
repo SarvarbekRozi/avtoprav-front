@@ -32,7 +32,7 @@ export default defineNuxtConfig({
         { name: 'keywords', content: 'avtoprav, avtoprav uz, yhq test, yo\'l harakati qoidalari, prava test, haydovchilik testi, imtihon, biletlar, avtomaktab, YHQ 2026' },
         { name: 'author', content: 'Avtoprav' },
         { name: 'application-name', content: 'Avtoprav' },
-        { name: 'theme-color', content: '#f97316' },
+        { name: 'theme-color', content: '#eef2fb' },
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
         { name: 'apple-mobile-web-app-title', content: 'Avtoprav' },
