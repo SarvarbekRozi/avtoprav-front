@@ -322,9 +322,10 @@ function timeAgo(iso: string) {
     </div>
   </div>
 
-  <!-- First visit / SSR: brendli splash. Crawler (Googlebot) shu matnni o'qiydi,
-       shuning uchun bu yerda "Avtoprav" + tavsif haqiqiy, indekslanadigan kontent. -->
   <div v-else class="min-h-[70vh] grid place-items-center px-6">
+    <!-- First visit / SSR: brendli splash. Crawler (Googlebot) shu matnni o'qiydi,
+         shuning uchun bu yerda "Avtoprav" + tavsif haqiqiy, indekslanadigan kontent.
+         Izoh div ICHIDA — ildizda tursa hidratsiya nomuvofiqligi chiqadi. -->
     <div class="text-center max-w-md">
       <img src="/logo-mark.svg" alt="Avtoprav logotipi" width="64" height="64" class="w-16 h-16 mx-auto mb-4" />
       <h1 class="text-2xl font-bold tracking-tight" style="color: var(--text-1);">Avtoprav</h1>

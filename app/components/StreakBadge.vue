@@ -86,8 +86,9 @@ function dayTooltip(d: any) {
 </script>
 
 <template>
-  <!-- Full card -->
   <div v-if="streak && !props.compact" class="card relative overflow-hidden">
+    <!-- Full card. Izohlar shablon ILDIZIDA turmasin — ildiz fragmentga
+         aylanib, SSR/klient hidratsiyasi mos kelmay qoladi. -->
     <!-- ambient glow -->
     <div aria-hidden="true" class="pointer-events-none absolute -right-24 -top-24 w-64 h-64 rounded-full bg-amber-200/40 blur-3xl"></div>
     <div aria-hidden="true" class="pointer-events-none absolute -left-16 -bottom-20 w-56 h-56 rounded-full bg-emerald-100/40 blur-3xl"></div>
@@ -217,11 +218,11 @@ function dayTooltip(d: any) {
     </div>
   </div>
 
-  <!-- Compact (header chip) -->
   <div v-else-if="streak && props.compact && streak.current > 0"
        class="hidden sm:flex items-center gap-1.5 h-8 px-2.5 rounded-full
               bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200
               shadow-soft text-sm">
+    <!-- Compact (header chip) -->
     <svg class="w-3.5 h-3.5 text-amber-600" viewBox="0 0 16 16" fill="currentColor">
       <path d="M8 1.5c-.4 1.3-1.2 2.5-2.3 3.4C4.2 6.2 3 7.7 3 9.7 3 12.5 5.2 14.5 8 14.5s5-2 5-4.8c0-1.3-.5-2.3-1.2-3.2-.4.5-.9.7-1.4.7-1 0-1.6-.8-1.4-1.7.2-1.3-.3-3-1-4Z"/>
     </svg>
