@@ -17,6 +17,10 @@ function toneFor(i: number) { return TONE_ROTATION[i % TONE_ROTATION.length] }
 function progress(t: any) {
   return Number.isFinite(t.mastery) ? Math.round(t.mastery) : 0
 }
+// Aniqlik faqat savol yechilgan bo'lsa bor (backend aks holda null qaytaradi).
+function hasAccuracy(t: any) {
+  return Number.isFinite(t.accuracy) && t.answered > 0
+}
 function progressColor(p: number) {
   if (p >= 80) return '#10b981'
   if (p >= 60) return '#3f5894'
@@ -71,6 +75,7 @@ function progressColor(p: number) {
         </p>
 
         <div class="mt-4">
+          <!-- O'zlashtirish: mavzudagi BARCHA savollarning qanchasi to'g'ri yechilgani -->
           <div class="flex items-center justify-between text-2xs mb-1.5">
             <span class="text-ink-500">{{ i18n.t({ uz: 'O\'zlashtirilgan', kr: 'Ўзлаштирилган' }) }}</span>
             <span class="tabular-nums font-semibold text-ink-800">{{ progress(t) }}%</span>
@@ -78,6 +83,18 @@ function progressColor(p: number) {
           <div class="h-1.5 rounded-full overflow-hidden bg-ink-100">
             <div class="h-full rounded-full transition-all duration-500"
                  :style="{ background: progressColor(progress(t)), width: progress(t) + '%' }"></div>
+          </div>
+
+          <!-- Aniqlik: yechilgan savollarning qanchasi to'g'ri bo'lgani -->
+          <div v-if="hasAccuracy(t)" class="flex items-center justify-between text-2xs mt-2">
+            <span class="text-ink-500">
+              {{ i18n.t({ uz: 'Aniqlik', kr: 'Аниқлик' }) }}
+              <span class="text-ink-400">· {{ t.mastered }}/{{ t.answered }}</span>
+            </span>
+            <span class="tabular-nums font-semibold" :style="{ color: progressColor(t.accuracy) }">{{ t.accuracy }}%</span>
+          </div>
+          <div v-else class="text-2xs mt-2 text-ink-400">
+            {{ i18n.t({ uz: 'Hali boshlanmagan', kr: 'Ҳали бошланмаган' }) }}
           </div>
         </div>
 
