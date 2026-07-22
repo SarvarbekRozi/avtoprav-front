@@ -11,9 +11,15 @@ function description(t: any) { return i18n.locale.value === 'uz_cyrl' ? t.descri
 const TONE_ROTATION = ['brand', 'sky', 'amber', 'rose', 'violet', 'emerald', 'ink'] as const
 function toneFor(i: number) { return TONE_ROTATION[i % TONE_ROTATION.length] }
 
+// O'zlashtirish = mavzudagi barcha savollarning qanchasi to'g'ri yechilgani.
+// Backend /topics dan `mastery` qaytaradi (bosh sahifadagi "Mavzular bo'yicha
+// daraja" bilan bir xil hisob).
 function progress(t: any) {
-  // Backend may not provide; default 0. If `accuracy` provided per topic, use it.
-  return Number.isFinite(t.accuracy) ? Math.round(t.accuracy) : 0
+  return Number.isFinite(t.mastery) ? Math.round(t.mastery) : 0
+}
+// Aniqlik faqat savol yechilgan bo'lsa bor (backend aks holda null qaytaradi).
+function hasAccuracy(t: any) {
+  return Number.isFinite(t.accuracy) && t.answered > 0
 }
 function progressColor(p: number) {
   if (p >= 80) return '#10b981'
@@ -69,6 +75,7 @@ function progressColor(p: number) {
         </p>
 
         <div class="mt-4">
+          <!-- O'zlashtirish: mavzudagi BARCHA savollarning qanchasi to'g'ri yechilgani -->
           <div class="flex items-center justify-between text-2xs mb-1.5">
             <span class="text-ink-500">{{ i18n.t({ uz: 'O\'zlashtirilgan', kr: 'Ўзлаштирилган' }) }}</span>
             <span class="tabular-nums font-semibold text-ink-800">{{ progress(t) }}%</span>
@@ -76,6 +83,18 @@ function progressColor(p: number) {
           <div class="h-1.5 rounded-full overflow-hidden bg-ink-100">
             <div class="h-full rounded-full transition-all duration-500"
                  :style="{ background: progressColor(progress(t)), width: progress(t) + '%' }"></div>
+          </div>
+
+          <!-- Aniqlik: yechilgan savollarning qanchasi to'g'ri bo'lgani -->
+          <div v-if="hasAccuracy(t)" class="flex items-center justify-between text-2xs mt-2">
+            <span class="text-ink-500">
+              {{ i18n.t({ uz: 'Aniqlik', kr: 'Аниқлик' }) }}
+              <span class="text-ink-400">· {{ t.mastered }}/{{ t.answered }}</span>
+            </span>
+            <span class="tabular-nums font-semibold" :style="{ color: progressColor(t.accuracy) }">{{ t.accuracy }}%</span>
+          </div>
+          <div v-else class="text-2xs mt-2 text-ink-400">
+            {{ i18n.t({ uz: 'Hali boshlanmagan', kr: 'Ҳали бошланмаган' }) }}
           </div>
         </div>
 

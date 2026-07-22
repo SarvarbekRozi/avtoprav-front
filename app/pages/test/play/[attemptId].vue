@@ -375,9 +375,9 @@ onBeforeUnmount(() => {
 
 <template>
   <ClientOnly>
-  <!-- Natija yuborilyapti (vaqt tugagach submit-all) — ekran qotib qolmasin -->
   <div v-if="finalizing" class="fixed inset-0 z-50 grid place-items-center backdrop-blur-sm"
        style="background: color-mix(in srgb, var(--canvas) 82%, transparent);">
+    <!-- Natija yuborilyapti (vaqt tugagach submit-all) — ekran qotib qolmasin -->
     <div class="text-center">
       <svg class="w-8 h-8 mx-auto animate-spin" viewBox="0 0 20 20" fill="none" style="color: var(--accent);">
         <circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="2" stroke-opacity="0.25"/>

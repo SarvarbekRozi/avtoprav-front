@@ -10,10 +10,29 @@ export default defineNuxtRouteMiddleware(async () => {
     return
   }
 
-  if (!auth.token) await auth.startGuest()
-  if (auth.token && !auth.user) await auth.fetchMe() // fetchMe clears a stale token
-  if (!auth.user) {
-    await auth.startGuest()
-    if (!auth.user) return navigateTo('/login') // API unreachable — last resort
+  const nuxtApp = useNuxtApp()
+
+  const ensureSession = async () => {
+    if (!auth.token) await auth.startGuest()
+    if (auth.token && !auth.user) await auth.fetchMe() // fetchMe clears a stale token
+    if (!auth.user) {
+      await auth.startGuest()
+      if (!auth.user) return navigateTo('/login') // API unreachable — last resort
+    }
   }
+
+  // Birinchi yuklashda (hidratsiya) auth holatini O'ZGARTIRMAYMIZ. Server
+  // sahifani auth.user=null bilan render qilgan; shu yerda mehmon yaratsak,
+  // Vue hidratsiya qilayotgan paytda layout/sahifa boshqa tarmoqqa o'tib
+  // ketadi va hidratsiya buziladi (ekran oqarib qolishi shundan).
+  // Shuning uchun mehmon yaratishni hidratsiya tugagach bajaramiz.
+  if (nuxtApp.isHydrating) {
+    nuxtApp.hooks.hookOnce('app:suspense:resolve', () => {
+      void ensureSession()
+    })
+
+    return
+  }
+
+  return ensureSession()
 })

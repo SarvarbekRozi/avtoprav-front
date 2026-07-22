@@ -73,8 +73,10 @@ const { data: streak } = useAsyncData('sidebar-streak', async () => {
 </script>
 
 <template>
-  <!-- Authenticated: collapsible sidebar -->
   <div v-if="auth.user" class="min-h-screen flex" style="background: var(--canvas);">
+    <!-- Authenticated: collapsible sidebar.
+         DIQQAT: izohlar shablon ILDIZIDA turmasin — ildiz ko'p tugunli (fragment)
+         bo'lib qoladi va SSR/klient hidratsiyasi mos kelmaydi. -->
     <NotificationBell />
 
     <!-- Sidebar (desktop) -->
@@ -455,8 +457,8 @@ const { data: streak } = useAsyncData('sidebar-streak', async () => {
     </main>
   </div>
 
-  <!-- Guest: clean centered layout -->
   <div v-else class="min-h-screen flex flex-col" style="background: var(--canvas);">
+    <!-- Guest: clean centered layout -->
     <div class="absolute top-3 right-3 z-30 flex items-center gap-2">
       <div class="hidden sm:flex items-center rounded-md p-0.5 text-xs font-medium"
            style="background: var(--surface-inset);">
