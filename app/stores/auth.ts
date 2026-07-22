@@ -23,11 +23,26 @@ export interface AuthUser {
 
 export const useAuthStore = defineStore('auth', () => {
   const tokenCookie = useCookie<string | null>('auth_token', { default: () => null, sameSite: 'lax', maxAge: 60 * 60 * 24 * 30 })
+
+  // Hisob turi alohida eslab qolinadi: sessiya yo'qolganda ro'yxatdan o'tgan
+  // foydalanuvchini JIMGINA mehmonga aylantirmaslik uchun kerak (aks holda
+  // XP va progress yangi mehmon hisobiga yozilib ketadi va bu sezilmaydi).
+  const kindCookie = useCookie<'user' | 'guest' | null>('acct', { default: () => null, sameSite: 'lax', maxAge: 60 * 60 * 24 * 30 })
+
   const user = ref<AuthUser | null>(null)
   const loading = ref(false)
 
   const token = computed(() => tokenCookie.value)
   const isAuthenticated = computed(() => !!tokenCookie.value)
+
+  /** Ro'yxatdan o'tgan hisob sessiyasi yo'qolgan (token yo'q, lekin mehmon emas edi). */
+  const lostRegisteredSession = computed(() => !tokenCookie.value && kindCookie.value === 'user')
+
+  function remember(u: AuthUser | null) {
+    if (u) {
+      kindCookie.value = u.is_guest ? 'guest' : 'user'
+    }
+  }
 
   async function login(credentials: { login: string, password: string }) {
     loading.value = true
@@ -38,6 +53,7 @@ export const useAuthStore = defineStore('auth', () => {
       })
       tokenCookie.value = res.token
       user.value = res.user
+      remember(res.user)
       return res
     }
     finally {
@@ -54,6 +70,7 @@ export const useAuthStore = defineStore('auth', () => {
       })
       tokenCookie.value = res.token
       user.value = res.user
+      remember(res.user)
       return res
     }
     finally {
@@ -72,6 +89,7 @@ export const useAuthStore = defineStore('auth', () => {
       })
       tokenCookie.value = res.token
       user.value = res.user
+      remember(res.user)
       return res
     }
     catch {
@@ -91,6 +109,7 @@ export const useAuthStore = defineStore('auth', () => {
         body: payload,
       })
       user.value = res.user
+      remember(res.user)
       return res
     }
     finally {
@@ -103,10 +122,18 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const res = await apiFetch<{ user: AuthUser }>('/me')
       user.value = res.user
+      remember(res.user)
       return res.user
     }
-    catch {
-      clear()
+    catch (e: any) {
+      // FAQAT token haqiqatan yaroqsiz bo'lganda (401) sessiyani tozalaymiz.
+      // Ilgari bu yerda har qanday xatoda clear() chaqirilardi — natijada
+      // tarmoq uzilishi, server qayta ishga tushishi (deploy) yoki 500 xato
+      // foydalanuvchini sezdirmasdan tizimdan chiqarib yuborardi.
+      if (e?.response?.status === 401 || e?.status === 401) {
+        clear()
+      }
+
       return null
     }
   }
@@ -117,12 +144,14 @@ export const useAuthStore = defineStore('auth', () => {
     }
     catch { /* ignore */ }
     clear()
+    kindCookie.value = null // ataylab chiqdi — hisob turini ham unutamiz
   }
 
+  /** Sessiyani tozalaydi. Hisob turi (`acct`) ataylab saqlanadi. */
   function clear() {
     tokenCookie.value = null
     user.value = null
   }
 
-  return { user, token, isAuthenticated, loading, login, register, startGuest, completeRegistration, fetchMe, logout, clear }
+  return { user, token, isAuthenticated, loading, lostRegisteredSession, login, register, startGuest, completeRegistration, fetchMe, logout, clear }
 })
