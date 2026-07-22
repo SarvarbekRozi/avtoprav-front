@@ -120,7 +120,11 @@ function fmtTime(sec: number) {
           {{ i18n.t({ uz: 'Hozircha xato qilingan savollar yo\'q.', kr: 'Ҳозирча хато қилинган саволлар йўқ.' }) }}
         </div>
         <div v-else class="divide-y divide-ink-200/70">
-          <div v-for="(r, i) in stats.top_mistakes" :key="r.id" class="px-5 py-3.5">
+          <!-- Savolni bosish -> Xatolarim sahifasida o'sha savolga o'tadi -->
+          <NuxtLink v-for="(r, i) in stats.top_mistakes" :key="r.id"
+            :to="r.id ? `/me/mistakes?focus=${r.id}` : ''"
+            class="px-5 py-3.5 block group transition-colors"
+            :class="r.id ? 'hover:bg-ink-50' : 'pointer-events-none'">
             <div class="flex items-start gap-3">
               <div class="w-6 h-6 rounded-md grid place-items-center text-xs font-semibold flex-shrink-0 tabular-nums bg-ink-100 text-ink-600">
                 {{ i + 1 }}
@@ -128,12 +132,18 @@ function fmtTime(sec: number) {
               <div class="flex-1 min-w-0">
                 <div class="text-sm leading-snug line-clamp-2 text-ink-900">{{ r.text }}</div>
                 <div class="flex items-center gap-2 mt-1.5">
-                  <span v-if="r.topic" class="badge">{{ r.topic }}</span>
-                  <span class="text-2xs tabular-nums text-rose-600">{{ r.error_rate }}% {{ i18n.t({ uz: 'xato', kr: 'хато' }) }}</span>
+                  <!-- Uzun mavzu nomi yorliqdan chiqib ketmasin: .badge da qat'iy
+                       balandlik bor, shuning uchun bu yerda kesib ko'rsatamiz. -->
+                  <span v-if="r.topic" :title="r.topic"
+                        class="inline-block max-w-[55%] truncate rounded-full px-2 py-0.5 text-2xs font-medium"
+                        style="background: var(--surface-inset); color: var(--text-2);">{{ r.topic }}</span>
+                  <span class="text-2xs tabular-nums text-rose-600 shrink-0">{{ r.error_rate }}% {{ i18n.t({ uz: 'xato', kr: 'хато' }) }}</span>
+                  <AppIcon v-if="r.id" name="chev-r" :size="13"
+                           class="ml-auto shrink-0 text-ink-300 group-hover:translate-x-0.5 transition-transform" />
                 </div>
               </div>
             </div>
-          </div>
+          </NuxtLink>
         </div>
       </div>
     </div>

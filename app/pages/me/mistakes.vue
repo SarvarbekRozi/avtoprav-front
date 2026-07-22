@@ -2,9 +2,28 @@
 definePageMeta({ middleware: 'auth' })
 
 const i18n = useI18n()
-const { data } = await useAsyncData('me-mistakes', () => apiFetch<any>('/me/mistakes'))
+const route = useRoute()
+
+// Statistikadagi "Eng ko'p xato" ro'yxatidan kelinganda shu savol birinchi
+// chiqadi (backend ?focus bilan saralaydi) va ajratib ko'rsatiladi.
+const focusId = computed(() => Number(route.query.focus) || null)
+
+const { data } = await useAsyncData(
+  () => `me-mistakes-${focusId.value ?? 'all'}`,
+  () => apiFetch<any>('/me/mistakes', { query: focusId.value ? { focus: focusId.value } : undefined }),
+  { watch: [focusId] },
+)
 
 function startMistakesTest() { return navigateTo('/test/start/mistakes') }
+
+// Fokusdagi savolga aylantiramiz — ro'yxat uzun bo'lsa ko'rinmay qolmasin.
+onMounted(() => {
+  if (!focusId.value) return
+  nextTick(() => {
+    document.getElementById(`q-${focusId.value}`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  })
+})
 </script>
 
 <template>
@@ -41,7 +60,9 @@ function startMistakesTest() { return navigateTo('/test/start/mistakes') }
 
     <!-- List -->
     <div v-else class="space-y-3">
-      <div v-for="q in data.data" :key="q.id" class="card p-5">
+      <div v-for="q in data.data" :key="q.id" :id="`q-${q.id}`"
+        class="card p-5 transition-shadow"
+        :class="q.id === focusId ? 'ring-2 ring-brand-500 shadow-lift' : ''">
         <div class="flex items-start gap-4">
           <img v-if="q.image" :src="q.image" class="w-20 h-20 rounded-lg object-cover border border-ink-200 flex-shrink-0">
           <div class="flex-1 min-w-0">
