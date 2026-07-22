@@ -11,9 +11,11 @@ function description(t: any) { return i18n.locale.value === 'uz_cyrl' ? t.descri
 const TONE_ROTATION = ['brand', 'sky', 'amber', 'rose', 'violet', 'emerald', 'ink'] as const
 function toneFor(i: number) { return TONE_ROTATION[i % TONE_ROTATION.length] }
 
+// O'zlashtirish = mavzudagi barcha savollarning qanchasi to'g'ri yechilgani.
+// Backend /topics dan `mastery` qaytaradi (bosh sahifadagi "Mavzular bo'yicha
+// daraja" bilan bir xil hisob).
 function progress(t: any) {
-  // Backend may not provide; default 0. If `accuracy` provided per topic, use it.
-  return Number.isFinite(t.accuracy) ? Math.round(t.accuracy) : 0
+  return Number.isFinite(t.mastery) ? Math.round(t.mastery) : 0
 }
 function progressColor(p: number) {
   if (p >= 80) return '#10b981'
