@@ -263,7 +263,7 @@ onMounted(() => {
           </div>
         </div>
         <div class="text-[15px] leading-relaxed mb-3 text-ink-800">{{ ans.question.text }}</div>
-        <img v-if="ans.question.image" :src="ans.question.image" class="rounded-lg border border-ink-200 max-h-40 mb-3">
+        <img v-if="ans.question.image" :src="ans.question.image" @error="onQuestionImageError" class="rounded-lg border border-ink-200 max-h-40 mb-3">
 
         <div v-if="!ans.is_correct" class="space-y-2">
           <div v-if="ans.chosen_option_id" class="px-3 py-2 rounded-lg bg-rose-50 text-rose-800 text-sm leading-snug">

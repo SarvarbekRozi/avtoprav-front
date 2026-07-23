@@ -13,8 +13,21 @@ export default defineNuxtRouteMiddleware(async () => {
   const nuxtApp = useNuxtApp()
 
   const ensureSession = async () => {
+    // Ro'yxatdan o'tgan hisob sessiyasi yo'qolgan bo'lsa — JIMGINA mehmon
+    // yaratmaymiz. Aks holda foydalanuvchi sezmasdan mehmonga aylanadi va
+    // yechgan testlari, XP'si begona hisobga yozilib ketadi.
+    if (auth.lostRegisteredSession) {
+      return navigateTo('/login?expired=1')
+    }
+
     if (!auth.token) await auth.startGuest()
-    if (auth.token && !auth.user) await auth.fetchMe() // fetchMe clears a stale token
+    if (auth.token && !auth.user) await auth.fetchMe() // 401 bo'lsa tokenni tozalaydi
+
+    // fetchMe 401 qaytarib tokenni tozalagan bo'lishi mumkin — qayta tekshiramiz
+    if (auth.lostRegisteredSession) {
+      return navigateTo('/login?expired=1')
+    }
+
     if (!auth.user) {
       await auth.startGuest()
       if (!auth.user) return navigateTo('/login') // API unreachable — last resort

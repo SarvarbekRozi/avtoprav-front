@@ -8,6 +8,7 @@ const route = useRoute()
 const form = reactive({ login: '', password: '' })
 const error = ref('')
 const showPwd = ref(false)
+const sessionExpired = computed(() => route.query.expired === '1')
 
 async function submit() {
   error.value = ''
@@ -41,6 +42,15 @@ async function submit() {
       </div>
 
       <div class="card p-6 sm:p-8">
+        <!-- Sessiya tugagan bo'lsa sababini aytamiz — foydalanuvchi sezmasdan
+             mehmonga aylanib qolmasin. -->
+        <div v-if="sessionExpired" class="mb-5 px-3.5 py-2.5 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg text-sm">
+          {{ i18n.t({
+            uz: 'Sessiyangiz tugadi. Natijalaringiz saqlangan — davom etish uchun qayta kiring.',
+            kr: 'Сессиянгиз тугади. Натижаларингиз сақланган — давом этиш учун қайта киринг.'
+          }) }}
+        </div>
+
         <div v-if="error" class="mb-5 px-3.5 py-2.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-sm flex items-start gap-2">
           <svg class="w-4 h-4 flex-shrink-0 mt-0.5" viewBox="0 0 16 16" fill="none">
             <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
