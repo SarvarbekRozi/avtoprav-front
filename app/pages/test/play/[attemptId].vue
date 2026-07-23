@@ -479,13 +479,13 @@ onBeforeUnmount(() => {
             <!-- Question text -->
             <h1 class="text-base sm:text-lg font-semibold text-ink-900 leading-snug">{{ currentItem.question.text }}</h1>
 
-            <!-- Rasm FAQAT savolda haqiqiy rasm bo'lsa ko'rsatiladi. Ilgari
-                 rasmsiz (matnli) savolда ham '/default-pic.png' o'rin egallovchi
-                 rasm chiqardi — bu "rasm chiqmadi/xato rasm"dek ko'rinardi.
-                 Result va Xatolarim sahifalari ham shunday (v-if bilan). -->
-            <div v-if="currentItem.question.image" class="relative cursor-zoom-in"
-                 @click="zoomedImage = currentItem.question.image">
-              <img :src="currentItem.question.image"
+            <!-- Rasm: haqiqiy rasm bo'lsa o'sha, bo'lmasa default o'rin egallovchi
+                 rasm. @error — savol rasmi fayli serverda yo'q bo'lsa (404) ham
+                 buzuq belgi o'rniga default rasm chiqadi. -->
+            <div class="relative cursor-zoom-in"
+                 @click="zoomedImage = currentItem.question.image || '/default-pic.png'">
+              <img :src="currentItem.question.image || '/default-pic.png'"
+                   @error="onQuestionImageError"
                    :alt="i18n.t({ uz: 'Savol rasmi', kr: 'Савол расми' })"
                    class="w-full rounded-xl border max-h-[40vh] sm:max-h-[340px] object-contain"
                    style="background: var(--surface-inset); border-color: var(--border-soft);">
@@ -571,6 +571,7 @@ onBeforeUnmount(() => {
           <AppIcon name="x" :size="22" />
         </button>
         <img :src="zoomedImage"
+             @error="onQuestionImageError"
              class="max-w-full max-h-full object-contain rounded-lg shadow-2xl anim-in"
              @click.stop>
       </div>

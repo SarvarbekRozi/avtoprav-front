@@ -64,7 +64,7 @@ onMounted(() => {
         class="card p-5 transition-shadow"
         :class="q.id === focusId ? 'ring-2 ring-brand-500 shadow-lift' : ''">
         <div class="flex items-start gap-4">
-          <img v-if="q.image" :src="q.image" class="w-20 h-20 rounded-lg object-cover border border-ink-200 flex-shrink-0">
+          <img v-if="q.image" :src="q.image" @error="onQuestionImageError" class="w-20 h-20 rounded-lg object-cover border border-ink-200 flex-shrink-0">
           <div class="flex-1 min-w-0">
             <div v-if="q.topic" class="text-2xs uppercase tracking-wider text-ink-500 font-semibold mb-1.5">
               {{ q.topic }}
