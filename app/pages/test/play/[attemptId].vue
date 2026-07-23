@@ -479,10 +479,13 @@ onBeforeUnmount(() => {
             <!-- Question text -->
             <h1 class="text-base sm:text-lg font-semibold text-ink-900 leading-snug">{{ currentItem.question.text }}</h1>
 
-            <!-- Image (default placeholder shown when the question has none) -->
-            <div class="relative cursor-zoom-in"
-                 @click="zoomedImage = currentItem.question.image || '/default-pic.png'">
-              <img :src="currentItem.question.image || '/default-pic.png'"
+            <!-- Rasm FAQAT savolda haqiqiy rasm bo'lsa ko'rsatiladi. Ilgari
+                 rasmsiz (matnli) savolда ham '/default-pic.png' o'rin egallovchi
+                 rasm chiqardi — bu "rasm chiqmadi/xato rasm"dek ko'rinardi.
+                 Result va Xatolarim sahifalari ham shunday (v-if bilan). -->
+            <div v-if="currentItem.question.image" class="relative cursor-zoom-in"
+                 @click="zoomedImage = currentItem.question.image">
+              <img :src="currentItem.question.image"
                    :alt="i18n.t({ uz: 'Savol rasmi', kr: 'Савол расми' })"
                    class="w-full rounded-xl border max-h-[40vh] sm:max-h-[340px] object-contain"
                    style="background: var(--surface-inset); border-color: var(--border-soft);">
