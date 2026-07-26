@@ -62,6 +62,11 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://127.0.0.1:8000',
+      // Ijtimoiy kirish (Google / Telegram). Skriptlar sahifa ochilganda EMAS,
+      // faqat kerak bo'lganda yuklanadi — shuning uchun app.head'da hech narsa yo'q.
+      googleClientId: process.env.NUXT_PUBLIC_GOOGLE_CLIENT_ID || '',
+      telegramBotName: process.env.NUXT_PUBLIC_TELEGRAM_BOT_NAME || 'avtoprav_auto_bot',
+      telegramBotId: process.env.NUXT_PUBLIC_TELEGRAM_BOT_ID || '8707751023',
     },
   },
 

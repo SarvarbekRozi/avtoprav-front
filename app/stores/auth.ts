@@ -21,6 +21,13 @@ export interface AuthUser {
   exam_days_left: number | null
 }
 
+/** Google / Telegram kirish javobi — /auth/login bilan bir xil + `is_new`. */
+export interface SocialAuthResponse {
+  token: string
+  user: AuthUser
+  is_new?: boolean
+}
+
 export const useAuthStore = defineStore('auth', () => {
   const tokenCookie = useCookie<string | null>('auth_token', { default: () => null, sameSite: 'lax', maxAge: 60 * 60 * 24 * 30 })
 
@@ -100,6 +107,74 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /** Joriy til — social kirish so'rovlariga qo'shiladi (startGuest bilan bir xil). */
+  function currentLocale(): 'uz_latn' | 'uz_cyrl' {
+    const locale = useCookie<string | null>('locale').value
+    return locale === 'uz_cyrl' ? 'uz_cyrl' : 'uz_latn'
+  }
+
+  // ─── Ijtimoiy kirish ──────────────────────────────────────────────────────
+  // Uchala endpoint ham /auth/login bilan BIR XIL javob qaytaradi. Agar joriy
+  // sessiya mehmon bo'lsa, backend o'sha hisobni O'RNIDA to'liq hisobga
+  // aylantiradi (XP, urinishlar saqlanadi) — apiFetch tokenni avtomatik
+  // yuborgani uchun buning uchun qo'shimcha ish qilish shart emas.
+
+  async function loginWithGoogle(idToken: string) {
+    loading.value = true
+    try {
+      const locale = currentLocale()
+      const res = await apiFetch<SocialAuthResponse>('/auth/google', {
+        method: 'POST',
+        body: { id_token: idToken, locale },
+      })
+      tokenCookie.value = res.token
+      user.value = res.user
+      remember(res.user)
+      return res
+    }
+    finally {
+      loading.value = false
+    }
+  }
+
+  /** Telegram Login Widget qaytargan xom payload (id, hash, auth_date, ...). */
+  async function loginWithTelegram(payload: Record<string, any>) {
+    loading.value = true
+    try {
+      const locale = currentLocale()
+      const res = await apiFetch<SocialAuthResponse>('/auth/telegram', {
+        method: 'POST',
+        body: { ...payload, locale },
+      })
+      tokenCookie.value = res.token
+      user.value = res.user
+      remember(res.user)
+      return res
+    }
+    finally {
+      loading.value = false
+    }
+  }
+
+  /** Telegram Mini App: window.Telegram.WebApp.initData xom holda yuboriladi. */
+  async function loginWithTelegramWebApp(initData: string) {
+    loading.value = true
+    try {
+      const locale = currentLocale()
+      const res = await apiFetch<SocialAuthResponse>('/auth/telegram/webapp', {
+        method: 'POST',
+        body: { init_data: initData, locale },
+      })
+      tokenCookie.value = res.token
+      user.value = res.user
+      remember(res.user)
+      return res
+    }
+    finally {
+      loading.value = false
+    }
+  }
+
   // Upgrade the guest account to a full one — progress is kept (same user row).
   async function completeRegistration(payload: any) {
     loading.value = true
@@ -153,5 +228,9 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
   }
 
-  return { user, token, isAuthenticated, loading, lostRegisteredSession, login, register, startGuest, completeRegistration, fetchMe, logout, clear }
+  return {
+    user, token, isAuthenticated, loading, lostRegisteredSession,
+    login, register, startGuest, completeRegistration, fetchMe, logout, clear,
+    loginWithGoogle, loginWithTelegram, loginWithTelegramWebApp,
+  }
 })

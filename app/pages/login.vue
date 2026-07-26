@@ -78,6 +78,8 @@ async function submit() {
             <span v-else>{{ i18n.t({ uz: 'Davom etish', kr: 'Давом этиш' }) }}</span>
           </button>
         </form>
+
+        <SocialAuthButtons />
       </div>
 
       <div class="text-center mt-6 text-sm text-ink-500">

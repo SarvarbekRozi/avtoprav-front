@@ -95,6 +95,10 @@ async function submit() {
             }) }}
           </p>
         </form>
+
+        <!-- Mehmon hisobi bo'lsa ham ishlaydi: backend hisobni o'rnida
+             to'liq hisobga aylantiradi (progress saqlanadi). -->
+        <SocialAuthButtons :upgrade="isUpgrade" />
       </div>
 
       <div class="text-center mt-6 text-sm text-ink-500">
