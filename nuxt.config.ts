@@ -64,7 +64,13 @@ export default defineNuxtConfig({
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'https://admin.avtoprav.uz',
       // Ijtimoiy kirish (Google / Telegram). Skriptlar sahifa ochilganda EMAS,
       // faqat kerak bo'lganda yuklanadi — shuning uchun app.head'da hech narsa yo'q.
-      googleClientId: process.env.NUXT_PUBLIC_GOOGLE_CLIENT_ID || '',
+      // Google Client ID MAXFIY EMAS — u har bir sahifa kodida ochiq turadi
+      // (maxfiysi "client secret", u umuman ishlatilmaydi: ID-token server
+      // ichida Google'ning ochiq kalitlari bilan tekshiriladi).
+      // Shuning uchun default sifatida shu yerda turadi — aks holda .env
+      // gitignore'da bo'lgani uchun serverda bo'sh qolib, tugma chiqmaydi.
+      googleClientId: process.env.NUXT_PUBLIC_GOOGLE_CLIENT_ID
+        || '537094352809-6hlgb6evcph2vj89arfkvat2958epcs7.apps.googleusercontent.com',
       telegramBotName: process.env.NUXT_PUBLIC_TELEGRAM_BOT_NAME || 'avtoprav_auto_bot',
       telegramBotId: process.env.NUXT_PUBLIC_TELEGRAM_BOT_ID || '8707751023',
     },
