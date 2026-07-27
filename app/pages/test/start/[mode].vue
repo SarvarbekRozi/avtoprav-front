@@ -12,6 +12,22 @@ const starting = ref(true)
 const limitReached = ref(false)
 const dailyLimit = ref(2)
 
+// Limitga urilgan paytdagi taklif — narxlar config/payme.php bilan bir xil.
+const bestTariff = {
+  id: '1month',
+  price: '45 000',
+  perDay: '1 500',
+  period: { uz: '1 oy', kr: '1 ой' },
+}
+const offer = ref<typeof bestTariff | null>(null)
+
+const limitBenefits = computed(() => [
+  i18n.t({ uz: 'Bugun ham, ertaga ham cheksiz test', kr: 'Бугун ҳам, эртага ҳам чексиз тест' }),
+  i18n.t({ uz: 'Imtihon rejimida vaqt bilan mashq', kr: 'Имтиҳон режимида вақт билан машқ' }),
+  i18n.t({ uz: 'Xatolaringiz ustida alohida ishlash', kr: 'Хатоларингиз устида алоҳида ишлаш' }),
+  i18n.t({ uz: 'AI qaysi mavzudan boshlashni aytadi', kr: 'AI қайси мавзудан бошлашни айтади' }),
+])
+
 const params: Record<string, any> = { mode }
 if (route.query.topic_id)  params.topic_id  = Number(route.query.topic_id)
 if (route.query.ticket_id) params.ticket_id = Number(route.query.ticket_id)
@@ -54,23 +70,50 @@ onMounted(async () => {
       </p>
     </template>
 
+    <!--
+      Odam aynan CHEKLOVGA duch kelgan payt — taklifni shu yerda ko'rsatamiz.
+      Tariflar sahifasiga havola berib yuborish o'rniga narx va tugma shu
+      yerda turadi, chunki xohish aynan shu daqiqada eng kuchli.
+    -->
     <template v-else-if="limitReached">
-      <div class="text-5xl mb-4" aria-hidden="true">🎉</div>
+      <div class="text-4xl mb-3" aria-hidden="true">🚦</div>
       <div class="text-lg font-semibold text-ink-900 mb-1">
         {{ i18n.t({ uz: 'Bugungi bepul testlar tugadi', kr: 'Бугунги бепул тестлар тугади' }) }}
       </div>
-      <p class="text-sm text-ink-500 mb-2">
-        {{ i18n.t({ uz: `Zo'r ishladingiz! Ertaga yana ${dailyLimit} ta bepul test olasiz.`, kr: `Зўр ишладингиз! Эртага яна ${dailyLimit} та бепул тест оласиз.` }) }}
+      <p class="text-sm mb-5" style="color: var(--text-3)">
+        {{ i18n.t({
+          uz: `Zo'r ishladingiz! Ertaga yana ${dailyLimit} ta bepul test ochiladi — yoki hoziroq davom eting.`,
+          kr: `Зўр ишладингиз! Эртага яна ${dailyLimit} та бепул тест очилади — ёки ҳозироқ давом этинг.`
+        }) }}
       </p>
-      <p class="text-sm text-ink-500 mb-6">
-        {{ i18n.t({ uz: 'To\'xtamasdan mashq qilishni istaysizmi? Premium — cheksiz testlar.', kr: 'Тўхтамасдан машқ қилишни истайсизми? Премиум — чексиз тестлар.' }) }}
-      </p>
-      <div class="flex items-center justify-center gap-2">
-        <NuxtLink to="/pricing" class="btn-gradient">
-          <AppIcon name="spark" :size="14" /> {{ i18n.t({ uz: 'Premium haqida', kr: 'Премиум ҳақида' }) }}
+
+      <div class="limit-card text-left">
+        <div class="text-2xs font-semibold uppercase tracking-[0.12em]" style="color: rgba(255,255,255,0.55)">
+          {{ i18n.t({ uz: 'Premium bilan', kr: 'Премиум билан' }) }}
+        </div>
+        <ul class="mt-3 space-y-2 text-sm">
+          <li v-for="b in limitBenefits" :key="b" class="flex items-start gap-2.5">
+            <span class="tick-dark"><AppIcon name="check" :size="10" /></span>
+            <span style="color: rgba(255,255,255,0.88)">{{ b }}</span>
+          </li>
+        </ul>
+
+        <button type="button" class="limit-cta" @click="offer = bestTariff">
+          🚀 {{ i18n.t({ uz: 'Premiumni boshlash', kr: 'Премиумни бошлаш' }) }}
+        </button>
+        <div class="mt-2 text-center text-2xs" style="color: rgba(255,255,255,0.55)">
+          {{ bestTariff.price }} {{ i18n.t({ uz: 'so\'m / 1 oy · ≈ 1 500 so\'m kuniga', kr: 'сўм / 1 ой · ≈ 1 500 сўм кунига' }) }}
+        </div>
+      </div>
+
+      <div class="mt-4 flex items-center justify-center gap-2">
+        <NuxtLink to="/pricing" class="btn-outline">
+          {{ i18n.t({ uz: 'Barcha tariflar', kr: 'Барча тарифлар' }) }}
         </NuxtLink>
         <NuxtLink to="/" class="btn-outline">{{ i18n.t({ uz: 'Bosh sahifa', kr: 'Бош саҳифа' }) }}</NuxtLink>
       </div>
+
+      <PremiumOfferModal :open="offer !== null" :tariff="offer" @close="offer = null" />
     </template>
 
     <template v-else>
@@ -90,3 +133,38 @@ onMounted(async () => {
     </template>
   </div>
 </template>
+
+<style scoped>
+.limit-card {
+  border-radius: 1.25rem;
+  padding: 1.25rem;
+  background: #0e1016;
+  box-shadow: 0 20px 48px -18px rgba(15, 23, 42, 0.45);
+}
+
+.tick-dark {
+  width: 1rem; height: 1rem; border-radius: 9999px;
+  display: grid; place-items: center; flex-shrink: 0; margin-top: 0.125rem;
+  background: rgba(255, 255, 255, 0.14);
+  color: #6ee7b7;
+}
+
+.limit-cta {
+  width: 100%;
+  height: 3rem;
+  margin-top: 1.15rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-size: 1rem;
+  color: #3d2c00;
+  background: linear-gradient(180deg, #fcd34d, #f5b820);
+  box-shadow: 0 8px 20px -8px rgba(245, 184, 32, 0.7);
+  transition: filter .15s, transform .15s;
+}
+.limit-cta:hover { filter: brightness(1.04); transform: translateY(-1px); }
+.limit-cta:active { transform: translateY(0); }
+</style>
