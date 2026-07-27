@@ -113,7 +113,7 @@ onMounted(async () => {
         <NuxtLink to="/" class="btn-outline">{{ i18n.t({ uz: 'Bosh sahifa', kr: 'Бош саҳифа' }) }}</NuxtLink>
       </div>
 
-      <PremiumOfferModal :open="offer !== null" :tariff="offer" @close="offer = null" />
+      <PaymentSheet :open="offer !== null" :tariff="offer" @close="offer = null" />
     </template>
 
     <template v-else>

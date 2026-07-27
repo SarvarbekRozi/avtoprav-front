@@ -9,11 +9,8 @@ const dailyLimit = computed(() => auth.user?.daily_tests?.limit ?? 2)
 const usedToday = computed(() => auth.user?.daily_tests?.used_today ?? 0)
 const dailyGoal = computed(() => auth.user?.daily_goal || 20)
 
-/** Bugun maqsadga yetish uchun yana nechta test kerak (Premium bilan). */
 const goalRemaining = computed(() => Math.max(0, dailyGoal.value - usedToday.value))
 const goalPercent = computed(() => Math.min(100, Math.round((usedToday.value / Math.max(1, dailyGoal.value)) * 100)))
-
-/** Progressni faqat cheklovi bor foydalanuvchiga ko'rsatamiz. */
 const showProgress = computed(() =>
   !isPremium.value && auth.user?.daily_tests?.limit !== null && goalRemaining.value > 0)
 
@@ -22,37 +19,45 @@ interface Tariff {
   price: string
   perDay: string
   period: { uz: string, kr: string }
-  best?: boolean
 }
 
 // Narxlar backenddagi config/payme.php bilan bir xil (2 900 000 / 4 500 000 tiyin).
-const tariffs: Tariff[] = [
-  { id: '2weeks', price: '29 000', perDay: '2 071', period: { uz: '2 hafta', kr: '2 ҳафта' } },
-  { id: '1month', price: '45 000', perDay: '1 500', period: { uz: '1 oy', kr: '1 ой' }, best: true },
-]
+const monthly: Tariff = { id: '1month', price: '45 000', perDay: '1 500', period: { uz: '1 oy', kr: '1 ой' } }
+const biweekly: Tariff = { id: '2weeks', price: '29 000', perDay: '2 071', period: { uz: '2 hafta', kr: '2 ҳафта' } }
 
-// Tarif bosilganda darrov Paymega emas — avval tasdiqlash oynasi chiqadi.
+// Narx bosilganda to'lov oynasi ochiladi (to'g'ridan-to'g'ri Paymega emas).
 const selected = ref<Tariff | null>(null)
-function choose(t: Tariff) { selected.value = t }
 
 /**
- * Ijtimoiy dalil — SOXTA EMAS. Backend haqiqiy to'langan buyurtmalarni
- * sanaydi va son ishonarli chegaradan past bo'lsa null qaytaradi,
- * shunda bu blok umuman ko'rinmaydi.
+ * Ijtimoiy dalil — faqat HAQIQIY raqamlar. Backend to'langan buyurtmalarni va
+ * faol o'quvchilarni sanaydi; son ishonarli chegaradan past bo'lsa null
+ * qaytaradi va bu blok umuman ko'rinmaydi.
  */
-const { data: stats } = await useAsyncData('pricing-proof',
-  () => apiFetch<{ proof: { count: number, window: 'day' | 'week' } | null }>('/pricing/stats'),
-  { default: () => ({ proof: null }), server: false })
+const { data: stats } = await useAsyncData('pricing-stats',
+  () => apiFetch<{
+    proof: { count: number, window: 'day' | 'week' } | null
+    activity: { learners_7d: number, tests_today: number } | null
+  }>('/pricing/stats'),
+  { default: () => ({ proof: null, activity: null }), server: false })
 
-const proofText = computed(() => {
+const socialProof = computed(() => {
   const p = stats.value?.proof
-  if (!p) return null
-  return p.window === 'day'
-    ? i18n.t({ uz: `So'nggi 24 soatda ${p.count} kishi Premium oldi`, kr: `Сўнгги 24 соатда ${p.count} киши Премиум олди` })
-    : i18n.t({ uz: `So'nggi 7 kunda ${p.count} kishi Premium oldi`, kr: `Сўнгги 7 кунда ${p.count} киши Премиум олди` })
+  if (p) {
+    return p.window === 'day'
+      ? i18n.t({ uz: `So'nggi 24 soatda ${p.count} kishi Premium oldi`, kr: `Сўнгги 24 соатда ${p.count} киши Премиум олди` })
+      : i18n.t({ uz: `So'nggi 7 kunda ${p.count} kishi Premium oldi`, kr: `Сўнгги 7 кунда ${p.count} киши Премиум олди` })
+  }
+  const a = stats.value?.activity
+  if (a) {
+    return i18n.t({
+      uz: `${a.learners_7d} kishi shu hafta imtihonga tayyorlanmoqda`,
+      kr: `${a.learners_7d} киши шу ҳафта имтиҳонга тайёрланмоқда`,
+    })
+  }
+  return null
 })
 
-// Paymedan qaytish: ?order=<id> → to'lov holatini tekshiramiz
+// Paymedan qaytish: ?order=<id>
 const checking = ref(false)
 const paidOk = ref(false)
 onMounted(async () => {
@@ -62,11 +67,7 @@ onMounted(async () => {
   for (let i = 0; i < 12; i++) {
     try {
       const s = await apiFetch<{ is_paid: boolean }>(`/me/orders/${orderId}`)
-      if (s.is_paid) {
-        await auth.fetchMe()
-        paidOk.value = true
-        break
-      }
+      if (s.is_paid) { await auth.fetchMe(); paidOk.value = true; break }
     }
     catch { /* qayta urinamiz */ }
     await new Promise(r => setTimeout(r, 1500))
@@ -74,303 +75,317 @@ onMounted(async () => {
   checking.value = false
 })
 
-/** Foyda tilida yozilgan — funksiya nomi emas, natijasi. */
+/** Foyda tilida — funksiya nomi emas, natijasi. */
 const benefits = computed(() => [
-  i18n.t({
-    uz: 'Imtihondan o\'tish imkoniyatingizni oshiradigan cheksiz mashq',
-    kr: 'Имтиҳондан ўтиш имкониятингизни оширадиган чексиз машқ',
-  }),
-  i18n.t({
-    uz: 'Haqiqiy imtihon sharoitida vaqt bilan mashq qilasiz',
-    kr: 'Ҳақиқий имтиҳон шароитида вақт билан машқ қиласиз',
-  }),
-  i18n.t({
-    uz: 'Xato qilgan savollaringiz alohida to\'planadi — ularni yakson qilasiz',
-    kr: 'Хато қилган саволларингиз алоҳида тўпланади — уларни яксон қиласиз',
-  }),
-  i18n.t({
-    uz: 'AI siz eng ko\'p xato qilayotgan mavzuni aniqlab, nimadan boshlashni aytadi',
-    kr: 'AI сиз энг кўп хато қилаётган мавзуни аниқлаб, нимадан бошлашни айтади',
-  }),
-  i18n.t({
-    uz: 'Reyting va XP to\'liq ochiladi — haftalik sovrinli musobaqada qatnashasiz',
-    kr: 'Рейтинг ва XP тўлиқ очилади — ҳафталик совринли мусобақада қатнашасиз',
-  }),
-])
-
-const freeHas = computed(() => [
-  i18n.t({ uz: `Har kuni ${dailyLimit.value} ta test`, kr: `Ҳар куни ${dailyLimit.value} та тест` }),
-  i18n.t({ uz: 'Asosiy mavzular va biletlar', kr: 'Асосий мавзулар ва билетлар' }),
-  i18n.t({ uz: 'Reyting va statistika', kr: 'Рейтинг ва статистика' }),
-])
-
-const freeLacks = computed(() => [
-  i18n.t({ uz: 'Kunlik limit mavjud', kr: 'Кунлик лимит мавжуд' }),
-  i18n.t({ uz: 'Cheksiz mashq yo\'q', kr: 'Чексиз машқ йўқ' }),
+  { icon: 'bolt', title: i18n.t({ uz: 'Cheksiz mashq', kr: 'Чексиз машқ' }),
+    desc: i18n.t({ uz: 'Imtihondan o\'tish imkoniyatingizni oshiradigan cheksiz testlar', kr: 'Имтиҳондан ўтиш имкониятингизни оширадиган чексиз тестлар' }) },
+  { icon: 'exam', title: i18n.t({ uz: 'Imtihon rejimi', kr: 'Имтиҳон режими' }),
+    desc: i18n.t({ uz: 'Haqiqiy imtihon sharoitida, vaqt bilan mashq qilasiz', kr: 'Ҳақиқий имтиҳон шароитида, вақт билан машқ қиласиз' }) },
+  { icon: 'refresh', title: i18n.t({ uz: 'Xatolar ustida ish', kr: 'Хатолар устида иш' }),
+    desc: i18n.t({ uz: 'Xato qilgan savollaringiz to\'planadi — ularni yakson qilasiz', kr: 'Хато қилган саволларингиз тўпланади — уларни яксон қиласиз' }) },
+  { icon: 'spark', title: i18n.t({ uz: 'AI tahlil', kr: 'AI таҳлил' }),
+    desc: i18n.t({ uz: 'Eng ko\'p xato qilayotgan mavzuingizni aniqlab, nimadan boshlashni aytadi', kr: 'Энг кўп хато қилаётган мавзуингизни аниқлаб, нимадан бошлашни айтади' }) },
+  { icon: 'trophy', title: i18n.t({ uz: 'Reyting va XP', kr: 'Рейтинг ва XP' }),
+    desc: i18n.t({ uz: 'To\'liq ochiladi — haftalik sovrinli musobaqada qatnashasiz', kr: 'Тўлиқ очилади — ҳафталик совринли мусобақада қатнашасиз' }) },
+  { icon: 'book', title: i18n.t({ uz: 'Barcha biletlar', kr: 'Барча билетлар' }),
+    desc: i18n.t({ uz: 'Rasmiy biletlar va mavzular bo\'yicha cheklovsiz kirish', kr: 'Расмий билетлар ва мавзулар бўйича чекловсиз кириш' }) },
 ])
 </script>
 
 <template>
-  <div class="max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
-    <!-- Sarlavha: "hammasi bepul" emas, natijaga yo'naltirilgan -->
-    <div class="text-center mb-8">
-      <h1 class="text-2xl sm:text-4xl font-semibold tracking-tightest text-ink-900">
-        🚗 {{ i18n.t({ uz: 'Imtihonga ishonch bilan tayyorlaning', kr: 'Имтиҳонга ишонч билан тайёрланинг' }) }}
-      </h1>
-      <p class="mt-3 max-w-xl mx-auto" style="color: var(--text-3)">
-        {{ i18n.t({
-          uz: 'Bepul rejimni sinab ko\'ring yoki Premium orqali cheksiz mashq qiling.',
-          kr: 'Бепул режимни синаб кўринг ёки Премиум орқали чексиз машқ қилинг.'
-        }) }}
-      </p>
-    </div>
+  <div class="pricing-wrap">
+    <!-- Yumshoq ko'k porlash — Apple/Stripe uslubidagi fon -->
+    <div class="glow glow-a" aria-hidden="true" />
+    <div class="glow glow-b" aria-hidden="true" />
 
-    <!-- To'lov natijasi -->
-    <div v-if="paidOk" class="max-w-3xl mx-auto mb-6 px-4 py-3.5 rounded-xl flex items-center gap-3"
-         style="background: #d1fae5; border: 1px solid #6ee7b7; color: #065f46;">
-      <AppIcon name="check" :size="18" />
-      <div class="text-sm font-medium">
-        {{ i18n.t({ uz: 'To\'lov muvaffaqiyatli — Premium faollashtirildi! 🎉', kr: 'Тўлов муваффақиятли — Премиум фаоллаштирилди! 🎉' }) }}
-      </div>
-    </div>
-    <div v-else-if="checking" class="max-w-3xl mx-auto mb-6 px-4 py-3.5 rounded-xl text-sm text-center"
-         style="background: var(--surface-inset); color: var(--text-3);">
-      {{ i18n.t({ uz: 'To\'lov holati tekshirilmoqda…', kr: 'Тўлов ҳолати текширилмоқда…' }) }}
-    </div>
-
-    <!-- Bugungi progress: odam cheklovni KO'RADI -->
-    <div v-if="showProgress" class="max-w-3xl mx-auto mb-6 card p-4 sm:p-5">
-      <div class="flex items-baseline justify-between gap-3">
-        <span class="text-sm font-medium text-ink-900">
-          {{ i18n.t({ uz: 'Bugun siz', kr: 'Бугун сиз' }) }}
-        </span>
-        <span class="text-sm tabular-nums" style="color: var(--text-3)">
-          {{ usedToday }} / {{ dailyGoal }} {{ i18n.t({ uz: 'test', kr: 'тест' }) }}
-        </span>
-      </div>
-      <div class="mt-2.5 h-2 rounded-full overflow-hidden" style="background: var(--surface-inset)">
-        <div class="h-full rounded-full transition-all"
-             :style="{ width: goalPercent + '%', background: 'linear-gradient(90deg, #f5b820, #fcd34d)' }" />
-      </div>
-      <p class="mt-2.5 text-sm" style="color: var(--text-3)">
-        {{ i18n.t({
-          uz: `Premium bilan bugun yana ${goalRemaining} ta test ishlashingiz mumkin.`,
-          kr: `Премиум билан бугун яна ${goalRemaining} та тест ишлашингиз мумкин.`
-        }) }}
-      </p>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-5 items-start">
-      <!-- BEPUL — ataylab xiraroq -->
-      <div class="lg:col-span-2 card p-5 sm:p-6 free-card">
-        <div class="text-xs font-semibold uppercase tracking-[0.12em]" style="color: var(--text-4)">
-          🆓 {{ i18n.t({ uz: 'Bepul', kr: 'Бепул' }) }}
-        </div>
-        <div class="mt-3 flex items-baseline gap-1.5">
-          <span class="text-3xl font-semibold tabular-nums tracking-tightest text-ink-900">0</span>
-          <span class="text-sm" style="color: var(--text-3)">{{ i18n.t({ uz: 'so\'m', kr: 'сўм' }) }}</span>
+    <div class="relative max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+      <!-- Sarlavha -->
+      <div class="text-center">
+        <div v-if="socialProof" class="proof-pill">
+          <span class="proof-dot" /> {{ socialProof }}
         </div>
 
-        <ul class="mt-5 space-y-2.5 text-sm">
-          <li v-for="f in freeHas" :key="f" class="flex items-start gap-2.5">
-            <span class="tick-yes"><AppIcon name="check" :size="10" /></span>
-            <span style="color: var(--text-2)">{{ f }}</span>
-          </li>
-          <li v-for="f in freeLacks" :key="f" class="flex items-start gap-2.5">
-            <span class="tick-no">
-              <svg viewBox="0 0 20 20" fill="none" class="w-2.5 h-2.5">
-                <path d="M6 6l8 8M14 6l-8 8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" />
-              </svg>
-            </span>
-            <span style="color: var(--text-4)">{{ f }}</span>
-          </li>
-        </ul>
-
-        <NuxtLink to="/" class="btn-outline w-full mt-6 justify-center">
-          {{ i18n.t({ uz: 'Bepul davom etish', kr: 'Бепул давом этиш' }) }}
-        </NuxtLink>
-      </div>
-
-      <!-- PREMIUM — kattaroq, asosiy -->
-      <div class="lg:col-span-3 premium-card">
-        <div class="premium-flag">
-          🔥 {{ i18n.t({ uz: 'Eng ko\'p tanlanadi', kr: 'Энг кўп танланади' }) }}
-        </div>
-
-        <div class="mt-1 text-2xl font-semibold tracking-tightish text-white">Premium</div>
-        <p class="mt-1 text-sm" style="color: rgba(255,255,255,0.6)">
+        <h1 class="mt-4 text-[1.75rem] sm:text-5xl font-semibold tracking-tightest text-ink-900 leading-[1.1]">
+          {{ i18n.t({ uz: 'Imtihonga ishonch bilan', kr: 'Имтиҳонга ишонч билан' }) }}<br class="hidden sm:block">
+          {{ i18n.t({ uz: 'tayyorlaning', kr: 'тайёрланинг' }) }}
+        </h1>
+        <p class="mt-4 max-w-lg mx-auto text-[15px] sm:text-base" style="color: var(--text-3)">
           {{ i18n.t({
-            uz: 'Yo\'l harakati imtihoniga jiddiy tayyorlanuvchilar uchun',
-            kr: 'Йўл ҳаракати имтиҳонига жиддий тайёрланувчилар учун'
+            uz: 'Bepul rejimni sinab ko\'ring yoki Premium bilan cheklovlarsiz mashq qiling.',
+            kr: 'Бепул режимни синаб кўринг ёки Премиум билан чекловларсиз машқ қилинг.'
           }) }}
         </p>
+      </div>
 
-        <!-- Haqiqiy sotuvlar yetarli bo'lsagina chiqadi -->
-        <div v-if="proofText" class="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-2xs"
-             style="background: rgba(245,184,32,0.16); color: #fcd34d;">
-          🔥 {{ proofText }}
-        </div>
-
-        <div v-if="isPremium"
-             class="w-full mt-5 h-12 inline-flex items-center justify-center gap-2 px-4 rounded-xl font-medium"
-             style="background: rgba(110,231,183,0.15); color: #6ee7b7;">
-          <AppIcon name="check" :size="16" />
-          {{ i18n.t({ uz: 'Sizda Premium faol', kr: 'Сизда Премиум фаол' }) }}
-        </div>
-
-        <template v-else>
-          <div class="mt-5 space-y-3">
-            <button v-for="t in tariffs" :key="t.id" type="button" class="tariff" :class="t.best && 'tariff-best'"
-                    @click="choose(t)">
-              <span v-if="t.best" class="tariff-badge">
-                ⭐ {{ i18n.t({ uz: 'Tavsiya etamiz', kr: 'Тавсия этамиз' }) }}
-              </span>
-
-              <span class="flex items-center justify-between gap-3">
-                <span class="text-left">
-                  <span class="block text-sm font-semibold" :style="{ color: t.best ? '#3d2c00' : 'var(--text-1)' }">
-                    {{ i18n.t(t.period) }}
-                  </span>
-                  <span class="block text-2xs tabular-nums mt-0.5"
-                        :style="{ color: t.best ? 'rgba(61,44,0,0.7)' : 'var(--text-3)' }">
-                    {{ t.price }} {{ i18n.t({ uz: 'so\'m', kr: 'сўм' }) }}
-                    · ≈ {{ t.perDay }} {{ i18n.t({ uz: 'so\'m/kun', kr: 'сўм/кун' }) }}
-                  </span>
-                </span>
-                <span class="tariff-cta" :class="t.best ? 'tariff-cta-best' : 'tariff-cta-plain'">
-                  🚀 {{ i18n.t({ uz: 'Boshlash', kr: 'Бошлаш' }) }}
-                </span>
-              </span>
-            </button>
-          </div>
-
-          <div v-if="isGuest" class="mt-3 px-3.5 py-2.5 rounded-lg text-xs leading-relaxed"
-               style="background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.75);">
-            {{ i18n.t({
-              uz: 'Premium olish uchun avval ro\'yxatdan o\'tasiz — progressingiz to\'liq saqlanib qoladi.',
-              kr: 'Премиум олиш учун аввал рўйхатдан ўтасиз — прогрессингиз тўлиқ сақланиб қолади.'
-            }) }}
-          </div>
-
-          <!-- Ishonch bloki: "har oy pul yechiladimi?" qo'rquvini yo'qotadi -->
-          <div class="mt-4 px-4 py-3 rounded-xl" style="background: rgba(255,255,255,0.07)">
-            <div class="flex items-center gap-2 text-sm font-medium" style="color: rgba(255,255,255,0.92)">
-              <AppIcon name="lock" :size="14" />
-              {{ i18n.t({ uz: 'Payme orqali xavfsiz to\'lov', kr: 'Payme орқали хавфсиз тўлов' }) }}
-            </div>
-            <ul class="mt-2 space-y-1 text-2xs" style="color: rgba(255,255,255,0.6)">
-              <li>✓ {{ i18n.t({ uz: 'Bir martalik to\'lov', kr: 'Бир марталик тўлов' }) }}</li>
-              <li>✓ {{ i18n.t({ uz: 'Avtomatik yechim yo\'q', kr: 'Автоматик ечим йўқ' }) }}</li>
-              <li>✓ {{ i18n.t({ uz: 'Yashirin to\'lovlar yo\'q', kr: 'Яширин тўловлар йўқ' }) }}</li>
-            </ul>
-          </div>
-        </template>
-
-        <div class="mt-5 pt-5" style="border-top: 1px solid rgba(255,255,255,0.12)">
-          <div class="text-sm font-medium mb-3" style="color: rgba(255,255,255,0.92)">
-            {{ i18n.t({ uz: 'Premium bilan siz:', kr: 'Премиум билан сиз:' }) }}
-          </div>
-          <ul class="space-y-2.5 text-sm">
-            <li v-for="b in benefits" :key="b" class="flex items-start gap-2.5">
-              <span class="tick-dark"><AppIcon name="check" :size="10" /></span>
-              <span style="color: rgba(255,255,255,0.88)">{{ b }}</span>
-            </li>
-          </ul>
+      <!-- To'lov natijasi -->
+      <div v-if="paidOk" class="max-w-md mx-auto mt-8 px-4 py-3.5 rounded-xl flex items-center gap-3"
+           style="background: #d1fae5; border: 1px solid #6ee7b7; color: #065f46;">
+        <AppIcon name="check" :size="18" />
+        <div class="text-sm font-medium">
+          {{ i18n.t({ uz: 'To\'lov muvaffaqiyatli — Premium faollashtirildi! 🎉', kr: 'Тўлов муваффақиятли — Премиум фаоллаштирилди! 🎉' }) }}
         </div>
       </div>
+      <div v-else-if="checking" class="max-w-md mx-auto mt-8 px-4 py-3.5 rounded-xl text-sm text-center"
+           style="background: var(--surface-inset); color: var(--text-3);">
+        {{ i18n.t({ uz: 'To\'lov holati tekshirilmoqda…', kr: 'Тўлов ҳолати текширилмоқда…' }) }}
+      </div>
+
+      <!-- Bugungi cheklov ko'rinib tursin -->
+      <div v-if="showProgress" class="max-w-md mx-auto mt-8 progress-box">
+        <div class="flex items-baseline justify-between gap-3">
+          <span class="text-sm font-medium text-ink-900">{{ i18n.t({ uz: 'Bugun siz', kr: 'Бугун сиз' }) }}</span>
+          <span class="text-sm tabular-nums" style="color: var(--text-3)">
+            {{ usedToday }} / {{ dailyGoal }} {{ i18n.t({ uz: 'test', kr: 'тест' }) }}
+          </span>
+        </div>
+        <div class="mt-2.5 h-1.5 rounded-full overflow-hidden" style="background: var(--surface-inset)">
+          <div class="h-full rounded-full" :style="{ width: goalPercent + '%', background: 'linear-gradient(90deg,#f5b820,#fcd34d)' }" />
+        </div>
+        <p class="mt-2.5 text-2xs" style="color: var(--text-3)">
+          {{ i18n.t({
+            uz: `Premium bilan bugun yana ${goalRemaining} ta test ishlashingiz mumkin.`,
+            kr: `Премиум билан бугун яна ${goalRemaining} та тест ишлашингиз мумкин.`
+          }) }}
+        </p>
+      </div>
+
+      <!-- ASOSIY: Premium karta markazda -->
+      <div class="mt-10 sm:mt-12 flex justify-center">
+        <div class="hero-card">
+          <div class="hero-badge">
+            <AppIcon name="star" :size="11" /> {{ i18n.t({ uz: 'Eng mashhur', kr: 'Энг машҳур' }) }}
+          </div>
+
+          <div class="text-center">
+            <div class="text-xs font-semibold uppercase tracking-[0.16em]" style="color: rgba(255,255,255,0.5)">
+              Premium
+            </div>
+
+            <template v-if="isPremium">
+              <div class="mt-6 mb-2 inline-flex items-center gap-2 px-4 h-12 rounded-xl font-medium"
+                   style="background: rgba(110,231,183,0.15); color: #6ee7b7;">
+                <AppIcon name="check" :size="16" />
+                {{ i18n.t({ uz: 'Sizda Premium faol', kr: 'Сизда Премиум фаол' }) }}
+              </div>
+            </template>
+
+            <template v-else>
+              <!-- 1 oylik — asosiy urg'u -->
+              <div class="mt-4 flex items-end justify-center gap-1.5">
+                <span class="text-[3.25rem] sm:text-6xl font-semibold tabular-nums tracking-tightest leading-none text-white">
+                  45 000
+                </span>
+                <span class="text-base pb-1.5" style="color: rgba(255,255,255,0.6)">
+                  {{ i18n.t({ uz: 'so\'m', kr: 'сўм' }) }}
+                </span>
+              </div>
+              <div class="mt-2 text-sm" style="color: rgba(255,255,255,0.62)">
+                {{ i18n.t({ uz: '1 oy · atigi 1 500 so\'m kuniga', kr: '1 ой · атиги 1 500 сўм кунига' }) }}
+              </div>
+
+              <button type="button" class="hero-cta" @click="selected = monthly">
+                {{ i18n.t({ uz: 'Premiumni boshlash', kr: 'Премиумни бошлаш' }) }}
+                <svg viewBox="0 0 20 20" fill="none" class="w-[18px] h-[18px]">
+                  <path d="M4 10h11M10.5 5.5L15 10l-4.5 4.5" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+
+              <!-- 2 haftalik — ikkinchi darajali -->
+              <button type="button" class="hero-alt" @click="selected = biweekly">
+                {{ i18n.t({ uz: 'yoki 2 hafta — 29 000 so\'m', kr: 'ёки 2 ҳафта — 29 000 сўм' }) }}
+              </button>
+
+              <div v-if="isGuest" class="mt-4 px-3.5 py-2.5 rounded-lg text-2xs leading-relaxed text-left"
+                   style="background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7);">
+                {{ i18n.t({
+                  uz: 'Premium olish uchun avval ro\'yxatdan o\'tasiz — progressingiz to\'liq saqlanib qoladi.',
+                  kr: 'Премиум олиш учун аввал рўйхатдан ўтасиз — прогрессингиз тўлиқ сақланиб қолади.'
+                }) }}
+              </div>
+
+              <div class="mt-5 pt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-2xs"
+                   style="border-top: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.55)">
+                <span>🔒 {{ i18n.t({ uz: 'Payme orqali', kr: 'Payme орқали' }) }}</span>
+                <span>✓ {{ i18n.t({ uz: 'Bir martalik to\'lov', kr: 'Бир марталик тўлов' }) }}</span>
+                <span>✓ {{ i18n.t({ uz: 'Avtomatik yechim yo\'q', kr: 'Автоматик ечим йўқ' }) }}</span>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bepul — kichik, ikkinchi darajali -->
+      <div class="mt-5 max-w-lg mx-auto free-row">
+        <div class="min-w-0">
+          <div class="text-sm font-medium text-ink-900">
+            {{ i18n.t({ uz: 'Bepul davom etish', kr: 'Бепул давом этиш' }) }}
+          </div>
+          <div class="text-2xs mt-0.5" style="color: var(--text-4)">
+            {{ i18n.t({
+              uz: `Kuniga ${dailyLimit} ta test · kunlik limit mavjud`,
+              kr: `Кунига ${dailyLimit} та тест · кунлик лимит мавжуд`
+            }) }}
+          </div>
+        </div>
+        <NuxtLink to="/" class="free-link">0 {{ i18n.t({ uz: 'so\'m', kr: 'сўм' }) }}</NuxtLink>
+      </div>
+
+      <!-- Afzalliklar — ikonkalar bilan -->
+      <div class="mt-14">
+        <h2 class="text-center text-lg sm:text-xl font-semibold tracking-tightish text-ink-900">
+          {{ i18n.t({ uz: 'Premium bilan siz nima olasiz', kr: 'Премиум билан сиз нима оласиз' }) }}
+        </h2>
+        <div class="mt-7 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div v-for="b in benefits" :key="b.title" class="benefit">
+            <span class="benefit-icon"><AppIcon :name="b.icon" :size="17" /></span>
+            <div class="min-w-0">
+              <div class="text-sm font-semibold text-ink-900">{{ b.title }}</div>
+              <p class="mt-1 text-2xs leading-relaxed" style="color: var(--text-3)">{{ b.desc }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="text-center text-2xs mt-10" style="color: var(--text-4)">
+        {{ i18n.t({ uz: 'Bepul tarif doim bepul qoladi.', kr: 'Бепул тариф доим бепул қолади.' }) }}
+      </p>
     </div>
 
-    <p class="text-center text-2xs mt-8" style="color: var(--text-4)">
-      {{ i18n.t({
-        uz: 'Bepul tarif doim bepul qoladi.',
-        kr: 'Бепул тариф доим бепул қолади.'
-      }) }}
-    </p>
-
-    <PremiumOfferModal :open="selected !== null" :tariff="selected" @close="selected = null" />
+    <PaymentSheet :open="selected !== null" :tariff="selected" @close="selected = null" />
   </div>
 </template>
 
 <style scoped>
-/* Bepul karta ataylab pastroq urg'uda — ko'z Premiumga tushsin */
-.free-card { opacity: 0.82; }
-.free-card:hover { opacity: 1; transition: opacity .2s; }
+.pricing-wrap { position: relative; overflow: hidden; }
 
-.tick-yes, .tick-no, .tick-dark {
-  width: 1rem; height: 1rem; border-radius: 9999px;
-  display: grid; place-items: center; flex-shrink: 0; margin-top: 0.125rem;
-}
-/* Yashil belgilar saytning qolgan qismidagi kabi — ikkala mavzuda ham
-   o'qiladi. DIQQAT: bu loyihada scoped CSS'dagi :global(.dark) qoidalari
-   qurishda tushib qoladi, shuning uchun mavzuga bog'liq override yozilmaydi. */
-.tick-yes { background: #d1fae5; color: #047857; }
-.tick-no  { background: var(--surface-inset); color: var(--text-4); }
-.tick-dark { background: rgba(255,255,255,0.14); color: #6ee7b7; }
-
-.premium-card {
-  position: relative;
-  border-radius: 1.25rem;
-  padding: 2rem 1.5rem 1.5rem;
-  background: #0e1016;
-  border: 1px solid #0e1016;
-  box-shadow: 0 24px 64px -20px rgba(15, 23, 42, 0.45);
-}
-@media (min-width: 640px) { .premium-card { padding: 2.25rem 1.75rem 1.75rem; } }
-
-.premium-flag {
+/* Yumshoq ko'k porlash — fon chuqurlik beradi, lekin matnga xalaqit qilmaydi */
+.glow {
   position: absolute;
-  top: -0.75rem; left: 1.5rem;
-  padding: 0.25rem 0.7rem;
   border-radius: 9999px;
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: #3d2c00;
-  background: linear-gradient(180deg, #fcd34d, #f5b820);
-  box-shadow: 0 4px 12px -4px rgba(245, 184, 32, 0.6);
+  filter: blur(90px);
+  pointer-events: none;
+  z-index: 0;
+}
+.glow-a {
+  top: -14rem; left: 50%; transform: translateX(-50%);
+  width: 44rem; height: 30rem;
+  background: radial-gradient(closest-side, rgba(63, 88, 148, 0.30), transparent);
+}
+.glow-b {
+  top: 18rem; right: -12rem;
+  width: 30rem; height: 26rem;
+  background: radial-gradient(closest-side, rgba(99, 102, 241, 0.18), transparent);
+}
+@media (max-width: 640px) { .glow-a { width: 26rem; height: 20rem; top: -9rem; } .glow-b { display: none; } }
+
+.proof-pill {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+  font-size: 0.75rem; font-weight: 500;
+  color: var(--text-2);
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  box-shadow: 0 2px 10px -4px rgba(15, 23, 42, 0.12);
+}
+.proof-dot {
+  width: 0.4rem; height: 0.4rem; border-radius: 9999px;
+  background: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
 }
 
-.tariff {
+.progress-box {
+  padding: 1rem 1.15rem;
+  border-radius: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+}
+
+/* Markaziy Premium karta — sahifadagi eng katta element */
+.hero-card {
   position: relative;
-  display: block;
-  width: 100%;
-  padding: 0.9rem 1rem;
-  border-radius: 0.875rem;
-  background: #fff;
-  border: 1px solid transparent;
-  transition: transform .15s, box-shadow .15s, filter .15s;
+  width: 100%; max-width: 30rem;
+  padding: 2.5rem 1.5rem 1.75rem;
+  border-radius: 1.75rem;
+  background: linear-gradient(165deg, #161b26 0%, #0b0e15 55%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 32px 80px -24px rgba(11, 14, 21, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
-.tariff:hover { transform: translateY(-1px); }
-.tariff:active { transform: translateY(0); }
+@media (min-width: 640px) { .hero-card { padding: 3rem 2.5rem 2rem; } }
 
-/* Tavsiya etilgan tarif — sariq, ko'zga tashlanadigan */
-.tariff-best {
-  margin-top: 0.9rem;
-  background: linear-gradient(180deg, #fde68a, #fcd34d);
-  box-shadow: 0 10px 24px -10px rgba(245, 184, 32, 0.75);
-}
-.tariff-best:hover { filter: brightness(1.03); }
-
-.tariff-badge {
-  position: absolute;
-  top: -0.6rem; right: 0.9rem;
-  padding: 0.15rem 0.55rem;
+.hero-badge {
+  position: absolute; top: -0.85rem; left: 50%; transform: translateX(-50%);
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.32rem 0.85rem;
   border-radius: 9999px;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  color: #fff;
-  background: #0e1016;
-}
-
-.tariff-cta {
-  flex-shrink: 0;
-  padding: 0.5rem 0.85rem;
-  border-radius: 0.625rem;
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.02em;
   white-space: nowrap;
+  color: #3d2c00;
+  background: linear-gradient(180deg, #fde68a, #f0b429);
+  box-shadow: 0 6px 18px -6px rgba(240, 180, 41, 0.7);
 }
-.tariff-cta-best  { background: #0e1016; color: #fcd34d; }
-.tariff-cta-plain { background: var(--surface-inset); color: var(--text-1); }
+
+/* Katta sariq CTA */
+.hero-cta {
+  width: 100%;
+  height: 3.5rem;
+  margin-top: 1.75rem;
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  border-radius: 1rem;
+  font-size: 1.0625rem; font-weight: 600;
+  color: #3d2c00;
+  background: linear-gradient(180deg, #fcd34d, #f0b429);
+  box-shadow: 0 14px 32px -12px rgba(240, 180, 41, 0.85);
+  transition: filter .15s, transform .15s, box-shadow .15s;
+}
+.hero-cta:hover { filter: brightness(1.05); transform: translateY(-2px); box-shadow: 0 18px 38px -12px rgba(240, 180, 41, 0.95); }
+.hero-cta:active { transform: translateY(0); }
+
+.hero-alt {
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.6);
+  border-radius: 0.625rem;
+  transition: color .15s, background .15s;
+}
+.hero-alt:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
+
+.free-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 0.9rem 1.15rem;
+  border-radius: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+}
+.free-link {
+  flex-shrink: 0;
+  padding: 0.45rem 0.9rem;
+  border-radius: 0.625rem;
+  font-size: 0.8125rem; font-weight: 600;
+  color: var(--text-2);
+  background: var(--surface-inset);
+  transition: background .15s;
+}
+.free-link:hover { background: var(--surface-hover); }
+
+.benefit {
+  display: flex; align-items: flex-start; gap: 0.75rem;
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  transition: border-color .18s, transform .18s;
+}
+.benefit:hover { border-color: var(--accent); transform: translateY(-2px); }
+.benefit-icon {
+  width: 2.15rem; height: 2.15rem; border-radius: 0.7rem;
+  display: grid; place-items: center; flex-shrink: 0;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
 </style>
