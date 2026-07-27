@@ -66,6 +66,11 @@ const questionStartedAt = ref(Date.now())
 const remainingSec = ref<number | null>(null)
 const error = ref('')
 let timerId: any = null
+// Taймerни HAQIQIY vaqtga (deadline) bog'laymiz. setInterval fon tab'da
+// sekinlashadi/to'xtaydi — agar har soniyada "-1" qilsak, boshqa tabga o'tganda
+// vaqt to'xtab qolardi (imtihonni pauza qilib bo'lardi). deadline bilan har
+// tik va tab qaytganda haqiqiy qolgan vaqt qayta hisoblanadi.
+let deadlineAt: number | null = null
 
 const auth = useAuthStore()
 const theme = useTheme()
@@ -144,6 +149,8 @@ async function load() {
     progress.value = res.progress ?? []
     currentPosition.value = res.current?.position ?? 1
     remainingSec.value = attemptInfo.value?.remaining_sec ?? null
+    // Server bergan qolgan vaqtdan qat'iy tugash momentini belgilaymiz
+    deadlineAt = remainingSec.value !== null ? Date.now() + remainingSec.value * 1000 : null
     if (currentItem.value) hydrateFromAnswer(currentItem.value)
     startTimer()
   } catch (e: any) {
@@ -162,17 +169,21 @@ function jumpTo(position: number) {
   if (item) hydrateFromAnswer(item)
 }
 
+/** Qolgan vaqtni deadline'dan qayta hisoblaydi; tugagan bo'lsa yakunlaydi. */
+function syncRemaining() {
+  if (deadlineAt === null) return
+  remainingSec.value = Math.max(0, Math.ceil((deadlineAt - Date.now()) / 1000))
+  if (remainingSec.value === 0 && !finalizing.value) {
+    stopTimer()
+    finishAttempt()
+  }
+}
+
 function startTimer() {
   stopTimer()
-  if (remainingSec.value === null) return
-  timerId = setInterval(() => {
-    if (remainingSec.value === null) return
-    remainingSec.value = Math.max(0, remainingSec.value - 1)
-    if (remainingSec.value === 0) {
-      stopTimer()
-      finishAttempt()
-    }
-  }, 1000)
+  if (deadlineAt === null) return
+  syncRemaining() // darhol to'g'irlaymiz
+  timerId = setInterval(syncRemaining, 1000)
 }
 function stopTimer() {
   if (timerId) { clearInterval(timerId); timerId = null }
@@ -366,10 +377,21 @@ function tileStyleFor(p: ProgressEntry, isCurrent: boolean) {
   }
 }
 
-onMounted(() => load())
+// Tab qayta faollashganda vaqtni darhol to'g'irlaymiz — fon'da setInterval
+// sekinlashgan bo'lsa ham, qaytganда haqiqiy qolgan vaqt ko'rinadi (va agar
+// yo'qligimizda tugagan bo'lsa — imtihon avtomatik yakunlanadi).
+function onVisibility() {
+  if (document.visibilityState === 'visible') syncRemaining()
+}
+
+onMounted(() => {
+  load()
+  document.addEventListener('visibilitychange', onVisibility)
+})
 onBeforeUnmount(() => {
   stopTimer()
   if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer)
+  document.removeEventListener('visibilitychange', onVisibility)
 })
 </script>
 
