@@ -6,13 +6,6 @@ const route = useRoute()
 const isPremium = computed(() => auth.user?.is_premium ?? false)
 const isGuest = computed(() => auth.user?.is_guest ?? false)
 const dailyLimit = computed(() => auth.user?.daily_tests?.limit ?? 2)
-const usedToday = computed(() => auth.user?.daily_tests?.used_today ?? 0)
-const dailyGoal = computed(() => auth.user?.daily_goal || 20)
-
-const goalRemaining = computed(() => Math.max(0, dailyGoal.value - usedToday.value))
-const goalPercent = computed(() => Math.min(100, Math.round((usedToday.value / Math.max(1, dailyGoal.value)) * 100)))
-const showProgress = computed(() =>
-  !isPremium.value && auth.user?.daily_tests?.limit !== null && goalRemaining.value > 0)
 
 interface Tariff {
   id: string
@@ -75,7 +68,16 @@ onMounted(async () => {
   checking.value = false
 })
 
-/** Foyda tilida — funksiya nomi emas, natijasi. */
+// Kartada darrov ko'rinadigan qisqa ro'yxat — "Premium nima beradi" aniq bo'lsin.
+const perks = computed(() => [
+  i18n.t({ uz: 'Cheksiz test — kunlik cheklov yo\'q', kr: 'Чексиз тест — кунлик чеклов йўқ' }),
+  i18n.t({ uz: 'Imtihon rejimi — vaqt bilan mashq', kr: 'Имтиҳон режими — вақт билан машқ' }),
+  i18n.t({ uz: 'Xatolaringiz ustida alohida ishlash', kr: 'Хатоларингиз устида алоҳида ишлаш' }),
+  i18n.t({ uz: 'AI shaxsiy tavsiyalar', kr: 'AI шахсий тавсиялар' }),
+  i18n.t({ uz: 'To\'liq reyting va XP', kr: 'Тўлиқ рейтинг ва XP' }),
+])
+
+/** Pastdagi kengaytirilgan tushuntirishlar — foyda tilida. */
 const benefits = computed(() => [
   { icon: 'bolt', title: i18n.t({ uz: 'Cheksiz mashq', kr: 'Чексиз машқ' }),
     desc: i18n.t({ uz: 'Imtihondan o\'tish imkoniyatingizni oshiradigan cheksiz testlar', kr: 'Имтиҳондан ўтиш имкониятингизни оширадиган чексиз тестлар' }) },
@@ -130,25 +132,6 @@ const benefits = computed(() => [
         {{ i18n.t({ uz: 'To\'lov holati tekshirilmoqda…', kr: 'Тўлов ҳолати текширилмоқда…' }) }}
       </div>
 
-      <!-- Bugungi cheklov ko'rinib tursin -->
-      <div v-if="showProgress" class="max-w-md mx-auto mt-8 progress-box">
-        <div class="flex items-baseline justify-between gap-3">
-          <span class="text-sm font-medium text-ink-900">{{ i18n.t({ uz: 'Bugun siz', kr: 'Бугун сиз' }) }}</span>
-          <span class="text-sm tabular-nums" style="color: var(--text-3)">
-            {{ usedToday }} / {{ dailyGoal }} {{ i18n.t({ uz: 'test', kr: 'тест' }) }}
-          </span>
-        </div>
-        <div class="mt-2.5 h-1.5 rounded-full overflow-hidden" style="background: var(--surface-inset)">
-          <div class="h-full rounded-full" :style="{ width: goalPercent + '%', background: 'linear-gradient(90deg,#f5b820,#fcd34d)' }" />
-        </div>
-        <p class="mt-2.5 text-2xs" style="color: var(--text-3)">
-          {{ i18n.t({
-            uz: `Premium bilan bugun yana ${goalRemaining} ta test ishlashingiz mumkin.`,
-            kr: `Премиум билан бугун яна ${goalRemaining} та тест ишлашингиз мумкин.`
-          }) }}
-        </p>
-      </div>
-
       <!-- ASOSIY: Premium karta markazda -->
       <div class="mt-10 sm:mt-12 flex justify-center">
         <div class="hero-card">
@@ -160,58 +143,69 @@ const benefits = computed(() => [
             <div class="text-xs font-semibold uppercase tracking-[0.16em]" style="color: rgba(255,255,255,0.5)">
               Premium
             </div>
-
-            <template v-if="isPremium">
-              <div class="mt-6 mb-2 inline-flex items-center gap-2 px-4 h-12 rounded-xl font-medium"
-                   style="background: rgba(110,231,183,0.15); color: #6ee7b7;">
-                <AppIcon name="check" :size="16" />
-                {{ i18n.t({ uz: 'Sizda Premium faol', kr: 'Сизда Премиум фаол' }) }}
-              </div>
-            </template>
-
-            <template v-else>
-              <!-- 1 oylik — asosiy urg'u -->
-              <div class="mt-4 flex items-end justify-center gap-1.5">
-                <span class="text-[3.25rem] sm:text-6xl font-semibold tabular-nums tracking-tightest leading-none text-white">
-                  45 000
-                </span>
-                <span class="text-base pb-1.5" style="color: rgba(255,255,255,0.6)">
-                  {{ i18n.t({ uz: 'so\'m', kr: 'сўм' }) }}
-                </span>
-              </div>
-              <div class="mt-2 text-sm" style="color: rgba(255,255,255,0.62)">
-                {{ i18n.t({ uz: '1 oy · atigi 1 500 so\'m kuniga', kr: '1 ой · атиги 1 500 сўм кунига' }) }}
-              </div>
-
-              <button type="button" class="hero-cta" @click="selected = monthly">
-                {{ i18n.t({ uz: 'Premiumni boshlash', kr: 'Премиумни бошлаш' }) }}
-                <svg viewBox="0 0 20 20" fill="none" class="w-[18px] h-[18px]">
-                  <path d="M4 10h11M10.5 5.5L15 10l-4.5 4.5" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </button>
-
-              <!-- 2 haftalik — ikkinchi darajali -->
-              <button type="button" class="hero-alt" @click="selected = biweekly">
-                {{ i18n.t({ uz: 'yoki 2 hafta — 29 000 so\'m', kr: 'ёки 2 ҳафта — 29 000 сўм' }) }}
-              </button>
-
-              <div v-if="isGuest" class="mt-4 px-3.5 py-2.5 rounded-lg text-2xs leading-relaxed text-left"
-                   style="background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7);">
-                {{ i18n.t({
-                  uz: 'Premium olish uchun avval ro\'yxatdan o\'tasiz — progressingiz to\'liq saqlanib qoladi.',
-                  kr: 'Премиум олиш учун аввал рўйхатдан ўтасиз — прогрессингиз тўлиқ сақланиб қолади.'
-                }) }}
-              </div>
-
-              <div class="mt-5 pt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-2xs"
-                   style="border-top: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.55)">
-                <span>🔒 {{ i18n.t({ uz: 'Payme orqali', kr: 'Payme орқали' }) }}</span>
-                <span>✓ {{ i18n.t({ uz: 'Bir martalik to\'lov', kr: 'Бир марталик тўлов' }) }}</span>
-                <span>✓ {{ i18n.t({ uz: 'Avtomatik yechim yo\'q', kr: 'Автоматик ечим йўқ' }) }}</span>
-              </div>
-            </template>
+            <p class="mt-1.5 text-sm" style="color: rgba(255,255,255,0.62)">
+              {{ i18n.t({ uz: 'Cheklovlarsiz, jiddiy tayyorgarlik', kr: 'Чекловларсиз, жиддий тайёргарлик' }) }}
+            </p>
           </div>
+
+          <!-- Premium nima beradi — kartada, aniq ko'rinib tursin -->
+          <ul class="mt-5 space-y-2.5">
+            <li v-for="p in perks" :key="p" class="flex items-start gap-2.5 text-left">
+              <span class="perk-tick"><AppIcon name="check" :size="11" /></span>
+              <span class="text-sm" style="color: rgba(255,255,255,0.9)">{{ p }}</span>
+            </li>
+          </ul>
+
+          <template v-if="isPremium">
+            <div class="w-full mt-6 h-12 inline-flex items-center justify-center gap-2 px-4 rounded-xl font-medium"
+                 style="background: rgba(110,231,183,0.15); color: #6ee7b7;">
+              <AppIcon name="check" :size="16" />
+              {{ i18n.t({ uz: 'Sizda Premium faol', kr: 'Сизда Премиум фаол' }) }}
+            </div>
+          </template>
+
+          <template v-else>
+            <!-- Ikkala tarif ham ko'rinadigan tugma -->
+            <div class="mt-6 space-y-2.5">
+              <!-- 1 oy — tavsiya etilgan, sariq -->
+              <button type="button" class="plan plan-primary" @click="selected = monthly">
+                <span class="plan-left">
+                  <span class="plan-name">{{ i18n.t(monthly.period) }}</span>
+                  <span class="plan-tag">{{ i18n.t({ uz: 'eng qulay', kr: 'энг қулай' }) }}</span>
+                </span>
+                <span class="plan-right">
+                  <span class="plan-price">{{ monthly.price }} <span class="plan-cur">{{ i18n.t({ uz: 'so\'m', kr: 'сўм' }) }}</span></span>
+                  <span class="plan-perday">≈ {{ monthly.perDay }} {{ i18n.t({ uz: 'so\'m/kun', kr: 'сўм/кун' }) }}</span>
+                </span>
+              </button>
+
+              <!-- 2 hafta — ikkinchi darajali, lekin baribir tugma -->
+              <button type="button" class="plan plan-secondary" @click="selected = biweekly">
+                <span class="plan-left">
+                  <span class="plan-name">{{ i18n.t(biweekly.period) }}</span>
+                </span>
+                <span class="plan-right">
+                  <span class="plan-price">{{ biweekly.price }} <span class="plan-cur">{{ i18n.t({ uz: 'so\'m', kr: 'сўм' }) }}</span></span>
+                  <span class="plan-perday">≈ {{ biweekly.perDay }} {{ i18n.t({ uz: 'so\'m/kun', kr: 'сўм/кун' }) }}</span>
+                </span>
+              </button>
+            </div>
+
+            <div v-if="isGuest" class="mt-3 px-3.5 py-2.5 rounded-lg text-2xs leading-relaxed text-left"
+                 style="background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7);">
+              {{ i18n.t({
+                uz: 'Premium olish uchun avval ro\'yxatdan o\'tasiz — progressingiz to\'liq saqlanib qoladi.',
+                kr: 'Премиум олиш учун аввал рўйхатдан ўтасиз — прогрессингиз тўлиқ сақланиб қолади.'
+              }) }}
+            </div>
+
+            <div class="mt-5 pt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-2xs"
+                 style="border-top: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.55)">
+              <span>🔒 {{ i18n.t({ uz: 'Payme orqali', kr: 'Payme орқали' }) }}</span>
+              <span>✓ {{ i18n.t({ uz: 'Bir martalik to\'lov', kr: 'Бир марталик тўлов' }) }}</span>
+              <span>✓ {{ i18n.t({ uz: 'Avtomatik yechim yo\'q', kr: 'Автоматик ечим йўқ' }) }}</span>
+            </div>
+          </template>
         </div>
       </div>
 
@@ -231,7 +225,7 @@ const benefits = computed(() => [
         <NuxtLink to="/" class="free-link">0 {{ i18n.t({ uz: 'so\'m', kr: 'сўм' }) }}</NuxtLink>
       </div>
 
-      <!-- Afzalliklar — ikonkalar bilan -->
+      <!-- Afzalliklar — ikonkalar bilan, batafsil -->
       <div class="mt-14">
         <h2 class="text-center text-lg sm:text-xl font-semibold tracking-tightish text-ink-900">
           {{ i18n.t({ uz: 'Premium bilan siz nima olasiz', kr: 'Премиум билан сиз нима оласиз' }) }}
@@ -295,13 +289,6 @@ const benefits = computed(() => [
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
 }
 
-.progress-box {
-  padding: 1rem 1.15rem;
-  border-radius: 1rem;
-  background: var(--surface);
-  border: 1px solid var(--border-soft);
-}
-
 /* Markaziy Premium karta — sahifadagi eng katta element */
 .hero-card {
   position: relative;
@@ -314,7 +301,7 @@ const benefits = computed(() => [
     0 32px 80px -24px rgba(11, 14, 21, 0.55),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
-@media (min-width: 640px) { .hero-card { padding: 3rem 2.5rem 2rem; } }
+@media (min-width: 640px) { .hero-card { padding: 3rem 2.25rem 2rem; } }
 
 .hero-badge {
   position: absolute; top: -0.85rem; left: 50%; transform: translateX(-50%);
@@ -328,32 +315,54 @@ const benefits = computed(() => [
   box-shadow: 0 6px 18px -6px rgba(240, 180, 41, 0.7);
 }
 
-/* Katta sariq CTA */
-.hero-cta {
+.perk-tick {
+  width: 1.15rem; height: 1.15rem; border-radius: 9999px;
+  display: grid; place-items: center; flex-shrink: 0; margin-top: 0.1rem;
+  background: rgba(110, 231, 183, 0.18);
+  color: #6ee7b7;
+}
+
+/* Ikkala tarif ham to'liq ko'rinadigan tugma */
+.plan {
   width: 100%;
-  height: 3.5rem;
-  margin-top: 1.75rem;
-  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+  padding: 0.85rem 1.1rem;
   border-radius: 1rem;
-  font-size: 1.0625rem; font-weight: 600;
+  text-align: left;
+  transition: transform .15s, box-shadow .15s, filter .15s, background .15s, border-color .15s;
+}
+.plan:active { transform: scale(0.99); }
+
+.plan-left { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+.plan-name { font-size: 1rem; font-weight: 600; }
+.plan-right { text-align: right; flex-shrink: 0; }
+.plan-price { display: block; font-size: 1.0625rem; font-weight: 700; }
+.plan-cur { font-size: 0.75rem; font-weight: 500; opacity: 0.7; }
+.plan-perday { display: block; font-size: 0.6875rem; margin-top: 0.05rem; }
+
+/* 1 oy — sariq, asosiy urg'u */
+.plan-primary {
   color: #3d2c00;
   background: linear-gradient(180deg, #fcd34d, #f0b429);
-  box-shadow: 0 14px 32px -12px rgba(240, 180, 41, 0.85);
-  transition: filter .15s, transform .15s, box-shadow .15s;
+  box-shadow: 0 12px 28px -12px rgba(240, 180, 41, 0.85);
 }
-.hero-cta:hover { filter: brightness(1.05); transform: translateY(-2px); box-shadow: 0 18px 38px -12px rgba(240, 180, 41, 0.95); }
-.hero-cta:active { transform: translateY(0); }
+.plan-primary:hover { filter: brightness(1.05); transform: translateY(-2px); }
+.plan-primary .plan-perday { color: rgba(61, 44, 0, 0.72); }
+.plan-tag {
+  font-size: 0.62rem; font-weight: 700; letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 0.12rem 0.45rem; border-radius: 9999px;
+  background: rgba(61, 44, 0, 0.16); color: #3d2c00;
+}
 
-.hero-alt {
-  width: 100%;
-  margin-top: 0.75rem;
-  padding: 0.5rem;
-  font-size: 0.8125rem;
-  color: rgba(255, 255, 255, 0.6);
-  border-radius: 0.625rem;
-  transition: color .15s, background .15s;
+/* 2 hafta — ikkinchi darajali, lekin baribir aniq tugma */
+.plan-secondary {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.16);
 }
-.hero-alt:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
+.plan-secondary:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.28); transform: translateY(-1px); }
+.plan-secondary .plan-perday { color: rgba(255, 255, 255, 0.5); }
 
 .free-row {
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
