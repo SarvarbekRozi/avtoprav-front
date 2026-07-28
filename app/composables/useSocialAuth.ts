@@ -212,8 +212,14 @@ export function useTelegramAuth() {
 export function isTelegramWebAppContext(): boolean {
   if (typeof window === 'undefined') return false
 
+  const w = window as any
+
   if (window.Telegram?.WebApp?.initData) return true
   if (window.location.hash.includes('tgWebApp')) return true
+
+  // Telegram Mini App WebView'iga bu proksilarni kiritadi (Android/iOS/desktop).
+  // Skript yuklanmasdan ham ishonchli signal.
+  if (w.TelegramWebviewProxy || w.TelegramWebviewProxyProto || w.external?.notify) return true
 
   // Telegram sahifa yuklanganda init parametrlarini shu kalitda saqlaydi —
   // sahifa qayta yuklanganda hash yo'qolsa ham shu qoladi.
