@@ -213,14 +213,8 @@ onBeforeUnmount(() => {
 
               <!-- Payme -->
               <button type="button" class="pay-option pay-active" :disabled="loading" @click="payWithPayme">
-                <span class="pay-logo pay-logo-payme">
-                  <svg viewBox="0 0 24 24" fill="none" class="w-[18px] h-[18px]" aria-hidden="true">
-                    <path d="M5 20V6.5A1.5 1.5 0 0 1 6.5 5H13a5 5 0 0 1 0 10H9" stroke="currentColor"
-                          stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                </span>
+                <span class="pay-brand"><img src="/payment/payme.png" alt="Payme"></span>
                 <span class="flex-1 text-left">
-                  <span class="block text-sm font-semibold" style="color: var(--text-1)">Payme</span>
                   <span class="block text-2xs" style="color: var(--text-4)">
                     {{ i18n.t({ uz: 'Karta orqali, bir zumda', kr: 'Карта орқали, бир зумда' }) }}
                   </span>
@@ -252,13 +246,10 @@ onBeforeUnmount(() => {
               </button>
 
               <!-- Yopiq usullar -->
-              <button v-for="m in [{ n: 'Click', c: '#0098EB' }, { n: 'Uzum Bank', c: '#7F4DFF' }]" :key="m.n"
+              <button v-for="m in [{ n: 'Click', logo: '/payment/click.png' }, { n: 'Uzum', logo: '/payment/uzum.png' }]" :key="m.n"
                       type="button" class="pay-option pay-locked" disabled>
-                <span class="pay-logo" :style="{ background: m.c + '1f', color: m.c }">
-                  <AppIcon name="card" :size="16" />
-                </span>
+                <span class="pay-brand"><img :src="m.logo" :alt="m.n"></span>
                 <span class="flex-1 text-left">
-                  <span class="block text-sm font-medium" style="color: var(--text-4)">{{ m.n }}</span>
                   <span class="block text-2xs" style="color: var(--text-4)">{{ i18n.t({ uz: 'Tez orada', kr: 'Тез орада' }) }}</span>
                 </span>
                 <AppIcon name="lock" :size="14" />
@@ -407,7 +398,21 @@ onBeforeUnmount(() => {
   width: 2.25rem; height: 2.25rem; border-radius: 0.625rem;
   display: grid; place-items: center; flex-shrink: 0;
 }
-.pay-logo-payme { background: rgba(0, 178, 178, 0.14); color: #00b2b2; }
+
+/* Brend logotipi — oq "chip" ustida. Oq fon qorong'i rejimda ham to'g'ri
+   ko'rinishini ta'minlaydi (ba'zi logotiplar oq fonli). */
+.pay-brand {
+  width: 5.5rem; height: 2.5rem;
+  border-radius: 0.625rem;
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  padding: 0.25rem 0.5rem;
+  overflow: hidden;
+}
+/* max-height ABSOLUT (rem) — chip bo'yi rasm hajmiga qarab o'smaydi. */
+.pay-brand img { max-height: 1.5rem; max-width: 100%; object-fit: contain; display: block; }
 
 .pay-spin {
   width: 1.05rem; height: 1.05rem; border-radius: 9999px;
