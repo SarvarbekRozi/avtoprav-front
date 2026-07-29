@@ -92,8 +92,9 @@ async function confirmManual() {
     const res = await apiFetch<{ order_id: number }>('/me/subscribe', {
       method: 'POST', body: { tariff: props.tariff.id, method: 'manual' },
     })
+    activated.value = false
     view.value = 'sent'
-    pollOrder(res.order_id)
+    pollOrder(res.order_id, ++pollToken)
   }
   catch (e: any) {
     error.value = messageOf(e)
@@ -104,13 +105,23 @@ async function confirmManual() {
 }
 
 // Admin tez tasdiqlasa — foydalanuvchi kutmasin. ~2 daqiqa yengil so'rab turamiz.
+// pollToken har yangi so'rovda/yopilganda oshadi — eski poll darrov to'xtaydi,
+// shunda eski poll yangi buyurtmaning holatini buzib qo'ymaydi.
 const activated = ref(false)
-async function pollOrder(orderId: number) {
-  for (let i = 0; i < 40 && !activated.value; i++) {
+let pollToken = 0
+async function pollOrder(orderId: number, token: number) {
+  for (let i = 0; i < 40; i++) {
+    if (token !== pollToken) return // yangi so'rov keldi yoki oyna yopildi
     await new Promise(r => setTimeout(r, 3000))
+    if (token !== pollToken) return
     try {
       const s = await apiFetch<{ is_paid: boolean }>(`/me/orders/${orderId}`)
-      if (s.is_paid) { await auth.fetchMe(); activated.value = true; return }
+      if (s.is_paid) {
+        if (token !== pollToken) return
+        await auth.fetchMe()
+        activated.value = true
+        return
+      }
     }
     catch { /* qayta urinamiz */ }
   }
@@ -138,6 +149,7 @@ watch(() => props.open, (open) => {
   }
   else {
     loading.value = false
+    pollToken++ // ochiq pollни to'xtatamiz
   }
 })
 
@@ -146,6 +158,7 @@ function onKey(e: KeyboardEvent) {
 }
 onMounted(() => window.addEventListener('keydown', onKey))
 onBeforeUnmount(() => {
+  pollToken++ // ochiq pollни to'xtatamiz
   window.removeEventListener('keydown', onKey)
   if (typeof document !== 'undefined') document.body.style.overflow = ''
 })
