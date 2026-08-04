@@ -224,23 +224,21 @@ useSeoMeta({
         <span class="text-xs tabular-nums" style="color: var(--text-4);">{{ g.items.length }}</span>
       </div>
 
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 items-stretch">
         <button
           v-for="s in g.items"
           :key="s.number"
-          class="card p-3 text-left flex flex-col items-center gap-2 hover:-translate-y-0.5"
+          class="card sign-card p-3 text-left flex flex-col gap-2 hover:-translate-y-0.5"
           style="box-shadow: var(--shadow-soft);"
           @click="open(s)"
         >
-          <div class="w-full aspect-square grid place-items-center rounded-lg p-2"
-               style="background: var(--surface-inset);">
+          <div class="sign-thumb" style="background: var(--surface-inset);">
             <img
               v-if="s.image"
               :src="s.image"
               :alt="`${s.number} ${name(s)}`"
               loading="lazy"
               decoding="async"
-              class="max-w-full max-h-full object-contain"
             >
             <!-- Rasmi hali yo'q belgilar (2022/2024-yilda qo'shilganlar).
                  Raqamni takrorlamaymiz — u pastda baribir yozilgan. -->
@@ -302,13 +300,11 @@ useSeoMeta({
               <div class="p-6 sm:p-7">
                 <div class="flex flex-col sm:flex-row gap-6">
                   <!-- Rasm -->
-                  <div class="shrink-0 mx-auto sm:mx-0 w-40 h-40 grid place-items-center rounded-xl p-3"
-                       style="background: var(--surface-inset);">
+                  <div class="sign-hero mx-auto sm:mx-0" style="background: var(--surface-inset);">
                     <img
                       v-if="selected.image"
                       :src="selected.image"
                       :alt="`${selected.number} ${name(selected)}`"
-                      class="max-w-full max-h-full object-contain"
                     >
                     <span v-else class="text-3xl font-semibold tabular-nums" style="color: var(--text-4);">
                       {{ selected.number }}
@@ -379,6 +375,56 @@ useSeoMeta({
 </template>
 
 <style scoped>
+/*
+  Belgi rasmlari turli nisbatda (kvadrat, uzun-tor 300x600, keng 1083x698).
+  Qutiga ANIQ balandlik beriladi, rasm esa o'sha chegaraga sig'diriladi —
+  shunda barcha kartalar bir xil bo'yda chiqadi.
+
+  DIQQAT: bu yerda `display: grid` ISHLAMAYDI. Grid qatori (auto) rasmning
+  tabiiy balandligiga moslashadi va quti chegarasidan oshib ketadi, natijada
+  rasmdagi `max-height: 100%` 96px emas, o'sha oshgan qator balandligiga
+  nisbatan hisoblanadi va rasm kesilib qoladi.
+  Flexbox'da esa foiz to'g'ridan-to'g'ri qutining aniq balandligiga bog'lanadi.
+*/
+.sign-thumb {
+  width: 100%;
+  height: 96px;              /* barcha kartalarda bir xil */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.sign-hero {
+  flex: none;
+  width: 160px;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+/* Rasm hech qachon qutidan oshmaydi; nisbati saqlanadi. */
+.sign-thumb img,
+.sign-hero img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* Grid katakchasi bo'ylab cho'zilsin — bir qatordagi kartalar teng bo'yda. */
+.sign-card {
+  height: 100%;
+}
+
 .sign-backdrop {
   position: fixed;
   inset: 0;
