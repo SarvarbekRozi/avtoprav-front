@@ -162,12 +162,7 @@ function fmtTime(sec: number) {
         icon="bolt" tone="amber" />
     </div>
 
-    <!-- Prize winners: past + current leaders -->
-    <div class="mb-6">
-      <WinnersCard />
-    </div>
-
-    <!-- XP Leaderboard -->
+    <!-- XP Leaderboard (reyting) -->
     <div class="mb-6">
       <LeaderboardCard />
     </div>

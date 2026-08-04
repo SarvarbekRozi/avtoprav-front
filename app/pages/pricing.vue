@@ -88,7 +88,7 @@ const benefits = computed(() => [
   { icon: 'spark', title: i18n.t({ uz: 'AI tahlil', kr: 'AI таҳлил' }),
     desc: i18n.t({ uz: 'Eng ko\'p xato qilayotgan mavzuingizni aniqlab, nimadan boshlashni aytadi', kr: 'Энг кўп хато қилаётган мавзуингизни аниқлаб, нимадан бошлашни айтади' }) },
   { icon: 'trophy', title: i18n.t({ uz: 'Reyting va XP', kr: 'Рейтинг ва XP' }),
-    desc: i18n.t({ uz: 'To\'liq ochiladi — haftalik sovrinli musobaqada qatnashasiz', kr: 'Тўлиқ очилади — ҳафталик совринли мусобақада қатнашасиз' }) },
+    desc: i18n.t({ uz: 'To\'liq ochiladi — haftalik reytingda yuqoriga chiqasiz', kr: 'Тўлиқ очилади — ҳафталик рейтингда юқорига чиқасиз' }) },
   { icon: 'book', title: i18n.t({ uz: 'Barcha biletlar', kr: 'Барча билетлар' }),
     desc: i18n.t({ uz: 'Rasmiy biletlar va mavzular bo\'yicha cheklovsiz kirish', kr: 'Расмий билетлар ва мавзулар бўйича чекловсиз кириш' }) },
 ])

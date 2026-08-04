@@ -202,8 +202,8 @@ function timeAgo(iso: string) {
         <div class="text-sm font-bold leading-tight" style="color: var(--text-1);">
           {{ i18n.t({ uz: 'Haftalik XP musobaqasi', kr: 'Ҳафталик XP мусобақаси' }) }}
         </div>
-        <div class="text-2xs mt-0.5 tabular-nums" style="color: var(--text-3);">
-          {{ i18n.t({ uz: '1-o\'rin — 70 000 so\'m · oylik 200 000 so\'m', kr: '1-ўрин — 70 000 сўм · ойлик 200 000 сўм' }) }}
+        <div class="text-2xs mt-0.5" style="color: var(--text-3);">
+          {{ i18n.t({ uz: 'XP yig\'ing va yetakchilar ro\'yxatida yuqoriga chiqing', kr: 'XP йиғинг ва етакчилар рўйхатида юқорига чиқинг' }) }}
         </div>
       </div>
       <AppIcon name="chev-r" :size="18" class="shrink-0" style="color: var(--text-4);" />

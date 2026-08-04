@@ -61,27 +61,6 @@ function medalColor(rank: number) {
       </div>
     </div>
 
-    <!-- Weekly / monthly prize for 1st place -->
-    <div v-if="period !== 'all'" class="mx-5 mt-4 rounded-xl p-3.5 flex items-center gap-3"
-         style="background: linear-gradient(135deg, rgba(251,191,36,0.20), rgba(245,158,11,0.07)); border: 1px solid rgba(245,158,11,0.35);">
-      <div class="w-11 h-11 rounded-full grid place-items-center shrink-0 shadow-soft"
-           style="background: linear-gradient(135deg, #fbbf24, #d97706);">
-        <AppIcon name="trophy" :size="22" class="text-white" />
-      </div>
-      <div class="min-w-0 flex-1">
-        <div class="text-2xs font-semibold uppercase tracking-wide" style="color: #b45309;">
-          {{ period === 'week'
-             ? i18n.t({ uz: '1-o\'rin · Haftalik sovg\'a', kr: '1-ўрин · Ҳафталик совға' })
-             : i18n.t({ uz: '1-o\'rin · Oylik sovg\'a', kr: '1-ўрин · Ойлик совға' }) }}
-        </div>
-        <div class="text-xl font-bold tabular-nums leading-tight" style="color: var(--text-1);">
-          {{ period === 'week' ? '70 000' : '200 000' }}
-          <span class="text-sm font-semibold" style="color: var(--text-3);">{{ i18n.t({ uz: 'so\'m', kr: 'сўм' }) }}</span>
-        </div>
-      </div>
-      <AppIcon name="spark" :size="18" class="text-amber-400 shrink-0" />
-    </div>
-
     <!-- Loading skeleton -->
     <div v-if="pending && !top.length" class="p-5 space-y-2">
       <div v-for="i in 5" :key="i" class="h-10 rounded-lg animate-pulse" style="background: var(--surface-inset);"></div>
