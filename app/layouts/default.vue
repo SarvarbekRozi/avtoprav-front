@@ -25,6 +25,7 @@ const navLinks = computed(() => {
     { to: '/test/start/exam', icon: 'exam', label: i18n.t({ uz: 'Imtihon', kr: 'Имтиҳон' }) },
     { to: '/tickets',  icon: 'ticket', label: i18n.t({ uz: 'Biletlar',    kr: 'Билетлар' }) },
     { to: '/topics',   icon: 'book',   label: i18n.t({ uz: 'Mavzular',    kr: 'Мавзулар' }) },
+    { to: '/belgilar', icon: 'sign',   label: i18n.t({ uz: 'Yo\'l belgilari', kr: 'Йўл белгилари' }) },
     { to: '/me/stats', icon: 'stat',   label: i18n.t({ uz: 'Statistika',  kr: 'Статистика' }) },
     { to: '/pricing',  icon: 'card',   label: i18n.t({ uz: 'Tariflar',    kr: 'Тарифлар' }) },
   ]
