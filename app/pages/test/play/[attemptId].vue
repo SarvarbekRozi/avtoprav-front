@@ -10,7 +10,7 @@ interface AnswerInfo {
   is_correct: boolean
   is_skipped: boolean
   selected_option_id: number | null
-  correct_option_id: number
+  correct_option_id: number | null
   explanation_uz: string | null
   explanation_kr: string | null
 }
@@ -18,15 +18,16 @@ interface AnswerInfo {
 interface QuestionItem {
   position: number
   is_bookmarked?: boolean
+  // DIQQAT: `question` ichida to'g'ri javob va izoh YO'Q — server ularni
+  // faqat javob berilgandan keyin, `answer` ichida yuboradi (xavfsizlik:
+  // aks holda bitta so'rov butun bazani berardi va imtihonda javoblar
+  // oldindan ko'rinardi).
   question: {
     id: number
     text: string
     image: string | null
     topic: string | null
     options: Array<{ id: number, text: string }>
-    correct_option_id: number
-    explanation_uz: string | null
-    explanation_kr: string | null
   }
   answer: AnswerInfo | null
 }
@@ -57,7 +58,7 @@ const examFailModal = ref(false)
 const exitModal = ref(false)
 const zoomedImage = ref<string | null>(null)
 const selectedOptionId = ref<number | null>(null)
-const lastAnswer = ref<{ is_correct: boolean, correct_option_id: number, explanation_uz: string | null, explanation_kr: string | null } | null>(null)
+const lastAnswer = ref<{ is_correct: boolean, correct_option_id: number | null, explanation_uz: string | null, explanation_kr: string | null } | null>(null)
 const loading = ref(true)
 const submitting = ref(false)
 const finished = ref(false)
@@ -201,12 +202,21 @@ function onOptionClick(optionId: number) {
   submitAnswer()
 }
 
-function submitAnswer() {
+/**
+ * Javobni SERVER tekshiradi.
+ *
+ * Ilgari to'g'ri javob va AI izohi test boshlanishida barcha savollar uchun
+ * oldindan yuklanardi va tekshiruv shu yerda, brauzerda bo'lardi. Bu ikki
+ * muammo tug'dirardi: imtihon vaqtida barcha javoblarni ko'rish mumkin edi va
+ * bitta so'rov butun savollar bazasini (javob + izoh bilan) berardi.
+ *
+ * Endi javob berilgandan keyin faqat O'SHA savolning natijasi keladi.
+ */
+async function submitAnswer() {
   const item = currentItem.value
-  if (!item) return
+  if (!item || submitting.value) return
 
   const elapsed = Math.floor((Date.now() - questionStartedAt.value) / 1000)
-  const correctId = item.question.correct_option_id
   const chosenId = selectedOptionId.value
   if (chosenId === null) return
 
@@ -216,35 +226,61 @@ function submitAnswer() {
     time_spent_sec: elapsed,
   }
 
-  const isCorrect = chosenId === correctId
+  let verdict: { is_correct: boolean, correct_option_id: number | null, explanation_uz: string | null, explanation_kr: string | null }
+  submitting.value = true
+  try {
+    const res = await apiFetch<any>(`/test/${attemptId}/answer`, {
+      method: 'POST',
+      body: { question_id: item.question.id, option_id: chosenId, time_spent_sec: elapsed },
+    })
+    verdict = res.answer
+    if (typeof res.user_points === 'number' && auth.user) auth.user.points = res.user_points
+    if (res.newly_unlocked?.length) {
+      try { sessionStorage.setItem('testRewards:' + attemptId, JSON.stringify(res.newly_unlocked)) } catch {}
+    }
+  } catch (e: any) {
+    // Javob yozilmadi — tanlovni ochib qo'yamiz, foydalanuvchi qayta uradi.
+    selectedOptionId.value = null
+    delete localAnswers.value[item.question.id]
+    error.value = e?.data?.message || i18n.t({ uz: 'Javobni yuborib bo\'lmadi. Qayta urinib ko\'ring.', kr: 'Жавобни юбориб бўлмади. Қайта уриниб кўринг.' })
+    submitting.value = false
+    return
+  }
+  submitting.value = false
+  error.value = ''
+
+  const correctId = verdict.correct_option_id
+  const isCorrect = verdict.is_correct
 
   lastAnswer.value = {
     is_correct: isCorrect,
     correct_option_id: correctId,
-    explanation_uz: item.question.explanation_uz,
-    explanation_kr: item.question.explanation_kr,
+    explanation_uz: verdict.explanation_uz,
+    explanation_kr: verdict.explanation_kr,
   }
 
   const pIdx = progress.value.findIndex(p => p.position === currentPosition.value)
-  if (pIdx !== -1) {
+  const pEntry = pIdx !== -1 ? progress.value[pIdx] : undefined
+  if (pEntry) {
     progress.value[pIdx] = {
-      position: progress.value[pIdx].position,
+      position: pEntry.position,
       status: isCorrect ? 'correct' : 'wrong',
     }
   }
 
   const qIdx = questions.value.findIndex(q => q.position === currentPosition.value)
-  if (qIdx !== -1) {
+  const qEntry = qIdx !== -1 ? questions.value[qIdx] : undefined
+  if (qEntry) {
     questions.value[qIdx] = {
-      ...questions.value[qIdx],
+      ...qEntry,
       answer: {
         is_answered: true,
         is_correct: isCorrect,
         is_skipped: false,
         selected_option_id: chosenId,
         correct_option_id: correctId,
-        explanation_uz: item.question.explanation_uz,
-        explanation_kr: item.question.explanation_kr,
+        explanation_uz: verdict.explanation_uz,
+        explanation_kr: verdict.explanation_kr,
       },
     }
   }
