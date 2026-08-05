@@ -43,14 +43,24 @@ export default defineNuxtRouteMiddleware(async () => {
   }
 
   const ensureSession = async () => {
+    // TELEGRAM KIRISHI ENG BIRINCHI — "sessiya yo'qolgan" xulosasidan ham OLDIN.
+    //
+    // initData o'zi to'liq huquqli, imzolangan hisob ma'lumoti. Agar u bo'lsa,
+    // foydalanuvchini /login ga uloqtirishning ma'nosi yo'q: bot orqali
+    // ro'yxatdan o'tgan odamning PAROLI YO'Q, u o'sha sahifada kira olmaydi.
+    // Bu tartib muhim, chunki token yo'qolishi endi ODATIY hodisa: qurilma
+    // limiti (2 ta) eski tokenni siqib chiqaradi, token muddati tugaydi yoki
+    // webview cookie'ni tozalaydi. O'shanda `acct=user` cookie'si qolib,
+    // quyidagi lostRegisteredSession sharti Mini App foydalanuvchisini
+    // avto-kirishga yetkazmasdan /login ga yuborib yuborardi.
+    await tryTelegramLogin()
+
     // Ro'yxatdan o'tgan hisob sessiyasi yo'qolgan bo'lsa — JIMGINA mehmon
     // yaratmaymiz. Aks holda foydalanuvchi sezmasdan mehmonga aylanadi va
     // yechgan testlari, XP'si begona hisobga yozilib ketadi.
     if (auth.lostRegisteredSession) {
       return navigateTo('/login?expired=1')
     }
-
-    await tryTelegramLogin()
 
     if (!auth.token) await auth.startGuest()
     if (auth.token && !auth.user) await auth.fetchMe() // 401 bo'lsa tokenni tozalaydi

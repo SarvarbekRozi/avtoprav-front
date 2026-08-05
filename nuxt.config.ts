@@ -56,27 +56,11 @@ export default defineNuxtConfig({
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico?v=2' },
         { rel: 'apple-touch-icon', href: '/apple-touch-icon.png?v=2' },
       ],
-      script: [
-        {
-          // Telegram Mini App initData'sini ENG BIRINCHI bo'lib ushlab qoladi.
-          //
-          // NEGA INLINE: rasmiy telegram-web-app.js yuklangach URL hash'ini
-          // tozalab yuboradi, Nuxt bundle'i esa undan keyin ishlaydi. Natijada
-          // avto-kirish bajarilmay, bot orqali ro'yxatdan o'tgan odam Mini
-          // App'da MEHMON bo'lib qolardi. Bu skript <head> ichida, hamma
-          // narsadan oldin ishlaydi — qiymat kafolatlangan.
-          //
-          // Ikkala ko'rinish qo'llab-quvvatlanadi: kodlangan (odatiy) va
-          // dekodlangan (brauzer/router dekodlab qo'ygan holat).
-          innerHTML: 'try{var h=(location.hash||"").replace(/^#/,"");if(h){var m=h.match(/(?:^|&)tgWebAppData=([^&]*)/),v="";'
-            + 'if(m&&m[1]){try{v=decodeURIComponent(m[1])}catch(e){v=m[1]}}'
-            + 'if(v.indexOf("hash=")<0&&h.indexOf("hash=")>-1&&h.indexOf("auth_date=")>-1){'
-            + 'v=h.replace(/^tgWebAppData=/,"").split("&").filter(function(p){return !/^tgWebApp[A-Za-z]*=/.test(p)}).join("&")}'
-            + 'if(v.indexOf("hash=")>-1){window.__tgInitData=v}}}catch(e){}',
-          tagPosition: 'head',
-          tagPriority: -100,
-        },
-      ],
+      // DIQQAT: Telegram initData'sini ushlaydigan inline skript BU YERDA EMAS —
+      // u `server/plugins/telegram-init-capture.ts` da. Sabab: u yerda skript
+      // `html.head.unshift()` bilan qo'yiladi, ya'ni <head> ning eng boshida
+      // bo'lishi KAFOLATLANGAN. Bu yerdagi `script[]` esa boshqa teglar bilan
+      // birga tartiblanadi. Ikki joyda takrorlanmasin.
     },
   },
 
@@ -98,6 +82,19 @@ export default defineNuxtConfig({
   },
 
   routeRules: {
+    // HTML HECH QACHON KESHLANMASIN.
+    //
+    // Ilgari hech qanday Cache-Control yuborilmasdi, shuning uchun brauzer va
+    // ayniqsa Telegram Mini App webview'i HTML'ni evristik ravishda keshlab
+    // qo'yardi. Yangi deploy chiqqach eski HTML eski `_nuxt/*.js` chunk'larini
+    // so'raydi — ular allaqachon o'chirilgan, 404/500 keladi va KLIENT ILOVA
+    // UMUMAN ISHGA TUSHMAYDI: kirish bajarilmaydi, foydalanuvchi MEHMON bo'lib
+    // qoladi. Aynan shu sabab tuzatish chiqqanidan keyin ham xato ko'rinardi.
+    //
+    // `_nuxt` fayllari esa xesh nomli — ular abadiy keshlanaveradi.
+    '/**': { headers: { 'cache-control': 'no-store, must-revalidate' } },
+    '/_nuxt/**': { headers: { 'cache-control': 'public, max-age=31536000, immutable' } },
+
     '/test/play/**': { ssr: false },
     '/test/result/**': { ssr: false },
     '/pricing': { ssr: false },
