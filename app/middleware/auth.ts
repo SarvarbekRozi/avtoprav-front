@@ -12,6 +12,33 @@ export default defineNuxtRouteMiddleware(async () => {
 
   const nuxtApp = useNuxtApp()
 
+  /**
+   * Telegram Mini App ichida ochilgan bo'lsa — MEHMON YARATISHDAN OLDIN
+   * avtomatik kiramiz.
+   *
+   * Ilgari bu plaginda edi va mehmon yaratish bilan POYGAGA tushardi: plagin
+   * kirgan bo'lsa ham, Nuxt gidratsiya paytida cookie holatini SSR yukidan
+   * tiklab tokenni "yo'qotardi", so'ng bu yerdagi shart mehmon yaratardi.
+   * Natijada bot orqali ro'yxatdan o'tgan odam Mini App'da MEHMON bo'lib
+   * qolardi. Endi ikkalasi bitta ketma-ketlikda — poyga yo'q.
+   */
+  const tryTelegramLogin = async () => {
+    const initData = readTelegramInitData()
+    if (!initData) return
+
+    // Allaqachon to'liq hisobda bo'lsa — qayta kirmaymiz (Mini App har
+    // ochilganda keraksiz token yaratilmasin).
+    if (auth.token && auth.user && !auth.user.is_guest) return
+
+    try {
+      await auth.loginWithTelegramWebApp(initData)
+    }
+    catch (e) {
+      // Kirish bo'lmasa oddiy mehmon oqimi o'z ishini qiladi.
+      console.warn('[auth] telegram mini app', e)
+    }
+  }
+
   const ensureSession = async () => {
     // Ro'yxatdan o'tgan hisob sessiyasi yo'qolgan bo'lsa — JIMGINA mehmon
     // yaratmaymiz. Aks holda foydalanuvchi sezmasdan mehmonga aylanadi va
@@ -19,6 +46,8 @@ export default defineNuxtRouteMiddleware(async () => {
     if (auth.lostRegisteredSession) {
       return navigateTo('/login?expired=1')
     }
+
+    await tryTelegramLogin()
 
     if (!auth.token) await auth.startGuest()
     if (auth.token && !auth.user) await auth.fetchMe() // 401 bo'lsa tokenni tozalaydi

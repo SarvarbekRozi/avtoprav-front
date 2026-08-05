@@ -56,6 +56,27 @@ export default defineNuxtConfig({
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico?v=2' },
         { rel: 'apple-touch-icon', href: '/apple-touch-icon.png?v=2' },
       ],
+      script: [
+        {
+          // Telegram Mini App initData'sini ENG BIRINCHI bo'lib ushlab qoladi.
+          //
+          // NEGA INLINE: rasmiy telegram-web-app.js yuklangach URL hash'ini
+          // tozalab yuboradi, Nuxt bundle'i esa undan keyin ishlaydi. Natijada
+          // avto-kirish bajarilmay, bot orqali ro'yxatdan o'tgan odam Mini
+          // App'da MEHMON bo'lib qolardi. Bu skript <head> ichida, hamma
+          // narsadan oldin ishlaydi — qiymat kafolatlangan.
+          //
+          // Ikkala ko'rinish qo'llab-quvvatlanadi: kodlangan (odatiy) va
+          // dekodlangan (brauzer/router dekodlab qo'ygan holat).
+          innerHTML: 'try{var h=(location.hash||"").replace(/^#/,"");if(h){var m=h.match(/(?:^|&)tgWebAppData=([^&]*)/),v="";'
+            + 'if(m&&m[1]){try{v=decodeURIComponent(m[1])}catch(e){v=m[1]}}'
+            + 'if(v.indexOf("hash=")<0&&h.indexOf("hash=")>-1&&h.indexOf("auth_date=")>-1){'
+            + 'v=h.replace(/^tgWebAppData=/,"").split("&").filter(function(p){return !/^tgWebApp[A-Za-z]*=/.test(p)}).join("&")}'
+            + 'if(v.indexOf("hash=")>-1){window.__tgInitData=v}}}catch(e){}',
+          tagPosition: 'head',
+          tagPriority: -100,
+        },
+      ],
     },
   },
 
