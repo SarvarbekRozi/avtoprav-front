@@ -12,8 +12,18 @@ const UI_TIMEOUT_MS = 5000
 export default defineNuxtPlugin(async () => {
   if (!import.meta.client) return
 
+  // ENG BIRINCHI ISH: initData'ni ushlab qolamiz.
+  //
+  // Pastda yuklanadigan rasmiy telegram-web-app.js URL hash'ini TOZALAB
+  // yuboradi (history.replaceState). middleware/auth.ts esa keyinroq
+  // (gidratsiya tugagach) ishlaydi va o'sha paytda hash yo'q bo'ladi —
+  // natijada avto-kirish bajarilmay, bot orqali ro'yxatdan o'tgan odam
+  // Mini App'da MEHMON bo'lib qolardi. Aynan shu xato edi.
+  const captured = readTelegramInitData()
+  if (captured) window.__tgInitData = captured
+
   // Telegram konteksti emas — oddiy veb foydalanuvchi. Narxi nol.
-  if (!readTelegramInitData() && !isTelegramWebAppContext()) return
+  if (!captured && !isTelegramWebAppContext()) return
 
   const theme = useTheme()
 

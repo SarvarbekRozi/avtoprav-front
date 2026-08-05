@@ -23,14 +23,17 @@ export default defineNuxtRouteMiddleware(async () => {
    * qolardi. Endi ikkalasi bitta ketma-ketlikda — poyga yo'q.
    */
   const tryTelegramLogin = async () => {
-    const initData = readTelegramInitData()
-    if (!initData) return
-
-    // Allaqachon to'liq hisobda bo'lsa — qayta kirmaymiz (Mini App har
-    // ochilganda keraksiz token yaratilmasin).
-    if (auth.token && auth.user && !auth.user.is_guest) return
-
+    // BUTUN blok try ichida: bu yerdagi HAR QANDAY xato mehmon yaratishni
+    // to'xtatib qo'ymasligi kerak. Aks holda Telegram bilan aloqasi yo'q
+    // oddiy foydalanuvchi ham sessiyasiz qolardi.
     try {
+      const initData = readTelegramInitData()
+      if (!initData) return
+
+      // Allaqachon to'liq hisobda bo'lsa — qayta kirmaymiz (Mini App har
+      // ochilganda keraksiz token yaratilmasin).
+      if (auth.token && auth.user && !auth.user.is_guest) return
+
       await auth.loginWithTelegramWebApp(initData)
     }
     catch (e) {

@@ -67,3 +67,7 @@ export function extractInitData(hash: string): string {
 
   return ''
 }
+
+declare global {
+  interface Window { __tgInitData?: string }
+}
