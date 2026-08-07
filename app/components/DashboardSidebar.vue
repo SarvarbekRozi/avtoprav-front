@@ -68,7 +68,7 @@ onBeforeUnmount(() => {
 async function changeLocale(value: 'uz_latn' | 'uz_cyrl') {
   await i18n.setLocale(value)
 }
-const localeLabel = computed(() => i18n.locale.value === 'uz_cyrl' ? 'Ўзбекча (кирилл)' : 'O\'zbekcha (lotin)')
+const localeLabel = computed(() => i18n.locale.value === 'uz_cyrl' ? 'Ўзбекча' : 'O\'zbekcha')
 const localeTitle = computed(() => i18n.locale.value === 'uz_latn' ? 'Кириллга ўтиш' : 'Lotin alifbosiga o\'tish')
 
 const themeTitle = computed(() => theme.isDark.value
@@ -90,11 +90,11 @@ const points = computed(() => auth.user?.points ?? 0)
   <!-- ── Desktop sidebar ── -->
   <aside
     class="hidden md:flex flex-col shrink-0 sticky top-0 h-screen relative border-r transition-[width] duration-200 ease-out"
-    :class="collapsed ? 'w-[68px]' : 'w-[272px]'"
+    :class="collapsed ? 'w-[72px]' : 'w-[280px]'"
     style="background: var(--surface); border-color: var(--border-soft);"
   >
     <!-- Logo -->
-    <div class="flex items-center gap-2 h-[68px] shrink-0"
+    <div class="flex items-center gap-2 h-[76px] shrink-0"
          :class="collapsed ? 'justify-center px-2' : 'justify-between px-4'">
       <NuxtLink to="/" class="flex items-center gap-2.5 min-w-0">
         <img src="/logo-mark.svg" alt="Avtoprav" width="36" height="36" class="w-9 h-9 shrink-0 rounded-[10px]" />
@@ -119,11 +119,11 @@ const points = computed(() => auth.user?.points ?? 0)
     </div>
 
     <!-- Navigatsiya -->
-    <nav class="flex-1 overflow-y-auto scrollbar-thin pt-1 pb-3 flex flex-col gap-1"
+    <nav class="flex-1 overflow-y-auto scrollbar-thin pt-2 pb-3 flex flex-col gap-1.5"
          :class="collapsed ? 'px-2 items-center' : 'px-3'">
       <NuxtLink v-for="link in navLinks" :key="link.to" :to="link.to"
         class="nav-item"
-        :class="collapsed ? 'w-11 h-11 justify-center' : 'gap-3 px-3 h-11'"
+        :class="collapsed ? 'w-11 h-11 justify-center' : 'gap-3.5 px-3.5 h-12'"
         :aria-current="isActive(link.to) ? 'page' : undefined"
         :title="collapsed ? link.label : undefined">
         <AppIcon :name="link.icon" :size="20" />
@@ -132,10 +132,10 @@ const points = computed(() => auth.user?.points ?? 0)
     </nav>
 
     <!-- Pastki blok: XP, til, profil -->
-    <div v-if="!collapsed" class="px-3 pb-3 flex flex-col gap-2.5">
+    <div v-if="!collapsed" class="px-4 pb-4 flex flex-col gap-3">
       <XPLevelCard :points="points" :streak="streak?.current ?? 0" />
 
-      <button type="button" class="lang-btn w-full flex items-center gap-2.5 h-10 px-3 rounded-xl text-[13px] font-medium"
+      <button type="button" class="lang-btn w-full flex items-center gap-2.5 h-11 px-3.5 rounded-xl text-[13.5px] font-medium"
               :title="localeTitle"
               @click="changeLocale(i18n.locale.value === 'uz_latn' ? 'uz_cyrl' : 'uz_latn')">
         <AppIcon name="globe" :size="16" style="color: var(--text-3);" />
@@ -213,7 +213,7 @@ const points = computed(() => auth.user?.points ?? 0)
       :aria-label="i18n.t({ uz: 'Asosiy menyu', kr: 'Асосий меню' })"
       class="md:hidden fixed top-0 left-0 bottom-0 z-50 w-[280px] flex flex-col border-r overflow-y-auto"
       style="background: var(--surface); border-color: var(--border-soft);">
-      <div class="flex items-center justify-between gap-2 h-[68px] px-4 shrink-0">
+      <div class="flex items-center justify-between gap-2 h-[76px] px-4 shrink-0">
         <NuxtLink to="/" class="flex items-center gap-2.5 min-w-0" @click="mobileOpen = false">
           <img src="/logo-mark.svg" alt="Avtoprav" width="36" height="36" class="w-9 h-9 rounded-[10px]" />
           <span class="font-bold text-[19px] tracking-tightish truncate" style="color: var(--text-1);">Avtoprav</span>
@@ -232,7 +232,7 @@ const points = computed(() => auth.user?.points ?? 0)
 
       <nav class="flex-1 px-3 pb-3 flex flex-col gap-1">
         <NuxtLink v-for="link in navLinks" :key="link.to" :to="link.to"
-          class="nav-item gap-3 px-3 h-11"
+          class="nav-item gap-3.5 px-3.5 h-12"
           :aria-current="isActive(link.to) ? 'page' : undefined"
           @click="mobileOpen = false">
           <AppIcon :name="link.icon" :size="20" />
@@ -240,10 +240,10 @@ const points = computed(() => auth.user?.points ?? 0)
         </NuxtLink>
       </nav>
 
-      <div class="px-3 pb-4 flex flex-col gap-2.5">
+      <div class="px-4 pb-5 flex flex-col gap-3">
         <XPLevelCard :points="points" :streak="streak?.current ?? 0" />
 
-        <button type="button" class="lang-btn w-full flex items-center gap-2.5 h-10 px-3 rounded-xl text-[13px] font-medium"
+        <button type="button" class="lang-btn w-full flex items-center gap-2.5 h-11 px-3.5 rounded-xl text-[13.5px] font-medium"
                 @click="changeLocale(i18n.locale.value === 'uz_latn' ? 'uz_cyrl' : 'uz_latn')">
           <AppIcon name="globe" :size="16" style="color: var(--text-3);" />
           <span class="flex-1 text-left truncate">{{ localeLabel }}</span>

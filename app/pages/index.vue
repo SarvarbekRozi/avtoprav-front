@@ -114,13 +114,18 @@ const tiles = computed<{ icon: string, tone: Tone, title: string, sub: string, t
 </script>
 
 <template>
-  <div v-if="auth.user" class="mx-auto w-full max-w-[1360px] px-4 sm:px-6 lg:px-8 pb-16 md:pb-12">
+  <!-- Kontent sidebar'dan keyin bo'sh joyni TO'LDIRADI (namunadagidek), tor
+       max-width bilan markazga siqilmaydi. 1800px — faqat juda keng ekranlarda
+       satr uzunligi haddan oshmasligi uchun. -->
+  <div v-if="auth.user" class="mx-auto w-full max-w-[1800px] px-4 sm:px-6 lg:px-8 xl:px-10 pb-16 md:pb-12">
     <OnboardingModal />
 
-    <!-- ── 1-qator: salomlashuv + tayyorgarlik ── -->
-    <div class="grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-5 pt-5 sm:pt-8">
+    <!-- ── 1-qator: salomlashuv + tayyorgarlik ──
+         Nisbat namunadan olingan: chap ustun ~38%, tayyorgarlik kartasi ~62%. -->
+    <div class="grid grid-cols-1 gap-4 sm:gap-6 pt-5 sm:pt-8
+                xl:grid-cols-[minmax(0,38fr)_minmax(0,62fr)]">
       <!-- pl-14: mobil hamburger; pr-12: mobil bildirishnoma tugmasi -->
-      <div class="xl:col-span-5 min-w-0 pl-14 pr-12 md:pl-0 md:pr-0 flex flex-col justify-center">
+      <div class="min-w-0 pl-14 pr-12 md:pl-0 md:pr-0 flex flex-col justify-center">
         <DashboardHeader :exam-days-left="examDaysLeft" />
 
         <div v-if="(dailyTests && dailyTests.limit !== null) || isGuest"
@@ -146,42 +151,56 @@ const tiles = computed<{ icon: string, tone: Tone, title: string, sub: string, t
                     class="text-xs underline underline-offset-4" style="color: var(--text-3);">
             {{ i18n.t({ uz: 'Natijani saqlash uchun ro\'yxatdan o\'ting', kr: 'Натижани сақлаш учун рўйхатдан ўтинг' }) }}
           </NuxtLink>
+
+          <!-- Tugallanmagan urinish — namunada alohida karta YO'Q, shuning uchun
+               u shu yerda ixcham chip ko'rinishida (funksiya saqlanadi, tartib buzilmaydi). -->
+          <NuxtLink v-if="current" :to="`/test/play/${current.id}`"
+                    class="inline-flex items-center gap-2 h-8 pl-2.5 pr-3 rounded-full text-xs font-semibold text-white transition-transform hover:-translate-y-0.5"
+                    style="background: linear-gradient(118deg, var(--ok-surface), var(--ok-surface-2)); box-shadow: 0 6px 16px -8px rgba(16,185,129,0.8);">
+            <span class="w-4 h-4 rounded-full grid place-items-center shrink-0" style="background: rgba(255,255,255,0.25);">
+              <svg width="8" height="8" viewBox="0 0 20 20" fill="currentColor"><path d="M6 4l11 6-11 6z" /></svg>
+            </span>
+            {{ i18n.t({ uz: 'Davom etish', kr: 'Давом этиш' }) }}
+            <span class="font-medium text-white/85 tabular-nums">{{ current.answered }}/{{ current.total }}</span>
+          </NuxtLink>
         </div>
       </div>
 
-      <div class="xl:col-span-7 min-w-0">
+      <div class="min-w-0">
         <PreparationCard
           :readiness="readiness" :attempts="attempts" :coverage="coverage"
           :seen="seen" :bank-total="bankTotal" :points="points" />
       </div>
     </div>
 
-    <!-- ── 2-qator: imtihon CTA + haftalik XP ── -->
-    <div class="grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-5 mt-4 sm:mt-5">
-      <div class="xl:col-span-7 min-w-0">
-        <ExamCTA :current="current" />
+    <!-- ── 2-qator: imtihon CTA + haftalik XP ──
+         Namunada bu ikki karta deyarli TENG kenglikda (≈49/51), 7/5 emas. -->
+    <div class="grid grid-cols-1 gap-4 sm:gap-6 mt-4 sm:mt-6
+                xl:grid-cols-[minmax(0,49fr)_minmax(0,51fr)]">
+      <div class="min-w-0">
+        <ExamCTA />
       </div>
-      <div class="xl:col-span-5 min-w-0">
+      <div class="min-w-0">
         <WeeklyXPChallenge :week-xp="weekXp" :streak-current="streakCurrent" />
       </div>
     </div>
 
     <!-- ── 3-qator: rejimlar ── -->
-    <nav class="grid grid-cols-2 sm:grid-cols-4 2xl:grid-cols-8 gap-2.5 sm:gap-3 mt-4 sm:mt-5"
+    <nav class="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3 sm:gap-3.5 mt-4 sm:mt-6"
          :aria-label="i18n.t({ uz: 'Mashq rejimlari', kr: 'Машқ режимлари' })">
       <QuickActionCard v-for="t in tiles" :key="t.to"
         :icon="t.icon" :tone="t.tone" :title="t.title" :subtitle="t.sub" :to="t.to" :badge="t.badge" />
     </nav>
 
-    <!-- ── 4-qator: AI tavsiya + mavzular + faollik ── -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-12 gap-4 sm:gap-5 mt-4 sm:mt-5">
-      <div class="xl:col-span-4 min-w-0">
+    <!-- ── 4-qator: AI tavsiya + mavzular + faollik (teng uchdan bir) ── -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 mt-4 sm:mt-6">
+      <div class="min-w-0">
         <AIRecommendationCard />
       </div>
-      <div class="xl:col-span-4 min-w-0">
+      <div class="min-w-0">
         <TopicStrengthCard />
       </div>
-      <div class="lg:col-span-2 xl:col-span-4 min-w-0">
+      <div class="lg:col-span-2 xl:col-span-1 min-w-0">
         <RecentActivityCard :recent="stats?.recent" />
       </div>
     </div>

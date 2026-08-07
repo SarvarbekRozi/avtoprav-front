@@ -34,8 +34,8 @@ const percent = computed(() => {
 
 <template>
   <NuxtLink to="/me/stats"
-    class="xp-card block rounded-xl transition-colors"
-    :class="compact ? 'p-2.5' : 'p-3'"
+    class="xp-card block rounded-2xl transition-colors"
+    :class="compact ? 'p-3' : 'p-4'"
     :title="i18n.t({ uz: 'Statistika sahifasiga o\'tish', kr: 'Статистика саҳифасига ўтиш' })">
     <div class="flex items-center gap-1.5">
       <AppIcon name="trophy" :size="14" class="text-amber-500 shrink-0" />
@@ -51,23 +51,19 @@ const percent = computed(() => {
       </span>
     </div>
 
-    <div class="mt-1 flex items-baseline gap-1.5">
-      <span class="text-xl font-bold tabular-nums tracking-tight" style="color: var(--text-1);">
+    <div class="mt-1.5 flex items-baseline gap-1.5">
+      <span class="text-[26px] font-bold tabular-nums tracking-tight leading-none" style="color: var(--text-1);">
         {{ points.toLocaleString() }}
       </span>
-      <span class="text-xs font-semibold" style="color: var(--text-4);">XP</span>
-      <span class="ml-auto text-2xs font-semibold tabular-nums shrink-0 px-1.5 h-5 grid place-items-center rounded-full"
-            style="background: var(--accent-soft); color: var(--accent);">
-        {{ i18n.t({ uz: 'Daraja', kr: 'Даража' }) }} {{ levelIndex }}
-      </span>
+      <span class="text-[13px] font-semibold" style="color: var(--text-4);">XP</span>
     </div>
 
-    <div class="h-1.5 rounded-full overflow-hidden mt-2" style="background: var(--border-soft);">
+    <div class="h-1.5 rounded-full overflow-hidden mt-3" style="background: var(--border-soft);">
       <div class="h-full rounded-full transition-[width] duration-700 ease-out"
-           :style="{ width: percent + '%', background: 'linear-gradient(90deg, #4f6ef0, #8b5cf6)' }"></div>
+           :style="{ width: percent + '%', background: 'var(--grad-progress)' }"></div>
     </div>
 
-    <div class="text-2xs mt-1.5 truncate" style="color: var(--text-4);">
+    <div class="text-xs mt-2 truncate" style="color: var(--text-4);">
       <template v-if="nextXp !== null">
         {{ i18n.t({ uz: 'Keyingi daraja', kr: 'Кейинги даража' }) }}: {{ nextXp.toLocaleString() }} XP
       </template>

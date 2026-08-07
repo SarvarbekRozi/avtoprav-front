@@ -64,15 +64,15 @@ const subtitle = computed(() => {
 <template>
   <div class="min-w-0">
     <!-- Bo'sh bo'lsa ham balandlik saqlansin — mount'dan keyin sahifa sakramaydi -->
-    <div class="text-[13px] font-medium h-[18px]" style="color: var(--text-4);">{{ dateLabel }}</div>
+    <div class="text-sm font-medium h-[20px]" style="color: var(--text-4);">{{ dateLabel }}</div>
 
-    <h1 class="mt-1.5 font-bold tracking-tightish leading-[1.12] text-[26px] sm:text-[32px] lg:text-[34px]"
+    <h1 class="mt-2 font-bold tracking-tightish leading-[1.1] text-[28px] sm:text-[34px] lg:text-[38px]"
         style="color: var(--text-1);">
       {{ greeting }}<template v-if="firstName">, {{ firstName }}</template>
-      <span class="wave inline-block ml-1.5" aria-hidden="true">👋</span>
+      <span class="wave inline-block ml-2" aria-hidden="true">👋</span>
     </h1>
 
-    <p class="mt-2 text-sm leading-relaxed max-w-[42ch]" style="color: var(--text-3);">
+    <p class="mt-3 text-[15px] leading-relaxed" style="color: var(--text-3);">
       {{ subtitle }}
     </p>
   </div>
