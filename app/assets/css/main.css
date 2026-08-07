@@ -29,6 +29,34 @@
     --accent:           #3f5894;
     --accent-soft:      #e7ecf5;
 
+    /* Dashboard birlamchi rangi — indigo. `--accent` (navy) brend rangi bo'lib
+       qoladi, `--primary` esa yangi dashboard aksentlari uchun. Ikkalasi ham
+       kerak: eski sahifalar `--accent` ga tayanadi. */
+    --primary:          #4f6ef0;
+    --primary-strong:   #3f5ad8;
+    --primary-soft:     #eef1fe;
+    --primary-contrast: #ffffff;
+    --primary-ring:     rgba(79, 110, 240, 0.18);
+    /* --primary-soft ustidagi MATN uchun. --primary o'zi bu fonda 3.87:1 beradi
+       (AA 4.5:1 dan past), shuning uchun matnga alohida to'qroq variant. */
+    --primary-ink:      #3448ae;
+
+    /* Hero gradienti (Imtihon CTA) — bitta joyda turadi */
+    --grad-hero:        linear-gradient(118deg, #4f6ef0 0%, #6366f1 46%, #8b5cf6 100%);
+    --grad-progress:    linear-gradient(90deg, #4f6ef0, #8b5cf6);
+
+    /* Status ranglari. `-ink` — och fon ustidagi MATN uchun,
+       `-surface` — oq matn ostidagi TO'LDIRISH uchun. Ikkalasi alohida,
+       chunki bitta rang ikkala rolni ham bajara olmaydi. */
+    --ok:               #10b981;
+    --ok-strong:        #059669;
+    --ok-surface:       #059669;
+    --ok-surface-2:     #10b981;
+    --ok-ink:           #047857;
+
+    --danger:           #e11d48;
+    --danger-ink:       #be123c;
+
     --focus-ring:       rgba(63, 88, 148, 0.15);
     --shadow-soft:      0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 1px 0 rgb(15 23 42 / 0.03);
     --shadow-card:      0 2px 4px -2px rgb(15 23 42 / 0.06), 0 1px 2px 0 rgb(15 23 42 / 0.04);
@@ -60,6 +88,29 @@
 
     --accent:           #9eaecf;
     --accent-soft:      rgba(63, 88, 148, 0.22);
+
+    /* DIQQAT: :root dagi HAR BIR yangi o'zgaruvchi shu yerda ham bo'lishi shart —
+       aks holda dark rejimda light qiymat "sizib" o'tadi. */
+    --primary:          #7f95f5;
+    --primary-strong:   #94a6f8;
+    --primary-soft:     rgba(79, 110, 240, 0.20);
+    --primary-contrast: #0b0e15;
+    --primary-ring:     rgba(127, 149, 245, 0.28);
+    --primary-ink:      #a8b8f8;
+
+    --grad-hero:        linear-gradient(118deg, #2f3f77 0%, #3b3f80 46%, #4a3f7d 100%);
+    --grad-progress:    linear-gradient(90deg, #7f95f5, #a78bfa);
+
+    /* DIQQAT: `-ink` (matn) dark'da OCHADI, `-surface` (to'ldirish) esa
+       QORAYMAYDI — oq matn ustida turgani uchun ikkala mavzuda ham bir xil. */
+    --ok:               #34d399;
+    --ok-strong:        #6ee7b7;
+    --ok-surface:       #047857;
+    --ok-surface-2:     #059669;
+    --ok-ink:           #6ee7b7;
+
+    --danger:           #fb7185;
+    --danger-ink:       #fda4af;
 
     --focus-ring:       rgba(158, 174, 207, 0.25);
     --shadow-soft:      0 1px 2px 0 rgb(0 0 0 / 0.35);
@@ -222,6 +273,47 @@
     @apply flex items-center gap-3 px-4 py-3 rounded-xl transition-colors duration-150;
   }
   .row:hover { background: var(--surface-hover); }
+
+  /* ── Dashboard primitivlari ──
+     Bularning hammasi CSS o'zgaruvchilarga tayanadi, shuning uchun fayl oxiridagi
+     ".dark .bg-* { ... !important }" bloki ularga tegmaydi (u faqat Tailwind'ning
+     tayyor rang klasslarini bosadi). Yangi dashboard shu yerdagilardan foydalanadi. */
+
+  /* Ingichka progress chizig'i: <div class="track"><i style="width:42%"/></div> */
+  .track {
+    background: var(--surface-inset);
+    border-radius: 9999px;
+    overflow: hidden;
+    height: 6px;
+  }
+  .track > i {
+    display: block;
+    height: 100%;
+    border-radius: 9999px;
+    background: var(--grad-progress);
+    transition: width .7s cubic-bezier(.34, 1.1, .64, 1);
+  }
+  .track-sm { height: 5px; }
+  @media (prefers-reduced-motion: reduce) {
+    .track > i { transition: none; }
+  }
+
+  /* Kartaning ichki bo'limlarini ajratuvchi vertikal chiziq (statistika ustunlari) */
+  .vsep { border-left: 1px solid var(--divider); }
+
+  /* Sidebar navigatsiya elementi */
+  .nav-item {
+    @apply relative flex items-center rounded-xl text-[14px] font-medium transition-colors duration-150;
+    color: var(--text-2);
+  }
+  .nav-item:hover { background: var(--surface-inset); color: var(--text-1); }
+  /* Matn --primary-ink bilan: --primary o'zi och ko'k fonda AA dan o'tmaydi */
+  .nav-item[aria-current="page"] {
+    background: var(--primary-soft);
+    color: var(--primary-ink);
+    font-weight: 600;
+  }
+  .nav-item[aria-current="page"]:hover { background: var(--primary-soft); color: var(--primary-ink); }
 }
 
 /* ─── Dark mode overrides for existing Tailwind ink/white classes ─── */
@@ -288,14 +380,15 @@
 .dark .border-rose-200    { border-color: rgba(244,  63,  94, 0.30) !important; }
 .dark .border-amber-200   { border-color: rgba(251, 191,  36, 0.30) !important; }
 
-/* Exam CTA banner — vivid on light, toned down (not glaring) on dark */
+/* Exam CTA banner — gradient endi `--grad-hero` tokenidan keladi (:root va .dark
+   ikkalasida ham aniqlangan), shuning uchun bu yerda mavzuga qarab tarmoqlanish
+   shart emas. Faqat soya dark rejimda yumshatiladi. */
 .exam-cta {
-  background: linear-gradient(120deg, #3f5894, #6d5ac0 55%, #8b5cf6);
-  box-shadow: 0 12px 30px -14px rgba(63, 88, 148, 0.7);
+  background: var(--grad-hero);
+  box-shadow: 0 18px 40px -22px rgba(79, 110, 240, 0.75);
 }
 .dark .exam-cta {
-  background: linear-gradient(120deg, #2e3c66, #3f3a6e 55%, #4a3f7d);
-  box-shadow: 0 12px 30px -14px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 18px 40px -22px rgba(0, 0, 0, 0.7);
 }
 
 /* AI recommendation cards — lavender on light, dark violet-tinted surface on dark

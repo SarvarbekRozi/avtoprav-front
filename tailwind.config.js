@@ -44,6 +44,21 @@ export default {
           600: '#059669',
           700: '#047857',
         },
+        // Dashboard birlamchi rangi (indigo). DIQQAT: `accent` yashil, CSS'dagi
+        // `--accent` esa navy — shuning uchun bu alohida `primary` nomi bilan.
+        primary: {
+          50:  '#eef1fe',
+          100: '#dfe5fd',
+          200: '#c3cefb',
+          300: '#9bacf7',
+          400: '#7086f4',
+          500: '#4f6ef0',
+          600: '#3f5ad8',
+          700: '#3448ae',
+          800: '#2d3d8b',
+          900: '#26326d',
+          950: '#171d42',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
