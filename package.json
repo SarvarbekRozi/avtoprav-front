@@ -7,7 +7,8 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "robot:cutout": "node scripts/robot-cutout.mjs"
   },
   "dependencies": {
     "@iconify-json/heroicons": "^1.2.3",
@@ -24,6 +25,8 @@
   "devDependencies": {
     "@nuxtjs/tailwindcss": "^6.13.1",
     "autoprefixer": "^10.4.20",
+    "jpeg-js": "^0.4.4",
+    "pngjs": "^7.0.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17"
   }
