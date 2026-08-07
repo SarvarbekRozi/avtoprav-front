@@ -52,8 +52,8 @@ function iconFor(name: string, index: number) {
 
 <template>
   <section class="card h-full flex flex-col">
-    <div class="px-4 sm:px-5 pt-4 pb-3 flex items-center justify-between gap-3">
-      <h2 class="text-[15px] font-semibold truncate" style="color: var(--text-1);">
+    <div class="px-5 sm:px-6 pt-5 pb-4 flex items-center justify-between gap-3">
+      <h2 class="text-[17px] font-semibold truncate" style="color: var(--text-1);">
         {{ i18n.t({ uz: 'Mavzular bo\'yicha ustaligingiz', kr: 'Мавзулар бўйича усталигингиз' }) }}
       </h2>
       <NuxtLink to="/topics" class="link-all text-[13px] font-medium shrink-0">
@@ -69,20 +69,20 @@ function iconFor(name: string, index: number) {
       }) }}
     </div>
 
-    <ul v-else class="px-4 sm:px-5 pb-4 flex flex-col gap-3.5">
+    <ul v-else class="px-5 sm:px-6 pb-5 flex flex-col gap-[18px]">
       <li v-for="(t, i) in rows" :key="t.topic_id">
-        <NuxtLink :to="`/test/start/topic?topic_id=${t.topic_id}`" class="group flex items-center gap-3">
-          <IconTile :icon="iconFor(t.name, i).icon" :tone="iconFor(t.name, i).tone" :size="34" />
+        <NuxtLink :to="`/test/start/topic?topic_id=${t.topic_id}`" class="group flex items-center gap-3.5">
+          <IconTile :icon="iconFor(t.name, i).icon" :tone="iconFor(t.name, i).tone" :size="38" />
 
           <div class="min-w-0 flex-1">
             <div class="flex items-center justify-between gap-2">
-              <span class="text-[13px] font-medium truncate transition-opacity group-hover:opacity-75"
+              <span class="text-[13.5px] font-medium truncate transition-opacity group-hover:opacity-75"
                     style="color: var(--text-1);">{{ t.name }}</span>
-              <span class="text-[13px] font-semibold tabular-nums shrink-0" style="color: var(--text-3);">
+              <span class="text-[13.5px] font-semibold tabular-nums shrink-0" style="color: var(--text-3);">
                 {{ t.mastery }}%
               </span>
             </div>
-            <div class="track track-sm mt-1.5">
+            <div class="track track-sm mt-2">
               <i :style="{ width: `${Math.max(t.mastery, 1.5)}%`, background: BAR[t.strength] || BAR.new }"></i>
             </div>
           </div>

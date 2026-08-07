@@ -61,8 +61,8 @@ const rows = computed(() => (props.recent ?? []).slice(0, 5))
 
 <template>
   <section class="card h-full flex flex-col">
-    <div class="px-4 sm:px-5 pt-4 pb-3 flex items-center justify-between gap-3">
-      <h2 class="text-[15px] font-semibold truncate" style="color: var(--text-1);">
+    <div class="px-5 sm:px-6 pt-5 pb-4 flex items-center justify-between gap-3">
+      <h2 class="text-[17px] font-semibold truncate" style="color: var(--text-1);">
         {{ i18n.t({ uz: 'So\'nggi faollik', kr: 'Сўнгги фаоллик' }) }}
       </h2>
       <NuxtLink to="/me/stats" class="link-all text-[13px] font-medium shrink-0">
@@ -75,13 +75,13 @@ const rows = computed(() => (props.recent ?? []).slice(0, 5))
       {{ i18n.t({ uz: 'Hozircha faollik yo\'q', kr: 'Ҳозирча фаоллик йўқ' }) }}
     </div>
 
-    <ul v-else class="px-4 sm:px-5 pb-4 flex flex-col gap-3">
+    <ul v-else class="px-5 sm:px-6 pb-5 flex flex-col gap-[18px]">
       <li v-for="a in rows" :key="a.id">
-        <NuxtLink :to="`/test/result/${a.id}`" class="group flex items-start gap-3">
-          <IconTile :icon="meta(a.mode).icon" :tone="meta(a.mode).tone" :size="32" :radius="16" />
+        <NuxtLink :to="`/test/result/${a.id}`" class="group flex items-start gap-3.5">
+          <IconTile :icon="meta(a.mode).icon" :tone="meta(a.mode).tone" :size="36" :radius="18" />
 
           <div class="min-w-0 flex-1">
-            <div class="text-[13px] font-medium leading-snug truncate transition-opacity group-hover:opacity-75"
+            <div class="text-[13.5px] font-medium leading-snug truncate transition-opacity group-hover:opacity-75"
                  style="color: var(--text-1);">
               {{ i18n.t(meta(a.mode).label) }} {{ i18n.t({ uz: 'urinishini yakunladingiz', kr: 'уринишини якунладингиз' }) }}
             </div>

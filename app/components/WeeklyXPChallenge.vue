@@ -105,56 +105,56 @@ const note = computed(() => {
 </script>
 
 <template>
-  <section class="card p-4 sm:p-5 h-full flex flex-col">
+  <section class="card p-5 sm:p-6 h-full min-h-[248px] flex flex-col">
     <!-- Sarlavha -->
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
-        <h2 class="text-[15px] font-semibold leading-tight" style="color: var(--text-1);">
+        <h2 class="text-[17px] font-semibold leading-tight" style="color: var(--text-1);">
           {{ i18n.t({ uz: 'Haftalik XP challenge', kr: 'Ҳафталик XP challenge' }) }}
         </h2>
-        <p class="text-xs mt-1 truncate" style="color: var(--text-4);">
+        <p class="text-[13px] mt-1.5 truncate" style="color: var(--text-4);">
           <span class="tabular-nums">{{ rangeLabel }}</span>
           <span v-if="rangeLabel"> · </span>{{ i18n.t({ uz: 'so\'nggi 7 kun', kr: 'сўнгги 7 кун' }) }}
         </p>
       </div>
 
-      <NuxtLink to="/me/stats" class="detail-btn inline-flex items-center gap-1 h-8 px-3 rounded-lg text-[13px] font-medium shrink-0">
+      <NuxtLink to="/me/stats"
+        class="detail-btn inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-[13px] font-medium shrink-0">
         {{ i18n.t({ uz: 'Batafsil', kr: 'Батафсил' }) }}
-        <AppIcon name="chev-r" :size="13" />
+        <AppIcon name="chev-r" :size="14" />
       </NuxtLink>
     </div>
 
-    <!-- Zinapoya -->
-    <ol class="grid grid-cols-5 mt-6" role="list">
+    <!-- Zinapoya. Namunadagidek: tugun YUQORIDA, ikkala yorliq esa OSTIDA. -->
+    <ol class="grid grid-cols-5 mt-7" role="list">
       <li v-for="(step, i) in STEPS" :key="step" class="flex flex-col items-center min-w-0">
-        <!-- XP yorlig'i -->
-        <div class="text-[13px] font-bold tabular-nums leading-none"
-             :style="{ color: stateOf(i) === 'locked' ? 'var(--text-4)' : 'var(--text-1)' }">
-          {{ step }} XP
-        </div>
-
         <!-- Tugun + ulovchi chiziqlar -->
-        <div class="relative w-full h-9 flex items-center justify-center my-2">
+        <div class="relative w-full h-8 flex items-center justify-center">
           <!-- Ulovchi chiziq har bir tugun katagida ikki yarimga bo'linadi.
                i-tugunga KIRUVCHI segment (uning chap yarmi + oldingi katakning
-               o'ng yarmi) o'sha tugun holatiga qarab bo'yaladi, shuning uchun
-               ikkala yarim ham bir xil `segState(i)` dan rang oladi. -->
+               o'ng yarmi) o'sha tugun holatiga qarab bo'yaladi. -->
           <span v-if="i > 0" class="seg absolute left-0 right-1/2" :class="`seg-${segState(i)}`"></span>
           <span v-if="i < STEPS.length - 1" class="seg absolute left-1/2 right-0"
                 :class="`seg-${segState(i + 1)}`"></span>
 
           <span class="node relative z-10 grid place-items-center rounded-full"
                 :class="[`node-${stateOf(i)}`]">
-            <AppIcon v-if="stateOf(i) === 'done'" name="check" :size="14" />
-            <AppIcon v-else-if="stateOf(i) === 'locked'" name="lock" :size="11" />
+            <AppIcon v-if="stateOf(i) === 'done'" name="check" :size="15" />
+            <AppIcon v-else-if="stateOf(i) === 'locked'" name="lock" :size="12" />
             <span v-else class="node-dot"></span>
           </span>
         </div>
 
+        <!-- XP miqdori -->
+        <div class="mt-3.5 text-[14px] font-bold tabular-nums leading-none whitespace-nowrap"
+             :style="{ color: stateOf(i) === 'locked' ? 'var(--text-4)' : 'var(--text-1)' }">
+          {{ step }} XP
+        </div>
+
         <!-- Bosqich raqami -->
-        <div class="text-2xs font-medium truncate"
+        <div class="mt-1.5 text-xs font-medium truncate"
              :style="{
-               color: stateOf(i) === 'current' ? 'var(--primary)' : 'var(--text-4)',
+               color: stateOf(i) === 'current' ? 'var(--primary-ink)' : 'var(--text-4)',
                fontWeight: stateOf(i) === 'current' ? 700 : 500,
              }">
           {{ i + 1 }}-{{ i18n.t({ uz: 'bosqich', kr: 'босқич' }) }}
@@ -162,23 +162,16 @@ const note = computed(() => {
       </li>
     </ol>
 
-    <!-- Umumiy progress -->
-    <div class="mt-5 flex items-center gap-2.5">
-      <div class="track track-sm flex-1">
-        <i :style="{ width: `${Math.max(overallPct, 1.5)}%` }"></i>
-      </div>
-      <span class="text-2xs font-semibold tabular-nums shrink-0" style="color: var(--text-3);">
-        <template v-if="loaded">{{ xp }}/{{ STEPS[STEPS.length - 1] }} XP</template>
-        <template v-else>—</template>
-      </span>
-    </div>
-
-    <!-- Izoh -->
-    <div class="mt-auto pt-4">
-      <div class="flex items-center gap-2.5 rounded-xl px-3 py-2.5"
-           style="background: rgba(251,191,36,0.12); border: 1px solid rgba(245,158,11,0.24);">
-        <AppIcon name="flame" :size="16" class="text-amber-500 shrink-0" />
-        <p class="text-xs font-medium leading-snug" style="color: var(--text-2);">{{ note }}</p>
+    <!-- Izoh — namunada ko'kimtir (amber emas) -->
+    <div class="mt-auto pt-6">
+      <div class="flex items-center gap-2.5 rounded-xl px-3.5 py-3"
+           style="background: var(--primary-soft);">
+        <AppIcon name="flame" :size="17" class="text-amber-500 shrink-0" />
+        <p class="text-[13px] font-medium leading-snug" style="color: var(--text-2);">{{ note }}</p>
+        <span v-if="loaded" class="ml-auto text-2xs font-semibold tabular-nums shrink-0 whitespace-nowrap"
+              style="color: var(--text-4);">
+          {{ xp }}/{{ STEPS[STEPS.length - 1] }} XP
+        </span>
       </div>
     </div>
   </section>
@@ -206,8 +199,8 @@ const note = computed(() => {
 
 /* ── Tugunlar ── */
 .node {
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   transition: box-shadow .25s, background .25s;
 }
 /* To'ldirish uchun --ok-surface (oq matn ostida ishlaydigan to'q yashil),
@@ -217,18 +210,18 @@ const note = computed(() => {
   color: #fff;
   box-shadow: 0 2px 8px -2px rgba(16, 185, 129, 0.55);
 }
+/* Namunada joriy bosqich — to'q ko'k to'ldirilgan doira, ichida oq halqa */
 .node-current {
-  width: 30px;
-  height: 30px;
-  background: var(--surface);
-  border: 3px solid var(--primary);
+  width: 34px;
+  height: 34px;
+  background: var(--primary);
   box-shadow: 0 0 0 4px var(--primary-ring);
 }
 .node-dot {
-  width: 9px;
-  height: 9px;
+  width: 11px;
+  height: 11px;
   border-radius: 9999px;
-  background: var(--primary);
+  background: #fff;
 }
 .node-locked {
   background: var(--surface-inset);

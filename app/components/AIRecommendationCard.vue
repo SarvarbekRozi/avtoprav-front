@@ -31,39 +31,42 @@ const primary = computed(() => rec.value
 </script>
 
 <template>
-  <section class="ai-recommend relative overflow-hidden rounded-2xl p-4 sm:p-5 h-full flex flex-col">
+  <section class="ai-recommend relative overflow-hidden rounded-[22px] p-5 sm:p-6 h-full flex flex-col">
     <div aria-hidden="true"
-         class="ai-glow absolute -top-20 -right-16 w-48 h-48 rounded-full blur-3xl pointer-events-none"
+         class="ai-glow absolute -top-24 -right-16 w-56 h-56 rounded-full blur-3xl pointer-events-none"
          style="background: radial-gradient(circle, rgba(139,92,246,0.34), transparent 70%);"></div>
 
-    <div class="relative flex items-start gap-3 sm:gap-4">
-      <RobotArt class="w-[86px] sm:w-[104px] shrink-0 -mt-2 -ml-2" />
+    <div class="relative flex items-start gap-4 sm:gap-5">
+      <!-- Robot namunadagidek yirik va chapda alohida joy egallaydi -->
+      <RobotArt class="w-[112px] sm:w-[124px] lg:w-[132px] shrink-0 -mt-3 -ml-3" />
 
-      <div class="min-w-0 flex-1">
-        <span class="ai-badge inline-flex items-center gap-1 px-2 h-[22px] rounded-md text-[10px] font-bold tracking-wider uppercase text-white">
-          <AppIcon name="spark" :size="10" />
+      <div class="min-w-0 flex-1 pt-1">
+        <span class="ai-badge inline-flex items-center gap-1.5 px-2.5 h-[24px] rounded-lg text-[10px] font-bold tracking-wider uppercase text-white">
+          <AppIcon name="spark" :size="11" />
           {{ i18n.t({ uz: 'AI tavsiya', kr: 'AI тавсия' }) }}
         </span>
 
-        <h2 class="text-[15px] sm:text-base font-bold leading-snug mt-2" style="color: var(--text-1);">
+        <h2 class="text-[17px] font-bold leading-snug mt-2.5" style="color: var(--text-1);">
           {{ i18n.t({ uz: 'Siz uchun tavsiya qilingan', kr: 'Сиз учун тавсия қилинган' }) }}
           <span aria-hidden="true">✨</span>
         </h2>
 
-        <p class="text-[13px] leading-relaxed mt-1.5" style="color: var(--text-2);">
+        <!-- line-clamp-4: tavsiya matni uzun bo'lsa ham karta yonidagilardan
+             baland bo'lib ketmasin (qatorlar bir sathda tursin) -->
+        <p class="text-[13.5px] leading-[1.6] mt-2 line-clamp-4" style="color: var(--text-2);">
           {{ message }}
         </p>
       </div>
     </div>
 
-    <div class="relative mt-auto pt-4 flex flex-wrap items-center gap-2">
+    <div class="relative mt-auto pt-5 flex flex-wrap items-center gap-2.5">
       <NuxtLink :to="primary.to"
-        class="ai-cta inline-flex items-center gap-1.5 h-10 px-4 rounded-xl text-[13px] font-semibold text-white">
+        class="ai-cta inline-flex items-center gap-2 h-11 px-5 rounded-xl text-[13.5px] font-semibold text-white">
         {{ primary.label }}
-        <AppIcon name="arrow" :size="14" />
+        <AppIcon name="arrow" :size="15" />
       </NuxtLink>
       <NuxtLink to="/topics"
-        class="ai-alt inline-flex items-center h-10 px-4 rounded-xl text-[13px] font-medium">
+        class="ai-alt inline-flex items-center h-11 px-5 rounded-xl text-[13.5px] font-medium">
         {{ i18n.t({ uz: 'Barcha mavzular', kr: 'Барча мавзулар' }) }}
       </NuxtLink>
     </div>
