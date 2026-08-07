@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const i18n = useI18n()
-const { data } = await useAsyncData('topic-stats', () => apiFetch<any>('/me/topic-stats'))
+// Dashboard kartalari bilan bir xil kalit/handler — Nuxt so'rovni dedupe qiladi
+const { data } = await useTopicStats()
 
 const strengthColors: Record<string, string> = {
   mastered:   'bg-emerald-500',

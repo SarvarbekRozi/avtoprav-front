@@ -14,20 +14,54 @@ interface Notif {
   created_at: string
 }
 
+const props = withDefaults(defineProps<{
+  /**
+   * true (standart) — ekranning o'ng yuqorisida suzib turadi (mobil).
+   * false — oddiy oqimdagi tugma (desktop sidebar ichida).
+   */
+  floating?: boolean
+  /** menyu qaysi tomonga ochilsin */
+  align?: 'left' | 'right'
+}>(), { floating: true, align: 'right' })
+
 const open = ref(false)
-const items = ref<Notif[]>([])
-const unread = ref(0)
 const rootRef = ref<HTMLElement | null>(null)
 
+// Holat useState orqali BO'LISHILADI: mobil (suzuvchi) va desktop (sidebar)
+// nusxalari bir vaqtda mount bo'ladi, lekin so'rov bir marta ketishi kerak.
+const items = useState<Notif[]>('notifications-items', () => [])
+const unread = useState<number>('notifications-unread', () => 0)
+// Kim uchun yuklangani. `true/false` emas, aynan FOYDALANUVCHI ID'si:
+// chiqib boshqa hisobga kirilganda (SPA, sahifa qayta yuklanmaydi) eski
+// hisobning bildirishnomalari ko'rinib qolmasligi uchun.
+const loadedFor = useState<number | null>('notifications-loaded-for', () => null)
+
 async function fetchNotifs() {
-  if (!auth.token) return
+  const uid = auth.user?.id ?? null
+  if (!auth.token || uid === null || loadedFor.value === uid) return
+  loadedFor.value = uid
   try {
     const res = await apiFetch<{ data: Notif[], unread: number }>('/me/notifications')
     items.value = res.data || []
     unread.value = res.unread || 0
   }
-  catch { /* ignore */ }
+  catch { loadedFor.value = null /* keyingi urinishda qayta so'ralsin */ }
 }
+
+// Hisob almashganda darrov tozalab, yangisini yuklaymiz.
+// Ikkala nusxa ham shu kuzatuvchini ro'yxatdan o'tkazadi, shuning uchun
+// tozalash `loadedFor` bilan himoyalangan — aks holda ikkinchi nusxa
+// birinchisining natijasini o'chirib, so'rovni takrorlardi.
+watch(() => auth.user?.id, (id, prev) => {
+  if (id === prev) return
+  if (loadedFor.value !== id) {
+    items.value = []
+    unread.value = 0
+    loadedFor.value = null
+  }
+  open.value = false
+  if (id != null) fetchNotifs()
+})
 
 async function toggle() {
   open.value = !open.value
@@ -63,12 +97,17 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
 </script>
 
 <template>
-  <div ref="rootRef" class="fixed top-3 right-3 z-30">
+  <div ref="rootRef" :class="props.floating ? 'fixed top-3 right-3 z-30' : 'relative'">
     <button type="button" @click="toggle"
-      class="h-10 w-10 rounded-full grid place-items-center border shadow-soft relative transition-colors"
-      style="background: var(--surface); border-color: var(--border-soft); color: var(--text-2);"
+      class="grid place-items-center relative transition-colors"
+      :class="props.floating
+        ? 'h-10 w-10 rounded-full border shadow-soft'
+        : 'h-8 w-8 rounded-lg hover:bg-[var(--surface-inset)]'"
+      :style="props.floating
+        ? 'background: var(--surface); border-color: var(--border-soft); color: var(--text-2);'
+        : 'color: var(--text-3);'"
       :aria-label="i18n.t({ uz: 'Bildirishnomalar', kr: 'Билдиришномалар' })">
-      <AppIcon name="bell" :size="18" />
+      <AppIcon name="bell" :size="props.floating ? 18 : 17" />
       <span v-if="unread > 0"
         class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold grid place-items-center tabular-nums">
         {{ unread > 9 ? '9+' : unread }}
@@ -80,7 +119,9 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
       enter-from-class="opacity-0 -translate-y-1" enter-to-class="opacity-100 translate-y-0"
       leave-active-class="transition duration-100 ease-in"
       leave-from-class="opacity-100" leave-to-class="opacity-0">
-      <div v-if="open" class="absolute right-0 mt-2 w-80 max-w-[calc(100vw-1.5rem)] card overflow-hidden"
+      <div v-if="open"
+           class="absolute mt-2 w-80 max-w-[calc(100vw-1.5rem)] card overflow-hidden z-50"
+           :class="props.align === 'left' ? 'left-0' : 'right-0'"
            style="box-shadow: var(--shadow-lift);">
         <div class="px-4 py-3 flex items-center justify-between" style="border-bottom: 1px solid var(--divider);">
           <div class="text-sm font-semibold" style="color: var(--text-1);">

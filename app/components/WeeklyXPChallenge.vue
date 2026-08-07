@@ -1,0 +1,241 @@
+<script setup lang="ts">
+/**
+ * "Haftalik XP challenge" — 5 bosqichli XP zinapoyasi.
+ *
+ * MA'LUMOT MANBASI (to'qib chiqarilmagan):
+ *   GET /leaderboard?period=week&limit=5  →  me.points
+ *   = SUM(daily_progress.points_earned) so'nggi 7 kun uchun (bugun ham kiradi).
+ * Bu API'dagi yagona davriy XP ko'rsatkichi — /me/stats.timeline ham,
+ * /me/streak.week ham XP ustuniga ega emas.
+ *
+ * Oyna SIRPANUVCHI (bugundan orqaga 7 kun), dushanba–yakshanba emas —
+ * shuning uchun sarlavha ostida "so'nggi 7 kun" deb aniq yozilgan.
+ *
+ * Bosqich chegaralari (100…300) — XP iqtisodiga moslangan mahalliy jadval:
+ * bitta faol kun ≈ 50 XP (kunlik maqsad +5, o'zlashtirilgan savol +3,
+ * imtihondan o'tish +30). Ya'ni zinapoya ~2–6 faol kunni qamraydi.
+ */
+const props = withDefaults(defineProps<{
+  /** so'nggi 7 kunlik XP; null = hali yuklanmadi (0 XP dan farqli) */
+  weekXp: number | null
+  /** joriy kunlik seriya (auth.user.streak_current) */
+  streakCurrent?: number
+}>(), { streakCurrent: 0 })
+
+const i18n = useI18n()
+
+const STEPS = [100, 150, 200, 250, 300]
+
+/** Ma'lumot keldimi? Kelmagan bo'lsa "0 XP yig'dingiz" deb da'vo qilmaymiz. */
+const loaded = computed(() => props.weekXp !== null)
+
+// points_earned manfiy bo'lishi mumkin (imtihondan yiqilish −5), umumiy bal esa
+// 0 dan pastga tushmaydi — ko'rsatishda 0 ga qisamiz.
+const xp = computed(() => Math.max(0, Math.round(props.weekXp ?? 0)))
+
+/** Erishilmagan eng past bosqich; hammasi bajarilgan bo'lsa STEPS.length */
+const currentIdx = computed(() => {
+  const i = STEPS.findIndex(s => xp.value < s)
+  return i === -1 ? STEPS.length : i
+})
+
+type State = 'done' | 'current' | 'locked'
+function stateOf(i: number): State {
+  if (xp.value >= STEPS[i]!) return 'done'
+  return i === currentIdx.value ? 'current' : 'locked'
+}
+
+const remaining = computed(() => {
+  const idx = currentIdx.value
+  if (idx >= STEPS.length) return 0
+  return Math.max(0, STEPS[idx]! - xp.value)
+})
+
+const overallPct = computed(() =>
+  Math.min(100, Math.round((xp.value / STEPS[STEPS.length - 1]!) * 100)))
+
+// Sirpanuvchi oynaning sanalari — faqat klientda (SSR vaqt mintaqasi boshqacha)
+const MONTH_LATN = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentyabr', 'oktyabr', 'noyabr', 'dekabr']
+const MONTH_CYRL = ['январ', 'феврал', 'март', 'апрел', 'май', 'июн', 'июл', 'август', 'сентябр', 'октябр', 'ноябр', 'декабр']
+
+const now = ref<Date | null>(null)
+onMounted(() => { now.value = new Date() })
+
+const rangeLabel = computed(() => {
+  const end = now.value
+  if (!end) return ''
+  const start = new Date(end)
+  start.setDate(start.getDate() - 6)
+  const months = i18n.locale.value === 'uz_cyrl' ? MONTH_CYRL : MONTH_LATN
+  return start.getMonth() === end.getMonth()
+    ? `${start.getDate()}–${end.getDate()} ${months[end.getMonth()]}`
+    : `${start.getDate()} ${months[start.getMonth()]} – ${end.getDate()} ${months[end.getMonth()]}`
+})
+
+/** Segment rangi: i-chi tugundan (i+1)-chiga */
+function segState(rightIdx: number): State {
+  return stateOf(rightIdx)
+}
+
+const note = computed(() => {
+  // Yuklanmagan bo'lsa hech qanday da'vo qilmaymiz — 0 XP deb ko'rsatish yolg'on bo'lardi
+  if (!loaded.value) return i18n.t({ uz: 'Natijalar yuklanmoqda…', kr: 'Натижалар юкланмоқда…' })
+
+  const s = props.streakCurrent
+  if (s >= 2) {
+    return i18n.t({
+      uz: `${s} kun ketma-ket muvaffaqiyatli. Davom eting!`,
+      kr: `${s} кун кетма-кет муваффақиятли. Давом этинг!`,
+    })
+  }
+  if (currentIdx.value >= STEPS.length) {
+    return i18n.t({ uz: 'Barcha bosqichlar bajarildi. Zo\'r natija!', kr: 'Барча босқичлар бажарилди. Зўр натижа!' })
+  }
+  if (xp.value > 0) {
+    return i18n.t({
+      uz: `Keyingi bosqichgacha ${remaining.value} XP qoldi`,
+      kr: `Кейинги босқичгача ${remaining.value} XP қолди`,
+    })
+  }
+  return i18n.t({
+    uz: 'Birinchi testni yeching va XP yig\'ishni boshlang',
+    kr: 'Биринчи тестни ечинг ва XP йиғишни бошланг',
+  })
+})
+</script>
+
+<template>
+  <section class="card p-4 sm:p-5 h-full flex flex-col">
+    <!-- Sarlavha -->
+    <div class="flex items-start justify-between gap-3">
+      <div class="min-w-0">
+        <h2 class="text-[15px] font-semibold leading-tight" style="color: var(--text-1);">
+          {{ i18n.t({ uz: 'Haftalik XP challenge', kr: 'Ҳафталик XP challenge' }) }}
+        </h2>
+        <p class="text-xs mt-1 truncate" style="color: var(--text-4);">
+          <span class="tabular-nums">{{ rangeLabel }}</span>
+          <span v-if="rangeLabel"> · </span>{{ i18n.t({ uz: 'so\'nggi 7 kun', kr: 'сўнгги 7 кун' }) }}
+        </p>
+      </div>
+
+      <NuxtLink to="/me/stats" class="detail-btn inline-flex items-center gap-1 h-8 px-3 rounded-lg text-[13px] font-medium shrink-0">
+        {{ i18n.t({ uz: 'Batafsil', kr: 'Батафсил' }) }}
+        <AppIcon name="chev-r" :size="13" />
+      </NuxtLink>
+    </div>
+
+    <!-- Zinapoya -->
+    <ol class="grid grid-cols-5 mt-6" role="list">
+      <li v-for="(step, i) in STEPS" :key="step" class="flex flex-col items-center min-w-0">
+        <!-- XP yorlig'i -->
+        <div class="text-[13px] font-bold tabular-nums leading-none"
+             :style="{ color: stateOf(i) === 'locked' ? 'var(--text-4)' : 'var(--text-1)' }">
+          {{ step }} XP
+        </div>
+
+        <!-- Tugun + ulovchi chiziqlar -->
+        <div class="relative w-full h-9 flex items-center justify-center my-2">
+          <!-- Ulovchi chiziq har bir tugun katagida ikki yarimga bo'linadi.
+               i-tugunga KIRUVCHI segment (uning chap yarmi + oldingi katakning
+               o'ng yarmi) o'sha tugun holatiga qarab bo'yaladi, shuning uchun
+               ikkala yarim ham bir xil `segState(i)` dan rang oladi. -->
+          <span v-if="i > 0" class="seg absolute left-0 right-1/2" :class="`seg-${segState(i)}`"></span>
+          <span v-if="i < STEPS.length - 1" class="seg absolute left-1/2 right-0"
+                :class="`seg-${segState(i + 1)}`"></span>
+
+          <span class="node relative z-10 grid place-items-center rounded-full"
+                :class="[`node-${stateOf(i)}`]">
+            <AppIcon v-if="stateOf(i) === 'done'" name="check" :size="14" />
+            <AppIcon v-else-if="stateOf(i) === 'locked'" name="lock" :size="11" />
+            <span v-else class="node-dot"></span>
+          </span>
+        </div>
+
+        <!-- Bosqich raqami -->
+        <div class="text-2xs font-medium truncate"
+             :style="{
+               color: stateOf(i) === 'current' ? 'var(--primary)' : 'var(--text-4)',
+               fontWeight: stateOf(i) === 'current' ? 700 : 500,
+             }">
+          {{ i + 1 }}-{{ i18n.t({ uz: 'bosqich', kr: 'босқич' }) }}
+        </div>
+      </li>
+    </ol>
+
+    <!-- Umumiy progress -->
+    <div class="mt-5 flex items-center gap-2.5">
+      <div class="track track-sm flex-1">
+        <i :style="{ width: `${Math.max(overallPct, 1.5)}%` }"></i>
+      </div>
+      <span class="text-2xs font-semibold tabular-nums shrink-0" style="color: var(--text-3);">
+        <template v-if="loaded">{{ xp }}/{{ STEPS[STEPS.length - 1] }} XP</template>
+        <template v-else>—</template>
+      </span>
+    </div>
+
+    <!-- Izoh -->
+    <div class="mt-auto pt-4">
+      <div class="flex items-center gap-2.5 rounded-xl px-3 py-2.5"
+           style="background: rgba(251,191,36,0.12); border: 1px solid rgba(245,158,11,0.24);">
+        <AppIcon name="flame" :size="16" class="text-amber-500 shrink-0" />
+        <p class="text-xs font-medium leading-snug" style="color: var(--text-2);">{{ note }}</p>
+      </div>
+    </div>
+  </section>
+</template>
+
+<style scoped>
+.detail-btn {
+  background: var(--surface);
+  border: 1px solid var(--border-1);
+  color: var(--text-2);
+  transition: background .15s, border-color .15s;
+}
+.detail-btn:hover { background: var(--surface-inset); border-color: var(--text-muted); }
+
+/* ── Ulovchi segmentlar ── */
+.seg {
+  height: 3px;
+  border-radius: 9999px;
+  background: var(--surface-inset);
+  overflow: hidden;
+}
+.seg-done { background: var(--ok-surface-2); }
+.seg-current { background: var(--primary); }
+.seg-locked { background: var(--surface-inset); }
+
+/* ── Tugunlar ── */
+.node {
+  width: 26px;
+  height: 26px;
+  transition: box-shadow .25s, background .25s;
+}
+/* To'ldirish uchun --ok-surface (oq matn ostida ishlaydigan to'q yashil),
+   --ok emas: --ok dark rejimda ochib ketadi va oq belgi ko'rinmay qoladi. */
+.node-done {
+  background: var(--ok-surface);
+  color: #fff;
+  box-shadow: 0 2px 8px -2px rgba(16, 185, 129, 0.55);
+}
+.node-current {
+  width: 30px;
+  height: 30px;
+  background: var(--surface);
+  border: 3px solid var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-ring);
+}
+.node-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 9999px;
+  background: var(--primary);
+}
+.node-locked {
+  background: var(--surface-inset);
+  color: var(--text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seg-current > i, .node { transition: none; }
+}
+</style>

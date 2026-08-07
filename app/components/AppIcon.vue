@@ -9,6 +9,7 @@ const NAME_MAP: Record<string, string> = {
   'chev-l':      'lucide:chevron-left',
   'chev-d':      'lucide:chevron-down',
   'chev-u':      'lucide:chevron-up',
+  'chev-ud':     'lucide:chevrons-up-down',
 
   // status
   check:         'lucide:check',
@@ -37,6 +38,16 @@ const NAME_MAP: Record<string, string> = {
   stat:          'lucide:bar-chart-3',
   sign:          'lucide:traffic-cone',
 
+  bookmark:      'lucide:bookmark',
+  target:        'lucide:target',
+  car:           'lucide:car',
+  alert:         'lucide:triangle-alert',
+  activity:      'lucide:activity',
+
+  // outlined status circles (activity feed)
+  'check-circle': 'lucide:circle-check-big',
+  'x-circle':     'lucide:circle-x',
+
   // user
   user:          'lucide:user-round',
   home:          'lucide:home',
@@ -48,6 +59,7 @@ const NAME_MAP: Record<string, string> = {
   settings:      'lucide:settings',
   send:          'lucide:send',
   card:          'lucide:credit-card',
+  logout:        'lucide:log-out',
 }
 
 const props = withDefaults(defineProps<{
