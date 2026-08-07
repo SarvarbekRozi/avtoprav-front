@@ -8,11 +8,25 @@
  *
  * So'rov `useTopicStats()` orqali — TopicStrengthCard bilan bitta kalitni va
  * bitta handler havolasini bo'lishadi, shuning uchun so'rov faqat bir marta ketadi.
+ *
+ * Robot — `AiRobot3D` (Three.js/WebGL, real vaqtda chiziladi). Rasm ishlatilmaydi.
  */
 const i18n = useI18n()
 const { data } = await useTopicStats()
 
 const rec = computed(() => data.value?.recommendation ?? null)
+
+/**
+ * Robot holati kontekstga bog'liq:
+ *   studying — tavsiya bor, ya'ni "mavzuni o'rganish kerak"
+ *   thinking — hali tavsiya yo'q (yetarli ma'lumot to'planmagan)
+ *   happy    — karta ustida sichqoncha
+ */
+const hovered = ref(false)
+const robotState = computed(() => {
+  if (hovered.value) return 'happy' as const
+  return rec.value ? ('studying' as const) : ('thinking' as const)
+})
 
 const message = computed(() => rec.value?.message ?? i18n.t({
   uz: 'Bir nechta test yeching — AI sizga eng mos mavzuni o\'zi tanlab beradi.',
@@ -31,15 +45,25 @@ const primary = computed(() => rec.value
 </script>
 
 <template>
-  <section class="ai-recommend relative overflow-hidden rounded-[22px] p-5 sm:p-6 h-full flex flex-col">
+  <section class="ai-recommend relative overflow-hidden rounded-[22px] p-5 sm:p-6 h-full flex flex-col"
+           @pointerenter="hovered = true" @pointerleave="hovered = false">
     <div aria-hidden="true"
          class="ai-glow absolute -top-24 -right-16 w-56 h-56 rounded-full blur-3xl pointer-events-none"
          style="background: radial-gradient(circle, rgba(139,92,246,0.34), transparent 70%);"></div>
 
     <div class="relative flex items-start gap-4 sm:gap-5">
-      <!-- Robot namunadagidek yirik va chapda alohida joy egallaydi.
-           Butun bo'yli personaj bo'lgani uchun kvadrat maydon kerak. -->
-      <RobotArt class="w-[128px] sm:w-[148px] lg:w-[158px] shrink-0 -mt-3 -ml-2" />
+      <!-- 3D robot.
+           ClientOnly — WebGL faqat brauzerda ishlaydi va `three` ni SSR
+           to'plamiga tortish keraksiz. Bu yerda xavfsiz: layout/sahifa ILDIZI
+           emas, karta ichi.
+           Lazy… — `three` ~580KB. Statik import bo'lsa u sahifaning asosiy
+           to'plamiga kirib, birinchi chiziqni kechiktirardi. Lazy bilan
+           alohida chunk bo'lib, hidratsiyadan keyin parallel yuklanadi. -->
+      <div class="robot-slot shrink-0 -mt-2 -ml-3 sm:-ml-4" aria-hidden="true">
+        <ClientOnly>
+          <LazyAiRobot3D :state="robotState" />
+        </ClientOnly>
+      </div>
 
       <div class="min-w-0 flex-1 pt-1">
         <span class="ai-badge inline-flex items-center gap-1.5 px-2.5 h-[24px] rounded-lg text-[10px] font-bold tracking-wider uppercase text-white">
@@ -95,6 +119,21 @@ const primary = computed(() => rec.value
   transition: background .15s;
 }
 .ai-alt:hover { background: var(--surface-inset); }
+
+/* Robot uchun maydon. AiRobot3D o'z ichida `min-height: 220px` belgilaydi,
+   shuning uchun slot ham shundan past bo'lmasligi kerak — aks holda canvas
+   kartadan toshib chiqadi. Kenglik/balandlik nisbati kamera aspektiga
+   ta'sir qiladi, shuning uchun deyarli kvadrat qoldirilgan. */
+.robot-slot {
+  width: 150px;
+  height: 220px;
+}
+@media (min-width: 640px) {
+  .robot-slot { width: 168px; height: 232px; }
+}
+@media (min-width: 1024px) {
+  .robot-slot { width: 178px; height: 240px; }
+}
 
 .ai-glow { animation: ai-pulse 4s ease-in-out infinite; }
 @keyframes ai-pulse {
