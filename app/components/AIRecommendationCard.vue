@@ -37,8 +37,9 @@ const primary = computed(() => rec.value
          style="background: radial-gradient(circle, rgba(139,92,246,0.34), transparent 70%);"></div>
 
     <div class="relative flex items-start gap-4 sm:gap-5">
-      <!-- Robot namunadagidek yirik va chapda alohida joy egallaydi -->
-      <RobotArt class="w-[112px] sm:w-[124px] lg:w-[132px] shrink-0 -mt-3 -ml-3" />
+      <!-- Robot namunadagidek yirik va chapda alohida joy egallaydi.
+           Butun bo'yli personaj bo'lgani uchun kvadrat maydon kerak. -->
+      <RobotArt class="w-[128px] sm:w-[148px] lg:w-[158px] shrink-0 -mt-3 -ml-2" />
 
       <div class="min-w-0 flex-1 pt-1">
         <span class="ai-badge inline-flex items-center gap-1.5 px-2.5 h-[24px] rounded-lg text-[10px] font-bold tracking-wider uppercase text-white">

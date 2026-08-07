@@ -22,3 +22,8 @@ logs
 .env
 .env.*
 !.env.example
+
+# Robot 3D renderlarining ORIGINALLARI (2400px, ~14MB).
+# Repoga faqat qayta ishlangan 380px PNG lar kiradi — originallar lokalda qoladi.
+# Qayta yaratish: originallarni public/robot/src/ ga qo'yib `npm run robot:cutout`
+public/robot/src/
