@@ -18,7 +18,10 @@ const i18n = useI18n()
 
     <div class="relative z-10 max-w-[62%] sm:max-w-[56%]">
       <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h2 class="text-[28px] sm:text-[32px] lg:text-[34px] font-bold tracking-tightish leading-none">
+        <!-- `text-white` SHART: main.css'dagi `h1,h2,h3,h4 { color: var(--text-1) }`
+             to'g'ridan-to'g'ri qoida bo'lgani uchun ota elementdan MEROS bo'lib
+             kelayotgan oq rangni bosib ketadi va sarlavha qora chiqadi. -->
+        <h2 class="text-white text-[28px] sm:text-[32px] lg:text-[34px] font-bold tracking-tightish leading-none">
           {{ i18n.t({ uz: 'Imtihon', kr: 'Имтиҳон' }) }}
         </h2>
         <span class="inline-flex items-center h-[26px] px-2.5 rounded-full text-[11px] font-semibold whitespace-nowrap"

@@ -60,52 +60,52 @@ const primary = computed(() => rec.value
 </script>
 
 <template>
-  <section class="ai-recommend relative overflow-hidden rounded-[22px] p-5 sm:p-6 h-full flex flex-col"
+  <section class="ai-recommend relative overflow-hidden rounded-[22px] p-5 h-full flex flex-col"
            @pointerenter="hovered = true" @pointerleave="hovered = false">
     <div aria-hidden="true"
          class="ai-glow absolute -top-24 -right-16 w-56 h-56 rounded-full blur-3xl pointer-events-none"
          style="background: radial-gradient(circle, rgba(139,92,246,0.34), transparent 70%);"></div>
 
-    <div class="relative flex items-start gap-4 sm:gap-5">
+    <div class="relative flex items-start gap-3 sm:gap-4">
       <!-- Robot — oddiy SVG, SSR'da ham chiziladi (ClientOnly kerak emas). -->
-      <div class="robot-slot shrink-0 -mt-2 -ml-3 sm:-ml-4" aria-hidden="true">
+      <div class="robot-slot shrink-0 -mt-1 -ml-3" aria-hidden="true">
         <AiRobotArt :state="robotState" />
       </div>
 
-      <div class="min-w-0 flex-1 pt-1">
+      <div class="min-w-0 flex-1">
         <!-- Maketdagidek: oddiy registr, binafsha chip -->
         <span class="ai-badge inline-flex items-center gap-1.5 px-2.5 h-[24px] rounded-lg text-[11px] font-semibold text-white">
           <AppIcon name="spark" :size="11" />
           {{ i18n.t({ uz: 'AI tavsiya', kr: 'AI тавсия' }) }}
         </span>
 
-        <h2 class="text-[17px] font-bold leading-snug mt-2.5" style="color: var(--text-1);">
+        <h2 class="text-[17px] font-bold leading-snug mt-2" style="color: var(--text-1);">
           {{ i18n.t({ uz: 'Siz uchun tavsiya qilingan', kr: 'Сиз учун тавсия қилинган' }) }}
           <span aria-hidden="true">✨</span>
         </h2>
 
-        <!-- line-clamp-4: tavsiya matni uzun bo'lsa ham karta yonidagilardan
+        <!-- line-clamp-3: tavsiya matni uzun bo'lsa ham karta yonidagilardan
              baland bo'lib ketmasin (qatorlar bir sathda tursin) -->
-        <p class="text-[13.5px] leading-[1.6] mt-2 line-clamp-4" style="color: var(--text-2);">
+        <p class="text-[13.5px] leading-[1.55] mt-1.5 line-clamp-3" style="color: var(--text-2);">
           {{ message }}
         </p>
       </div>
     </div>
 
-    <div class="relative mt-auto pt-5 flex flex-wrap items-center gap-2.5">
+    <div class="relative mt-auto pt-4 flex flex-wrap items-center gap-2.5">
       <NuxtLink :to="primary.to"
-        class="ai-cta inline-flex items-center gap-2 h-11 px-5 rounded-xl text-[13.5px] font-semibold text-white">
+        class="ai-cta inline-flex items-center gap-2 h-10 px-5 rounded-xl text-[13.5px] font-semibold text-white">
         {{ primary.label }}
         <AppIcon name="arrow" :size="15" />
       </NuxtLink>
       <!-- Tavsiya bor payt maketdagidek "Keyinroq eslatish" (bugunga yashiradi);
            tavsiya yo'q payt bu tugma ma'nosiz — o'rniga mavzular havolasi. -->
       <button v-if="rec" type="button" @click="snooze"
-        class="ai-alt inline-flex items-center h-11 px-5 rounded-xl text-[13.5px] font-medium">
+        class="ai-alt inline-flex items-center h-10 px-4 rounded-xl text-[13.5px] font-medium">
         {{ i18n.t({ uz: 'Keyinroq eslatish', kr: 'Кейинроқ эслатиш' }) }}
       </button>
       <NuxtLink v-else to="/topics"
-        class="ai-alt inline-flex items-center h-11 px-5 rounded-xl text-[13.5px] font-medium">
+        class="ai-alt inline-flex items-center h-10 px-4 rounded-xl text-[13.5px] font-medium">
         {{ i18n.t({ uz: 'Barcha mavzular', kr: 'Барча мавзулар' }) }}
       </NuxtLink>
     </div>
@@ -136,14 +136,14 @@ const primary = computed(() => rec.value
 
 /* Robot uchun maydon — SVG pastga tayanib (xMidYMax) shu qutini to'ldiradi. */
 .robot-slot {
-  width: 150px;
-  height: 220px;
+  width: 128px;
+  height: 168px;
 }
 @media (min-width: 640px) {
-  .robot-slot { width: 168px; height: 232px; }
+  .robot-slot { width: 142px; height: 180px; }
 }
 @media (min-width: 1024px) {
-  .robot-slot { width: 178px; height: 240px; }
+  .robot-slot { width: 150px; height: 188px; }
 }
 
 .ai-glow { animation: ai-pulse 4s ease-in-out infinite; }

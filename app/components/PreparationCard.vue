@@ -20,8 +20,8 @@ const props = defineProps<{
 const i18n = useI18n()
 const theme = useTheme()
 
-const SIZE = 104
-const THICK = 10
+const SIZE = 88
+const THICK = 9
 const RADIUS = (SIZE - THICK) / 2 - 1
 const CIRC = 2 * Math.PI * RADIUS
 
@@ -66,7 +66,7 @@ const metrics = computed(() => [
 </script>
 
 <template>
-  <section class="card p-5 sm:p-6 h-full flex flex-col justify-center">
+  <section class="card p-5 h-full flex flex-col justify-center">
     <!-- Sarlavha + XP -->
     <div class="flex items-start justify-between gap-3">
       <h2 class="text-[17px] font-semibold leading-tight" style="color: var(--text-1);">
@@ -84,7 +84,7 @@ const metrics = computed(() => [
     </div>
 
     <!-- Doira + ko'rsatkichlar -->
-    <div class="mt-5 flex items-center gap-5 sm:gap-6 lg:gap-7">
+    <div class="mt-4 flex items-center gap-5 sm:gap-6 lg:gap-7">
       <div class="relative shrink-0" :style="{ width: `${SIZE}px`, height: `${SIZE}px` }">
         <svg :width="SIZE" :height="SIZE" :viewBox="`0 0 ${SIZE} ${SIZE}`" role="img"
              :aria-label="i18n.t({ uz: `Tayyorgarlik ${pct} foiz`, kr: `Тайёргарлик ${pct} фоиз` })">
@@ -97,7 +97,7 @@ const metrics = computed(() => [
                   class="ring-value" />
         </svg>
         <div class="absolute inset-0 grid place-items-center">
-          <span class="text-[22px] font-bold tabular-nums tracking-tight" style="color: var(--text-1);">
+          <span class="text-[19px] font-bold tabular-nums tracking-tight" style="color: var(--text-1);">
             {{ pct }}%
           </span>
         </div>
@@ -109,14 +109,14 @@ const metrics = computed(() => [
            (ajratuvchi chiziqlar ham matn balandligicha qoladi — namunadagidek). -->
       <!-- Oddiy grid, <dl> emas: ro'yxatning oxirgi katagi havola bo'lgani uchun
            <dl> kontent modeli buzilardi (<dl> ichida faqat dt/dd/div bo'lishi mumkin). -->
-      <div class="flex-1 min-w-0 grid grid-cols-2 gap-y-4 items-center
+      <div class="flex-1 min-w-0 grid grid-cols-2 gap-y-3 items-center
                   lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,2fr)]">
         <div v-for="(m, i) in metrics" :key="m.key"
              class="min-w-0 lg:px-3 xl:px-4 2xl:px-5" :class="i > 0 ? 'lg:vsep' : ''">
-          <div class="text-[22px] font-bold tabular-nums leading-none truncate" style="color: var(--text-1);">
+          <div class="text-[20px] font-bold tabular-nums leading-none truncate" style="color: var(--text-1);">
             {{ m.value }}<span v-if="m.suffix" class="text-xs font-medium ml-1" style="color: var(--text-4);">{{ m.suffix }}</span>
           </div>
-          <div class="text-xs mt-2 truncate" style="color: var(--text-4);">{{ m.label }}</div>
+          <div class="text-xs mt-1.5 truncate" style="color: var(--text-4);">{{ m.label }}</div>
         </div>
 
         <NuxtLink to="/me/stats"
@@ -126,7 +126,7 @@ const metrics = computed(() => [
               {{ i18n.t({ uz: 'Keyingi maqsad', kr: 'Кейинги мақсад' }) }}
             </span>
             <!-- line-clamp-2: tor ekranlarda 3-qatorga bo'linib kartani cho'zmasin -->
-            <span class="block text-[13.5px] font-semibold leading-tight mt-1.5 line-clamp-2" style="color: var(--text-2);">
+            <span class="block text-[13.5px] font-semibold leading-tight mt-1 line-clamp-2" style="color: var(--text-2);">
               {{ nextGoal }}
             </span>
           </span>
@@ -137,7 +137,7 @@ const metrics = computed(() => [
       </div>
     </div>
 
-    <div class="track mt-5" :aria-hidden="true">
+    <div class="track mt-4" :aria-hidden="true">
       <i :style="{ width: `${Math.max(pct, 1.5)}%` }"></i>
     </div>
   </section>

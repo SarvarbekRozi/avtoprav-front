@@ -14,7 +14,8 @@ import type { Tone } from '~/composables/useTone'
 const i18n = useI18n()
 const { data } = await useTopicStats()
 
-const rows = computed(() => (data.value?.topics ?? []).slice(0, 5))
+// 4 ta — yonidagi "So'nggi faollik" va AI kartasi bilan bir sathda tursin.
+const rows = computed(() => (data.value?.topics ?? []).slice(0, 4))
 
 /** Progress bar rangi — o'zlashtirish darajasiga qarab */
 const BAR: Record<string, string> = {

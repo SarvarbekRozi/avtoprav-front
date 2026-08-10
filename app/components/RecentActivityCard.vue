@@ -56,7 +56,9 @@ function when(iso: string) {
   return `${d.getDate()}-${months[d.getMonth()]}, ${time}`
 }
 
-const rows = computed(() => (props.recent ?? []).slice(0, 5))
+// 4 ta — yonidagi "Mavzular bo'yicha ustaligingiz" va AI kartasi bilan bir
+// sathda tursin (uchalasi bitta gridda, balandligi eng balandiga tenglashadi).
+const rows = computed(() => (props.recent ?? []).slice(0, 4))
 </script>
 
 <template>
