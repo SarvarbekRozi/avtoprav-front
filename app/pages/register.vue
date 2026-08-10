@@ -51,7 +51,7 @@ async function submit() {
 </script>
 
 <template>
-  <div class="flex-1 grid xl:grid-cols-[minmax(0,52fr)_minmax(0,48fr)]">
+  <div class="auth-page flex-1 grid xl:grid-cols-[minmax(0,52fr)_minmax(0,48fr)]">
     <!-- Mehmon yuksalayotganda chap ustun sarlavhasi ham shu kontekstni aytadi:
          odam nima yo'qotmasligini bilib turishi kerak. -->
     <AuthShowcase
@@ -207,7 +207,16 @@ async function submit() {
    faylga chiqarish mumkin edi, lekin `scoped` uslublar komponentlar orasida
    ulashilmaydi — global CSS'ga chiqarish esa auth sahifalariga tegishli
    klasslarni butun saytga tarqatardi. */
-.auth-side { background: var(--canvas); }
+/* FON IKKI USTUNGA BIR BUTUN: ilgari chap panel o'z gradientini, o'ng
+   panel --canvas ni olardi va tutashgan joyda tik CHOK korinardi — sahifa
+   ikkiga bolingandek tuyulardi. Endi gradient sahifa ildizida, ustunlar
+   shaffof. */
+.auth-page {
+  background: linear-gradient(150deg, #fbfcff 0%, #f4f7fd 42%, #eaf0fb 100%);
+}
+.dark .auth-page {
+  background: linear-gradient(150deg, #171b23 0%, #101319 55%, #0b0e15 100%);
+}
 
 .wordmark {
   font-size: 21px;

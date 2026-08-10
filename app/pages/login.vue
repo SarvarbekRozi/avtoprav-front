@@ -29,7 +29,7 @@ async function submit() {
 <template>
   <!-- flex-1: layouts/default.vue'dagi <main> `flex-1 flex flex-col` —
        sahifa ildizi ham cho'zilmasa ikki ustun ekran balandligini to'ldirmaydi. -->
-  <div class="flex-1 grid xl:grid-cols-[minmax(0,52fr)_minmax(0,48fr)]">
+  <div class="auth-page flex-1 grid xl:grid-cols-[minmax(0,52fr)_minmax(0,48fr)]">
     <!-- Chap ustun faqat xl (1280) dan boshlab: kichik ekranda karta butun ekranni
          oladi (mobil foydalanuvchi uchun brend bloki emas, forma muhim). -->
     <AuthShowcase class="hidden xl:flex" />
@@ -133,7 +133,16 @@ async function submit() {
 </template>
 
 <style scoped>
-.auth-side { background: var(--canvas); }
+/* FON IKKI USTUNGA BIR BUTUN: ilgari chap panel o'z gradientini, o'ng
+   panel --canvas ni olardi va tutashgan joyda tik CHOK korinardi — sahifa
+   ikkiga bolingandek tuyulardi. Endi gradient sahifa ildizida, ustunlar
+   shaffof. */
+.auth-page {
+  background: linear-gradient(150deg, #fbfcff 0%, #f4f7fd 42%, #eaf0fb 100%);
+}
+.dark .auth-page {
+  background: linear-gradient(150deg, #171b23 0%, #101319 55%, #0b0e15 100%);
+}
 
 .wordmark {
   font-size: 21px;

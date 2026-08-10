@@ -9,9 +9,11 @@
  * mumkin.
  *
  * Illyustratsiya (public/auth-road.webp) — yuqori qirrasi CSS mask bilan
- * shaffofga o'tadi: rasmning fon rangi (#d8dbea atrofida) panel foniga aynan
- * teng emas, shuning uchun qattiq chok ko'rinib qolardi. Mask bilan qanday
- * fon bo'lsa ham chok bo'lmaydi.
+ * shaffofga o'tadi: rasm foni sahifa fonidan bir oz to'qroq, mask bo'lmasa
+ * gorizontal chok ko'rinib qolardi.
+ *
+ * FON bu komponentda EMAS — u sahifa ildizida (.auth-page) va ikki ustunga
+ * bir butun bo'lib yotadi, aks holda ustunlar orasida tik chok chiqadi.
  */
 const i18n = useI18n()
 
@@ -122,15 +124,17 @@ const features = computed(() => [
     <!-- Yo'l illyustratsiyasi: ustunning butun kengligiga (chetdan chetga)
          cho'ziladi va pastiga tegib turadi. `mt-auto` — matn bilan orasidagi
          bo'shliqni ekran balandligi o'zi taqsimlaydi. -->
-    <img src="/auth-road.webp" alt="" aria-hidden="true" width="1280" height="632"
+    <img src="/auth-road.webp" alt="" aria-hidden="true" width="1400" height="538"
          class="road relative z-0 mt-auto w-full select-none pointer-events-none" />
   </aside>
 </template>
 
 <style scoped>
+/* FON YO'Q — u sahifa ildizida (`.auth-page`) va ikki ustunga BIR BUTUN
+   bo'lib yotadi. Ilgari chap panel o'z gradientini, o'ng panel `--canvas` ni
+   olardi: ikki rang tutashgan joyda tik CHOK ko'rinib, sahifa ikkiga
+   bo'lingandek tuyulardi (qorong'i rejimda ayniqsa keskin). */
 .showcase {
-  /* Maketdagi juda och ko'k-oq fon */
-  background: linear-gradient(168deg, #fbfcff 0%, #f2f5fd 46%, #e9eefb 100%);
   /* Gorizontal padding YO'Q — u `.showcase-pad` da. Rasm chetdan chetga
      cho'zilishi uchun shunday. */
   padding: 32px 0 0;
@@ -141,9 +145,6 @@ const features = computed(() => [
 .showcase-pad { padding: 0 24px; }
 @media (min-width: 1024px) { .showcase-pad { padding: 0 40px; } }
 @media (min-width: 1280px) { .showcase-pad { padding: 0 64px; } }
-.dark .showcase {
-  background: linear-gradient(168deg, var(--surface-soft) 0%, var(--canvas) 100%);
-}
 
 .wordmark {
   font-size: 23px;
@@ -179,31 +180,33 @@ const features = computed(() => [
 @media (min-width: 1024px) { .showcase-title { font-size: 37px; } }
 @media (min-width: 1280px) { .showcase-title { font-size: 43px; } }
 
-/* Rasmning yuqori qirrasi panel foniga silliq o'tadi — rasm foni bilan panel
-   foni aynan bir xil rang emas, mask bo'lmasa gorizontal chok ko'rinardi.
-   Chap/o'ng chetlari ham yumshatiladi (rasm ustundan kengroq ko'rinsin). */
-/* `max-height` + `object-fit: cover` SHART: rasm tabiiy nisbati bo'yicha
-   ustun kengligiga qarab o'sadi (872px kenglikda 430px balandlik) va matn
-   bilan qo'shilib ustunni ekrandan BALAND qilib qo'yardi — sahifa keraksiz
-   vertikal scroll olardi. Endi rasm ekran balandligiga moslashadi, ortiqcha
-   qismi (osmon) yuqoridan qirqiladi. */
+/* Rasmning yuqori qirrasi fonga silliq o'tadi — rasm foni sahifa fonidan
+   bir oz to'qroq, mask bo'lmasa gorizontal chok ko'rinardi. Chap/o'ng
+   chetlari ham yumshatiladi. */
 .road {
   /* `margin-top: auto` — Tailwind'ning `mt-auto` klassi YETMAYDI: scoped CSS
      `.road[data-v-…]` yuqori aniqlikda bo'lgani uchun uni bosib ketadi va rasm
      ustunning pastiga tegmay, ostida bo'shliq qolib ketardi. */
   margin-top: auto;
   height: auto;
-  max-height: min(300px, 26vh);
+  /* Rasm 2.60 nisbatda kesilgan — 863px ustunda tabiiy balandligi 332px,
+     ya'ni odatdagi ekranda QIRQILMAYDI va mashina to'liq ko'rinadi.
+     Past ekranda `cover` ishga tushadi va `center top` tufayli PASTDAGI bo'sh
+     asfalt kesiladi, mashina esa joyida qoladi (ilgari `center bottom` edi —
+     u yuqorini qirqib, mashinaning ustki yarmini kesib tashlardi). */
+  max-height: min(380px, 38vh);
   object-fit: cover;
-  object-position: center bottom;
+  object-position: center top;
   -webkit-mask-image:
-    linear-gradient(to bottom, transparent 0%, #000 26%),
+    linear-gradient(to bottom, transparent 0%, #000 22%),
     linear-gradient(to right, transparent 0%, #000 6%, #000 94%, transparent 100%);
   -webkit-mask-composite: source-in;
   mask-image:
-    linear-gradient(to bottom, transparent 0%, #000 26%),
+    linear-gradient(to bottom, transparent 0%, #000 22%),
     linear-gradient(to right, transparent 0%, #000 6%, #000 94%, transparent 100%);
   mask-composite: intersect;
 }
-.dark .road { opacity: 0.55; }
+/* Rasm yorug' rejim uchun chizilgan — qorong'ida uni butunlay qoraytirib
+   bo'lmaydi, shuning uchun shaffofligi kamaytiriladi va fonga singiydi. */
+.dark .road { opacity: 0.4; }
 </style>
