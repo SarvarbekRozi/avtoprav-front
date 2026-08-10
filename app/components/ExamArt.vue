@@ -1,8 +1,10 @@
 <script setup lang="ts">
 /**
  * Imtihon CTA kartasi uchun illyustratsiya: checklist planshet + sekundomer.
- * Inline SVG — tashqi rasm yuklanmaydi (Telegram Mini App'da ham darrov chiziladi),
- * har qanday o'lchamda tiniq, dark rejimda buzilmaydi.
+ * Kompozitsiya dizayn maketiga mos: planshet o'ngga engil qiyshaygan,
+ * taglik indigo (gradient fonga hamohang), belgilar KO'K, sekundomer
+ * planshetning chap-past tomonida, atrofda mayda uchqunlar.
+ * Inline SVG — tashqi rasm yuklanmaydi, har o'lchamda tiniq, dark'da buzilmaydi.
  * Gradient id'lari useId() bilan prefikslanadi.
  */
 const uid = useId()
@@ -13,36 +15,36 @@ const g = (n: string) => `${uid}-${n}`
   <svg viewBox="0 0 280 240" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
     <defs>
       <!-- Planshet -->
-      <linearGradient :id="g('sheet')" x1="46" y1="36" x2="176" y2="212" gradientUnits="userSpaceOnUse">
+      <linearGradient :id="g('sheet')" x1="88" y1="32" x2="218" y2="208" gradientUnits="userSpaceOnUse">
         <stop stop-color="#ffffff" />
         <stop offset="0.55" stop-color="#f4f7fd" />
         <stop offset="1" stop-color="#dde5f5" />
       </linearGradient>
-      <linearGradient :id="g('backPlate')" x1="60" y1="46" x2="190" y2="220" gradientUnits="userSpaceOnUse">
-        <stop stop-color="#a9b8dc" />
-        <stop offset="1" stop-color="#7288b8" />
+      <linearGradient :id="g('backPlate')" x1="100" y1="42" x2="232" y2="218" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#8a95f6" />
+        <stop offset="1" stop-color="#5058dd" />
       </linearGradient>
-      <linearGradient :id="g('clip')" x1="98" y1="14" x2="146" y2="52" gradientUnits="userSpaceOnUse">
-        <stop stop-color="#aab9dc" />
-        <stop offset="1" stop-color="#667cb0" />
+      <linearGradient :id="g('clip')" x1="132" y1="12" x2="180" y2="50" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#c7d2ea" />
+        <stop offset="1" stop-color="#8195c2" />
       </linearGradient>
       <linearGradient :id="g('tick')" x1="0" y1="0" x2="1" y2="1">
-        <stop stop-color="#5ee89a" />
-        <stop offset="1" stop-color="#12a24f" />
+        <stop stop-color="#6db4ff" />
+        <stop offset="1" stop-color="#2563eb" />
       </linearGradient>
 
       <!-- Sekundomer: metall korpus -->
-      <linearGradient :id="g('bezel')" x1="162" y1="118" x2="256" y2="216" gradientUnits="userSpaceOnUse">
+      <linearGradient :id="g('bezel')" x1="17" y1="126" x2="111" y2="224" gradientUnits="userSpaceOnUse">
         <stop stop-color="#ffffff" />
         <stop offset="0.35" stop-color="#dbe3f3" />
         <stop offset="0.7" stop-color="#9dadd0" />
         <stop offset="1" stop-color="#c7d2e8" />
       </linearGradient>
-      <linearGradient :id="g('bezelInner')" x1="172" y1="128" x2="246" y2="206" gradientUnits="userSpaceOnUse">
+      <linearGradient :id="g('bezelInner')" x1="27" y1="136" x2="101" y2="214" gradientUnits="userSpaceOnUse">
         <stop stop-color="#8fa1c8" />
         <stop offset="1" stop-color="#c9d4ea" />
       </linearGradient>
-      <linearGradient :id="g('face')" x1="176" y1="132" x2="242" y2="202" gradientUnits="userSpaceOnUse">
+      <linearGradient :id="g('face')" x1="31" y1="140" x2="97" y2="210" gradientUnits="userSpaceOnUse">
         <stop stop-color="#ffffff" />
         <stop offset="1" stop-color="#e9eef9" />
       </linearGradient>
@@ -62,82 +64,90 @@ const g = (n: string) => `${uid}-${n}`
     </defs>
 
     <!-- Yerdagi soya -->
-    <ellipse cx="146" cy="226" rx="104" ry="12" fill="#0a1430" opacity="0.18" />
+    <ellipse cx="140" cy="228" rx="112" ry="12" fill="#0a1430" opacity="0.18" />
 
-    <!-- ── Planshet (biroz burilgan) ── -->
-    <g transform="rotate(-6 118 128)" :filter="`url(#${g('cast')})`">
-      <!-- orqa taglik: qalinlik effekti -->
-      <rect x="56" y="44" width="134" height="172" rx="17" :fill="`url(#${g('backPlate')})`" />
+    <!-- ── Planshet (maketdagidek o'ngga qiyshaygan) ── -->
+    <g transform="rotate(7 155 122)" :filter="`url(#${g('cast')})`">
+      <!-- orqa taglik: indigo, qalinlik effekti -->
+      <rect x="98" y="40" width="134" height="172" rx="17" :fill="`url(#${g('backPlate')})`" />
       <!-- oq varaq -->
-      <rect x="46" y="34" width="134" height="172" rx="16" :fill="`url(#${g('sheet')})`" />
-      <rect x="46" y="34" width="134" height="172" rx="16" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.9" />
+      <rect x="88" y="30" width="134" height="172" rx="16" :fill="`url(#${g('sheet')})`" />
+      <rect x="88" y="30" width="134" height="172" rx="16" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.9" />
 
       <!-- yuqoridagi qisqich -->
-      <rect x="90" y="22" width="46" height="28" rx="10" :fill="`url(#${g('clip')})`" />
-      <rect x="99" y="15" width="28" height="15" rx="7.5" fill="#56699c" />
-      <rect x="99" y="15" width="28" height="6" rx="3" fill="#ffffff" opacity="0.28" />
+      <rect x="132" y="18" width="46" height="28" rx="10" :fill="`url(#${g('clip')})`" />
+      <rect x="141" y="11" width="28" height="15" rx="7.5" fill="#56699c" />
+      <rect x="141" y="11" width="28" height="6" rx="3" fill="#ffffff" opacity="0.28" />
 
-      <!-- checklist: 2 ta bajarilgan, 1 ta bo'sh -->
+      <!-- checklist: 2 ta bajarilgan (ko'k), 1 ta navbatda -->
       <g>
-        <rect x="64" y="76" width="24" height="24" rx="8" :fill="`url(#${g('tick')})`" />
-        <path d="M70 88.2l3.9 3.9 7.6-8" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" />
-        <rect x="98" y="79" width="62" height="7" rx="3.5" fill="#bcc8e2" />
-        <rect x="98" y="91" width="40" height="7" rx="3.5" fill="#d6dded" />
+        <rect x="106" y="72" width="24" height="24" rx="8" :fill="`url(#${g('tick')})`" />
+        <path d="M112 84.2l3.9 3.9 7.6-8" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" />
+        <rect x="140" y="75" width="62" height="7" rx="3.5" fill="#bcc8e2" />
+        <rect x="140" y="87" width="40" height="7" rx="3.5" fill="#d6dded" />
 
-        <rect x="64" y="116" width="24" height="24" rx="8" :fill="`url(#${g('tick')})`" />
-        <path d="M70 128.2l3.9 3.9 7.6-8" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" />
-        <rect x="98" y="119" width="56" height="7" rx="3.5" fill="#bcc8e2" />
-        <rect x="98" y="131" width="34" height="7" rx="3.5" fill="#d6dded" />
+        <rect x="106" y="112" width="24" height="24" rx="8" :fill="`url(#${g('tick')})`" />
+        <path d="M112 124.2l3.9 3.9 7.6-8" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" />
+        <rect x="140" y="115" width="56" height="7" rx="3.5" fill="#bcc8e2" />
+        <rect x="140" y="127" width="34" height="7" rx="3.5" fill="#d6dded" />
 
-        <rect x="64" y="156" width="24" height="24" rx="8" fill="#eef2fa" stroke="#c3cee6" stroke-width="2" />
-        <rect x="98" y="159" width="48" height="7" rx="3.5" fill="#ccd6ea" />
-        <rect x="98" y="171" width="28" height="7" rx="3.5" fill="#e2e8f4" />
+        <rect x="106" y="152" width="24" height="24" rx="8" fill="#e7eeff" stroke="#9db8ea" stroke-width="2" />
+        <rect x="140" y="155" width="48" height="7" rx="3.5" fill="#ccd6ea" />
+        <rect x="140" y="167" width="28" height="7" rx="3.5" fill="#e2e8f4" />
       </g>
     </g>
 
-    <!-- ── Sekundomer ── -->
+    <!-- ── Sekundomer (chap-pastda, planshet oldida) ── -->
     <g :filter="`url(#${g('cast')})`">
       <!-- toj (yuqoridagi tugma) -->
-      <g transform="rotate(18 209 108)">
-        <rect x="201" y="98" width="16" height="16" rx="5" :fill="`url(#${g('crown')})`" />
-        <rect x="197" y="88" width="24" height="12" rx="6" :fill="`url(#${g('crown')})`" />
-        <rect x="197" y="88" width="24" height="4.5" rx="2.2" fill="#ffffff" opacity="0.45" />
+      <g transform="rotate(-14 64 116)">
+        <rect x="56" y="106" width="16" height="16" rx="5" :fill="`url(#${g('crown')})`" />
+        <rect x="52" y="96" width="24" height="12" rx="6" :fill="`url(#${g('crown')})`" />
+        <rect x="52" y="96" width="24" height="4.5" rx="2.2" fill="#ffffff" opacity="0.45" />
       </g>
       <!-- yon tugma -->
-      <g transform="rotate(45 248 132)">
-        <rect x="240" y="124" width="17" height="11" rx="5.5" :fill="`url(#${g('crown')})`" />
+      <g transform="rotate(-45 22 140)">
+        <rect x="14" y="132" width="17" height="11" rx="5.5" :fill="`url(#${g('crown')})`" />
       </g>
 
       <!-- korpus -->
-      <circle cx="209" cy="168" r="54" :fill="`url(#${g('bezel')})`" />
-      <circle cx="209" cy="168" r="47" :fill="`url(#${g('bezelInner')})`" />
-      <circle cx="209" cy="168" r="43" :fill="`url(#${g('face')})`" />
-      <circle cx="209" cy="168" r="43" fill="none" stroke="#ffffff" stroke-width="2" stroke-opacity="0.9" />
+      <circle cx="64" cy="176" r="54" :fill="`url(#${g('bezel')})`" />
+      <circle cx="64" cy="176" r="47" :fill="`url(#${g('bezelInner')})`" />
+      <circle cx="64" cy="176" r="43" :fill="`url(#${g('face')})`" />
+      <circle cx="64" cy="176" r="43" fill="none" stroke="#ffffff" stroke-width="2" stroke-opacity="0.9" />
 
       <!-- bo'linmalar -->
       <g stroke="#8fa0c6" stroke-width="2.6" stroke-linecap="round">
-        <path d="M209 131v7" />
-        <path d="M209 198v7" />
-        <path d="M172 168h7" />
-        <path d="M239 168h7" />
+        <path d="M64 139v7" />
+        <path d="M64 206v7" />
+        <path d="M27 176h7" />
+        <path d="M94 176h7" />
       </g>
       <g stroke="#c2cde4" stroke-width="2" stroke-linecap="round">
-        <path d="M235.2 141.8l-4.2 4.2" />
-        <path d="M187.2 189.8l-4.2 4.2" />
-        <path d="M182.8 141.8l4.2 4.2" />
-        <path d="M230.8 189.8l4.2 4.2" />
+        <path d="M90.2 149.8l-4.2 4.2" />
+        <path d="M42.2 197.8l-4.2 4.2" />
+        <path d="M37.8 149.8l4.2 4.2" />
+        <path d="M85.8 197.8l4.2 4.2" />
       </g>
 
       <!-- millar -->
-      <path d="M209 168V138" stroke="#2d4276" stroke-width="5" stroke-linecap="round" />
-      <path d="M209 168l19 13" stroke="#2d4276" stroke-width="4.2" stroke-linecap="round" />
-      <path d="M209 168l-9 16" stroke="#ef4444" stroke-width="2.4" stroke-linecap="round" />
-      <circle cx="209" cy="168" r="5.5" fill="#2d4276" />
-      <circle cx="209" cy="168" r="2.2" fill="#ffffff" />
+      <path d="M64 176V146" stroke="#2d4276" stroke-width="5" stroke-linecap="round" />
+      <path d="M64 176l19 13" stroke="#2d4276" stroke-width="4.2" stroke-linecap="round" />
+      <path d="M64 176l-9 16" stroke="#ef4444" stroke-width="2.4" stroke-linecap="round" />
+      <circle cx="64" cy="176" r="5.5" fill="#2d4276" />
+      <circle cx="64" cy="176" r="2.2" fill="#ffffff" />
 
       <!-- shisha yaltirashi -->
-      <path d="M209 125a43 43 0 0 0-38 63c-2-30 14-52 38-56 24-4 41 12 43 26a43 43 0 0 0-43-33z"
+      <path d="M64 133a43 43 0 0 0-38 63c-2-30 14-52 38-56 24-4 41 12 43 26a43 43 0 0 0-43-33z"
             :fill="`url(#${g('gloss')})`" opacity="0.7" />
+    </g>
+
+    <!-- ── Uchqunlar (maketdagidek mayda bezak) ── -->
+    <g fill="#ffffff">
+      <path d="M252 44l2.2 5.8 5.8 2.2-5.8 2.2-2.2 5.8-2.2-5.8-5.8-2.2 5.8-2.2z" opacity="0.9" />
+      <path d="M32 62l1.6 4.2 4.2 1.6-4.2 1.6-1.6 4.2-1.6-4.2-4.2-1.6 4.2-1.6z" opacity="0.7" />
+      <circle cx="246" cy="128" r="3" opacity="0.55" />
+      <circle cx="20" cy="98" r="2.2" opacity="0.45" />
     </g>
   </svg>
 </template>

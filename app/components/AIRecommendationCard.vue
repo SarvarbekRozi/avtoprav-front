@@ -9,12 +9,27 @@
  * So'rov `useTopicStats()` orqali — TopicStrengthCard bilan bitta kalitni va
  * bitta handler havolasini bo'lishadi, shuning uchun so'rov faqat bir marta ketadi.
  *
- * Robot — `AiRobot3D` (Three.js/WebGL, real vaqtda chiziladi). Rasm ishlatilmaydi.
+ * Robot — `AiRobotArt` (SVG, maketga mos). WebGL versiyasi olib tashlandi:
+ * GPU'ga qarab har xil (ko'pincha qorong'i) chiqardi.
  */
 const i18n = useI18n()
 const { data } = await useTopicStats()
 
-const rec = computed(() => data.value?.recommendation ?? null)
+// "Keyinroq eslatish" — tavsiyani BUGUNGA yashiradi (localStorage). Ertaga
+// yana chiqadi: tavsiya eslatma, jarima emas.
+const SNOOZE_KEY = 'ai-rec-snooze'
+const snoozed = ref(false)
+onMounted(() => {
+  try { snoozed.value = localStorage.getItem(SNOOZE_KEY) === new Date().toDateString() }
+  catch { /* private rejim — shunchaki ko'rsataveramiz */ }
+})
+function snooze() {
+  try { localStorage.setItem(SNOOZE_KEY, new Date().toDateString()) }
+  catch { /* saqlanmasa ham UI yashirinadi */ }
+  snoozed.value = true
+}
+
+const rec = computed(() => snoozed.value ? null : (data.value?.recommendation ?? null))
 
 /**
  * Robot holati kontekstga bog'liq:
@@ -52,21 +67,14 @@ const primary = computed(() => rec.value
          style="background: radial-gradient(circle, rgba(139,92,246,0.34), transparent 70%);"></div>
 
     <div class="relative flex items-start gap-4 sm:gap-5">
-      <!-- 3D robot.
-           ClientOnly — WebGL faqat brauzerda ishlaydi va `three` ni SSR
-           to'plamiga tortish keraksiz. Bu yerda xavfsiz: layout/sahifa ILDIZI
-           emas, karta ichi.
-           Lazy… — `three` ~580KB. Statik import bo'lsa u sahifaning asosiy
-           to'plamiga kirib, birinchi chiziqni kechiktirardi. Lazy bilan
-           alohida chunk bo'lib, hidratsiyadan keyin parallel yuklanadi. -->
+      <!-- Robot — oddiy SVG, SSR'da ham chiziladi (ClientOnly kerak emas). -->
       <div class="robot-slot shrink-0 -mt-2 -ml-3 sm:-ml-4" aria-hidden="true">
-        <ClientOnly>
-          <LazyAiRobot3D :state="robotState" />
-        </ClientOnly>
+        <AiRobotArt :state="robotState" />
       </div>
 
       <div class="min-w-0 flex-1 pt-1">
-        <span class="ai-badge inline-flex items-center gap-1.5 px-2.5 h-[24px] rounded-lg text-[10px] font-bold tracking-wider uppercase text-white">
+        <!-- Maketdagidek: oddiy registr, binafsha chip -->
+        <span class="ai-badge inline-flex items-center gap-1.5 px-2.5 h-[24px] rounded-lg text-[11px] font-semibold text-white">
           <AppIcon name="spark" :size="11" />
           {{ i18n.t({ uz: 'AI tavsiya', kr: 'AI тавсия' }) }}
         </span>
@@ -90,7 +98,13 @@ const primary = computed(() => rec.value
         {{ primary.label }}
         <AppIcon name="arrow" :size="15" />
       </NuxtLink>
-      <NuxtLink to="/topics"
+      <!-- Tavsiya bor payt maketdagidek "Keyinroq eslatish" (bugunga yashiradi);
+           tavsiya yo'q payt bu tugma ma'nosiz — o'rniga mavzular havolasi. -->
+      <button v-if="rec" type="button" @click="snooze"
+        class="ai-alt inline-flex items-center h-11 px-5 rounded-xl text-[13.5px] font-medium">
+        {{ i18n.t({ uz: 'Keyinroq eslatish', kr: 'Кейинроқ эслатиш' }) }}
+      </button>
+      <NuxtLink v-else to="/topics"
         class="ai-alt inline-flex items-center h-11 px-5 rounded-xl text-[13.5px] font-medium">
         {{ i18n.t({ uz: 'Barcha mavzular', kr: 'Барча мавзулар' }) }}
       </NuxtLink>
@@ -99,10 +113,10 @@ const primary = computed(() => rec.value
 </template>
 
 <style scoped>
-/* Gradient oxiri #06b6d4 dan #0e7490 ga to'qlashtirildi: oq 10px matn
-   och siyan ustida 2.43:1 beradi, bu AA (4.5:1) dan ancha past edi. */
+/* Maketdagidek yaxlit binafsha chip (teal aralashmasi olib tashlandi).
+   Oq matn #7c3aed ustida 5.9:1 — AA dan yuqori. */
 .ai-badge {
-  background: linear-gradient(90deg, #7c3aed, #0e7490);
+  background: linear-gradient(90deg, #8b5cf6, #7c3aed);
   box-shadow: 0 2px 6px rgba(139, 92, 246, 0.35);
 }
 .ai-cta {
@@ -120,10 +134,7 @@ const primary = computed(() => rec.value
 }
 .ai-alt:hover { background: var(--surface-inset); }
 
-/* Robot uchun maydon. AiRobot3D o'z ichida `min-height: 220px` belgilaydi,
-   shuning uchun slot ham shundan past bo'lmasligi kerak — aks holda canvas
-   kartadan toshib chiqadi. Kenglik/balandlik nisbati kamera aspektiga
-   ta'sir qiladi, shuning uchun deyarli kvadrat qoldirilgan. */
+/* Robot uchun maydon — SVG pastga tayanib (xMidYMax) shu qutini to'ldiradi. */
 .robot-slot {
   width: 150px;
   height: 220px;

@@ -25,6 +25,9 @@ const props = withDefaults(defineProps<{
 const i18n = useI18n()
 
 const STEPS = [100, 150, 200, 250, 300]
+// Maketdagi yorliqlar: har bosqich taxminan shuncha FAOL KUNga to'g'ri keladi
+// (bitta faol kun ≈ 50 XP — yuqoridagi izohga qarang).
+const DAYS = [1, 2, 3, 5, 7]
 
 /** Ma'lumot keldimi? Kelmagan bo'lsa "0 XP yig'dingiz" deb da'vo qilmaymiz. */
 const loaded = computed(() => props.weekXp !== null)
@@ -112,9 +115,10 @@ const note = computed(() => {
         <h2 class="text-[17px] font-semibold leading-tight" style="color: var(--text-1);">
           {{ i18n.t({ uz: 'Haftalik XP challenge', kr: 'Ҳафталик XP challenge' }) }}
         </h2>
-        <p class="text-[13px] mt-1.5 truncate" style="color: var(--text-4);">
-          <span class="tabular-nums">{{ rangeLabel }}</span>
-          <span v-if="rangeLabel"> · </span>{{ i18n.t({ uz: 'so\'nggi 7 kun', kr: 'сўнгги 7 кун' }) }}
+        <!-- Sana oralig'i sirpanuvchi 7 kunlik oynani o'zi ko'rsatadi —
+             qo'shimcha "so'nggi 7 kun" yozuvi maketda yo'q, olib tashlandi. -->
+        <p class="text-[13px] mt-1.5 truncate tabular-nums" style="color: var(--text-4);">
+          {{ rangeLabel }}
         </p>
       </div>
 
@@ -151,13 +155,13 @@ const note = computed(() => {
           {{ step }} XP
         </div>
 
-        <!-- Bosqich raqami -->
+        <!-- Kun yorlig'i (maketdagidek: "1 kun", "2 kun", …) -->
         <div class="mt-1.5 text-xs font-medium truncate"
              :style="{
                color: stateOf(i) === 'current' ? 'var(--primary-ink)' : 'var(--text-4)',
                fontWeight: stateOf(i) === 'current' ? 700 : 500,
              }">
-          {{ i + 1 }}-{{ i18n.t({ uz: 'bosqich', kr: 'босқич' }) }}
+          {{ DAYS[i] }} {{ i18n.t({ uz: 'kun', kr: 'кун' }) }}
         </div>
       </li>
     </ol>

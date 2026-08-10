@@ -72,7 +72,7 @@ const tiles = computed<{ icon: string, tone: Tone, title: string, sub: string, t
   {
     icon: 'star', tone: 'violet', to: '/test/start/daily',
     title: i18n.t({ uz: 'Kunlik', kr: 'Кунлик' }),
-    sub: i18n.t({ uz: 'Kunlik savollar to\'plami', kr: 'Кунлик саволлар тўплами' }),
+    sub: i18n.t({ uz: 'Kunlik savollar', kr: 'Кунлик саволлар' }),
   },
   {
     icon: 'bolt', tone: 'amber', to: '/test/start/blitz',
@@ -82,7 +82,7 @@ const tiles = computed<{ icon: string, tone: Tone, title: string, sub: string, t
   {
     icon: 'ticket', tone: 'sky', to: '/tickets',
     title: i18n.t({ uz: 'Biletlar', kr: 'Билетлар' }),
-    sub: i18n.t({ uz: 'Rasmiy biletlar bo\'yicha mashq', kr: 'Расмий билетлар бўйича машқ' }),
+    sub: i18n.t({ uz: 'Rasmiy 63 ta bilet bo\'yicha mashq', kr: 'Расмий 63 та билет бўйича машқ' }),
   },
   {
     icon: 'book', tone: 'emerald', to: '/topics',
