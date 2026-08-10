@@ -50,9 +50,7 @@ const strengthBadge: Record<string, string> = {
             <span class="ai-badge inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold tracking-wider uppercase"
                   style="background: linear-gradient(90deg, #8b5cf6, #06b6d4); color: #fff;
                          box-shadow: 0 2px 6px rgba(139,92,246,0.35);">
-              <svg class="w-2.5 h-2.5" viewBox="0 0 12 12" fill="currentColor">
-                <path d="M6 0l1.5 4.5L12 6l-4.5 1.5L6 12l-1.5-4.5L0 6l4.5-1.5z"/>
-              </svg>
+              <AppIcon name="spark" :size="11" />
               AI
             </span>
           </div>
@@ -102,9 +100,7 @@ const strengthBadge: Record<string, string> = {
                 <span class="ai-badge inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold tracking-wider uppercase"
                       style="background: linear-gradient(90deg, #8b5cf6, #06b6d4); color: #fff;
                              box-shadow: 0 2px 6px rgba(139,92,246,0.35);">
-                  <svg class="w-2.5 h-2.5" viewBox="0 0 12 12" fill="currentColor">
-                    <path d="M6 0l1.5 4.5L12 6l-4.5 1.5L6 12l-1.5-4.5L0 6l4.5-1.5z"/>
-                  </svg>
+                  <AppIcon name="spark" :size="11" />
                   AI
                 </span>
               </div>

@@ -57,13 +57,7 @@ const themeLabel = computed(() => theme.isDark.value
               class="h-8 w-8 rounded-md grid place-items-center transition-colors"
               style="color: var(--text-3); background: var(--surface-inset);"
               :title="themeLabel" :aria-label="themeLabel">
-        <svg v-if="!theme.isDark.value" width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M13 9.5A5.5 5.5 0 0 1 6.5 3a5.5 5.5 0 1 0 6.5 6.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-        </svg>
-        <svg v-else width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.5 3.5l1 1M11.5 11.5l1 1M3.5 12.5l1-1M11.5 4.5l1-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
+        <AppIcon :name="theme.isDark.value ? 'sun' : 'moon'" :size="17" />
       </button>
     </div>
 

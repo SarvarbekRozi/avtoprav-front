@@ -15,7 +15,20 @@ export default defineNuxtConfig({
     mode: 'svg',
   },
 
-  css: ['~/assets/css/main.css'],
+  // Shriftlar O'ZIMIZDA (npm @fontsource-variable) — Google Fonts CDN'iga
+  // so'rov ketmaydi: O'zbekistonda u sekin/bloklangan bo'lishi mumkin, Telegram
+  // Mini App ichida esa har qanday tashqi so'rov birinchi chizishni kechiktiradi.
+  //
+  // ILGARI: tailwind.config.js'da `Inter` yozilgan edi, lekin na @font-face,
+  // na havola bor edi — ya'ni Inter HECH QACHON yuklanmagan va sayt tizim
+  // shriftiga (Windows'da Segoe UI) tushib qolgan.
+  //
+  // `wght.css` hamma subsetni sanaydi, lekin har biriga `unicode-range`
+  // berilgan — brauzer faqat sahifada ishlatilganini yuklaydi (lotin + kirill).
+  css: [
+    '@fontsource-variable/inter/wght.css',
+    '~/assets/css/main.css',
+  ],
 
   app: {
     head: {

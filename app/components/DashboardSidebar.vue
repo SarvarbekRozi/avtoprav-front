@@ -97,9 +97,8 @@ const points = computed(() => auth.user?.points ?? 0)
     <div class="flex items-center gap-2 h-[76px] shrink-0"
          :class="collapsed ? 'justify-center px-2' : 'justify-between px-4'">
       <NuxtLink to="/" class="flex items-center gap-2.5 min-w-0">
-        <img src="/logo-mark.svg" alt="Avtoprav" width="36" height="36" class="w-9 h-9 shrink-0 rounded-[10px]" />
-        <span v-if="!collapsed" class="font-bold text-[19px] tracking-tightish truncate"
-              style="color: var(--text-1);">Avtoprav</span>
+        <img src="/logo-mark.svg" alt="Avtoprav" width="38" height="38" class="w-[38px] h-[38px] shrink-0 rounded-[11px]" />
+        <span v-if="!collapsed" class="wordmark truncate">Avtoprav</span>
       </NuxtLink>
       <div v-if="!collapsed" class="flex items-center gap-0.5 shrink-0">
         <!-- Desktop'da qo'ng'iroq shu yerda; mobil'da esa layout'dagi suzuvchi nusxa.
@@ -107,13 +106,7 @@ const points = computed(() => auth.user?.points ?? 0)
         <NotificationBell :floating="false" align="left" />
         <button type="button" class="icon-btn h-8 w-8 rounded-lg grid place-items-center"
                 :title="themeTitle" :aria-label="themeTitle" @click="theme.toggle()">
-          <svg v-if="!theme.isDark.value" width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M13 9.5A5.5 5.5 0 0 1 6.5 3a5.5 5.5 0 1 0 6.5 6.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-          </svg>
-          <svg v-else width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.5 3.5l1 1M11.5 11.5l1 1M3.5 12.5l1-1M11.5 4.5l1-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
+          <AppIcon :name="theme.isDark.value ? 'sun' : 'moon'" :size="17" />
         </button>
       </div>
     </div>
@@ -155,13 +148,7 @@ const points = computed(() => auth.user?.points ?? 0)
       </NuxtLink>
       <button type="button" class="icon-btn h-9 w-9 rounded-lg grid place-items-center"
               :title="themeTitle" :aria-label="themeTitle" @click="theme.toggle()">
-        <svg v-if="!theme.isDark.value" width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M13 9.5A5.5 5.5 0 0 1 6.5 3a5.5 5.5 0 1 0 6.5 6.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-        </svg>
-        <svg v-else width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.5 3.5l1 1M11.5 11.5l1 1M3.5 12.5l1-1M11.5 4.5l1-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
+        <AppIcon :name="theme.isDark.value ? 'sun' : 'moon'" :size="17" />
       </button>
       <button type="button" class="icon-btn h-9 w-9 rounded-lg grid place-items-center text-xs font-semibold"
               :title="localeTitle"
@@ -176,9 +163,7 @@ const points = computed(() => auth.user?.points ?? 0)
       class="collapse-btn absolute top-[26px] -right-3 z-10 h-7 w-7 rounded-full grid place-items-center border"
       :title="collapsed ? i18n.t({ uz: 'Ochish', kr: 'Очиш' }) : i18n.t({ uz: 'Yopish', kr: 'Ёпиш' })"
       @click="collapsed = !collapsed">
-      <svg class="w-3.5 h-3.5 transition-transform" :class="{ 'rotate-180': collapsed }" viewBox="0 0 12 12" fill="none">
-        <path d="M7.5 3 4.5 6l3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+      <AppIcon name="chev-l" :size="15" class="transition-transform" :class="{ 'rotate-180': collapsed }" />
     </button>
   </aside>
 
@@ -189,9 +174,7 @@ const points = computed(() => auth.user?.points ?? 0)
     :aria-label="i18n.t({ uz: 'Menyu', kr: 'Меню' })"
     :aria-expanded="mobileOpen"
     @click="mobileOpen = true">
-    <svg class="w-5 h-5" viewBox="0 0 20 20" fill="none">
-      <path d="M3 6h14M3 10h14M3 14h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-    </svg>
+    <AppIcon name="menu" :size="20" />
   </button>
 
   <!-- ── Mobil: fon ── -->
@@ -215,18 +198,12 @@ const points = computed(() => auth.user?.points ?? 0)
       style="background: var(--surface); border-color: var(--border-soft);">
       <div class="flex items-center justify-between gap-2 h-[76px] px-4 shrink-0">
         <NuxtLink to="/" class="flex items-center gap-2.5 min-w-0" @click="mobileOpen = false">
-          <img src="/logo-mark.svg" alt="Avtoprav" width="36" height="36" class="w-9 h-9 rounded-[10px]" />
-          <span class="font-bold text-[19px] tracking-tightish truncate" style="color: var(--text-1);">Avtoprav</span>
+          <img src="/logo-mark.svg" alt="Avtoprav" width="38" height="38" class="w-[38px] h-[38px] rounded-[11px]" />
+          <span class="wordmark truncate">Avtoprav</span>
         </NuxtLink>
         <button type="button" class="icon-btn h-8 w-8 rounded-lg grid place-items-center"
                 :title="themeTitle" :aria-label="themeTitle" @click="theme.toggle()">
-          <svg v-if="!theme.isDark.value" width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M13 9.5A5.5 5.5 0 0 1 6.5 3a5.5 5.5 0 1 0 6.5 6.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-          </svg>
-          <svg v-else width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.5 3.5l1 1M11.5 11.5l1 1M3.5 12.5l1-1M11.5 4.5l1-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
+          <AppIcon :name="theme.isDark.value ? 'sun' : 'moon'" :size="17" />
         </button>
       </div>
 
@@ -257,6 +234,18 @@ const points = computed(() => auth.user?.points ?? 0)
 </template>
 
 <style scoped>
+/* Brend yozuvi — oddiy Inter (sayt shrifti), faqat kattaroq va to'qroq.
+   Inter o'zgaruvchan shrift, shuning uchun 800 og'irlik qo'shimcha fayl
+   yuklamaydi. */
+.wordmark {
+  font-size: 23px;
+  font-weight: 800;
+  font-variation-settings: 'wght' 800;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  color: var(--text-1);
+}
+
 .icon-btn {
   color: var(--text-3);
   transition: background .15s, color .15s;

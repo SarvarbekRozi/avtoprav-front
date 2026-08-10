@@ -19,6 +19,12 @@ const NAME_MAP: Record<string, string> = {
   // time
   clock:         'lucide:clock',
 
+  // mavzu almashtirish + mobil menyu (ilgari qo'lda chizilgan sodda SVG edi —
+  // yonidagi Lucide ikonkalari bilan uslubi mos kelmasdi)
+  moon:          'lucide:moon',
+  sun:           'lucide:sun',
+  menu:          'lucide:menu',
+
   // brand / gamification
   flame:         'lucide:flame',
   'flame-outline': 'lucide:flame',
@@ -36,7 +42,9 @@ const NAME_MAP: Record<string, string> = {
   shuffle:       'lucide:shuffle',
   refresh:       'lucide:rotate-ccw',
   stat:          'lucide:bar-chart-3',
-  sign:          'lucide:traffic-cone',
+  // `traffic-cone` EMAS: konus yo'l belgisi emas, "Yo'l belgilari" bo'limi
+  // uchun ma'nosi noto'g'ri edi. `signpost` — aynan yo'l ko'rsatkichi.
+  sign:          'lucide:signpost',
 
   bookmark:      'lucide:bookmark',
   target:        'lucide:target',

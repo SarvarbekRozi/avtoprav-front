@@ -61,8 +61,11 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
-        display: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
+        // Nomlar @fontsource-variable paketlaridagi @font-face bilan AYNAN mos
+        // bo'lishi shart ('Inter Variable', 'Manrope Variable') — aks holda
+        // brauzer shriftni topmay tizim shriftiga tushib qoladi.
+        sans: ['Inter Variable', 'Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+        display: ['Inter Variable', 'Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
       },
       fontSize: {
         '2xs': ['0.6875rem', { lineHeight: '1rem' }],

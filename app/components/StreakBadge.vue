@@ -101,14 +101,8 @@ function dayTooltip(d: any) {
              :class="streak.current > 0
                ? 'bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 shadow-lift'
                : 'bg-ink-100'">
-          <!-- Flame SVG -->
-          <svg v-if="streak.current > 0" class="w-9 h-9 sm:w-11 sm:h-11 text-white drop-shadow" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2c-1 2.5-2.5 4-4.5 5.5C5.5 9 4 11 4 14c0 4.4 3.6 8 8 8s8-3.6 8-8c0-2.4-1-4-2-5-.7.8-1.4 1-2.2 1-1.6 0-2.6-1.3-2.2-2.8.4-2-.5-4-1.6-5.2z" opacity="0.95"/>
-            <path d="M12 11c-.5 1.2-1.5 2-2 3-.7 1.4-.3 3 1 4 .8.6 1.7.6 2.5.2 1.6-.8 2-2.6 1.2-4-.4-.8-1.2-1.5-1.7-2.5-.3-.5-.7-1.1-1-.7z" fill="rgb(254 215 170)"/>
-          </svg>
-          <svg v-else class="w-9 h-9 sm:w-11 sm:h-11 text-ink-400" viewBox="0 0 24 24" fill="none">
-            <path d="M12 2c-1 2.5-2.5 4-4.5 5.5C5.5 9 4 11 4 14c0 4.4 3.6 8 8 8s8-3.6 8-8c0-2.4-1-4-2-5-.7.8-1.4 1-2.2 1-1.6 0-2.6-1.3-2.2-2.8.4-2-.5-4-1.6-5.2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
-          </svg>
+          <AppIcon name="flame" :size="40"
+                   :class="streak.current > 0 ? 'text-white drop-shadow' : 'text-ink-400'" />
         </div>
         <!-- small ping for active -->
         <span v-if="streak.current > 0" class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white">
@@ -128,9 +122,7 @@ function dayTooltip(d: any) {
           <span>{{ todayLabel }}</span>
           <span class="text-ink-300">·</span>
           <span class="flex items-center gap-1">
-            <svg class="w-3 h-3 text-ink-400" viewBox="0 0 12 12" fill="none">
-              <path d="M6 1l1.4 3 3.1.4-2.3 2.2.6 3.1L6 8.2 3.2 9.7l.6-3.1L1.5 4.4 4.6 4 6 1z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
-            </svg>
+            <AppIcon name="trophy" :size="12" class="text-ink-400" />
             {{ i18n.t({ uz: 'Rekord:', kr: 'Рекорд:' }) }} <b class="text-ink-700">{{ streak.longest }}</b>
           </span>
         </div>
@@ -155,9 +147,7 @@ function dayTooltip(d: any) {
             <span class="text-ink-400">/ {{ streak.today_goal }}</span>
           </span>
           <span v-if="streak.today_reached" class="badge-success">
-            <svg class="w-3 h-3" viewBox="0 0 12 12" fill="none">
-              <path d="M2 6.5L4.5 9L10 3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+            <AppIcon name="check" :size="12" />
             {{ i18n.t({ uz: 'Bajarildi', kr: 'Бажарилди' }) }}
           </span>
         </div>
@@ -203,9 +193,7 @@ function dayTooltip(d: any) {
                      : 'bg-white text-ink-300 border border-ink-200/70',
                  d.isToday ? 'ring-2 ring-ink-900 ring-offset-2 ring-offset-white' : '',
                ]">
-            <svg v-if="d.reached" class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 16 16" fill="none">
-              <path d="M3 8.5L6.5 12L13 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+            <AppIcon v-if="d.reached" name="check" :size="17" />
             <span v-else-if="d.questions > 0" class="text-xs font-semibold tabular-nums">{{ d.questions }}</span>
             <span v-else class="text-xs text-ink-300">·</span>
           </div>
@@ -223,9 +211,7 @@ function dayTooltip(d: any) {
               bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200
               shadow-soft text-sm">
     <!-- Compact (header chip) -->
-    <svg class="w-3.5 h-3.5 text-amber-600" viewBox="0 0 16 16" fill="currentColor">
-      <path d="M8 1.5c-.4 1.3-1.2 2.5-2.3 3.4C4.2 6.2 3 7.7 3 9.7 3 12.5 5.2 14.5 8 14.5s5-2 5-4.8c0-1.3-.5-2.3-1.2-3.2-.4.5-.9.7-1.4.7-1 0-1.6-.8-1.4-1.7.2-1.3-.3-3-1-4Z"/>
-    </svg>
+    <AppIcon name="flame" :size="14" class="text-amber-600" />
     <span class="font-semibold text-amber-800 tabular-nums">{{ streak.current }}</span>
   </div>
 </template>
