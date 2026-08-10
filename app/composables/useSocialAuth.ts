@@ -124,7 +124,11 @@ export function useGoogleAuth() {
       size: 'large',
       width,
       text: 'signin_with',
-      shape: 'pill',
+      // `rectangular` — auth kartasidagi qolgan tugmalar ham to'g'ri burchakli.
+      // DIQQAT: bu Google'ning RASMIY parametri. Tugmani CSS bilan qirqish,
+      // qayta bo'yash yoki balandligini o'zgartirish Google brend talablariga
+      // zid, shuning uchun qilinmaydi — balandlik `size: 'large'` = 40px.
+      shape: 'rectangular',
       locale: 'ru',
     })
   }

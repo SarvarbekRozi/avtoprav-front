@@ -171,12 +171,11 @@ onBeforeUnmount(() => {
           <span class="social-divider-line" />
         </div>
 
-        <div v-if="error" class="mb-4 px-3.5 py-2.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-sm flex items-start gap-2">
-          <svg class="w-4 h-4 flex-shrink-0 mt-0.5" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" />
-            <path d="M8 5v3.5M8 10.75v.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-          </svg>
-          {{ error }}
+        <!-- Tokenlar bilan: ilgari `bg-rose-50 text-rose-700` qattiq klasslari
+             turgan edi, ular qorong'i rejimda oq-pushti yamoq berardi. -->
+        <div v-if="error" class="social-error" role="alert">
+          <AppIcon name="info" :size="16" class="shrink-0 mt-px" />
+          <span>{{ error }}</span>
         </div>
 
         <div class="social-actions" :class="busy ? 'pointer-events-none opacity-60' : ''">
@@ -218,41 +217,55 @@ onBeforeUnmount(() => {
 .social-divider {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
+  gap: 0.875rem;
+  margin-bottom: 1.125rem;
 }
 .social-divider-line {
   flex: 1 1 0%;
   height: 1px;
-  background: var(--border-soft);
+  background: var(--border-1);
 }
 .social-divider-text {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--text-4);
 }
 
-/* Google tugmasi eng ko'pi bilan 400px — ikkalasi bir xil kenglikda tursin */
+/* Auth kartasi ichida to'liq kenglik — `max-width: 400px; margin: auto` bo'lsa
+   tugmalar kartaning maydonlaridan torroq bo'lib, chetlari to'g'ri kelmaydi. */
 .social-actions {
   display: flex;
   flex-direction: column;
   gap: 0.625rem;
-  max-width: 400px;
-  margin: 0 auto;
   transition: opacity .15s;
 }
 
 .social-skeleton {
   height: 40px;
-  border-radius: 9999px;
+  border-radius: 10px;
   background: var(--surface-inset);
   animation: social-pulse 1.6s ease-in-out infinite;
+}
+
+.social-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 0.875rem;
+  border-radius: 12px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  background: var(--danger-soft);
+  color: var(--danger-ink);
 }
 @keyframes social-pulse {
   0%, 100% { opacity: 1 }
   50%      { opacity: .55 }
 }
 
-/* Telegram tugmasi — brend rangi, Google tugmasi bilan bir o'lchamda (40px, pill) */
+/* Telegram tugmasi — brend rangi. Balandlik 40px: Google tugmasi bilan TENG
+   bo'lishi kerak, uning balandligi esa Google tomonidan qat'iy (size: 'large'),
+   o'zgartirib bo'lmaydi. Radius ham Google'ning `rectangular` shakliga yaqin. */
 .tg-btn {
   display: inline-flex;
   align-items: center;
@@ -261,7 +274,7 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 40px;
   padding: 0 1rem;
-  border-radius: 9999px;
+  border-radius: 6px;
   font-size: 0.875rem;
   font-weight: 500;
   color: #fff;

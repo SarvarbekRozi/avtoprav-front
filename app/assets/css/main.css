@@ -56,6 +56,15 @@
 
     --danger:           #e11d48;
     --danger-ink:       #be123c;
+    /* `-soft` — xabar bloklari foni; ustidagi matn `-ink` bilan yoziladi.
+       Ilgari sahifalar bunday bloklarni `bg-rose-50 border-rose-200` kabi
+       QATTIQ Tailwind klasslari bilan yasardi — ular qorong'i rejimda oq-pushti
+       fon berib, matnni o'qilmas qilardi. */
+    --danger-soft:      #ffe4e6;
+
+    --warn:             #f59e0b;
+    --warn-ink:         #92400e;
+    --warn-soft:        #fef3c7;
 
     --focus-ring:       rgba(63, 88, 148, 0.15);
     --shadow-soft:      0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 1px 0 rgb(15 23 42 / 0.03);
@@ -111,6 +120,13 @@
 
     --danger:           #fb7185;
     --danger-ink:       #fda4af;
+    /* Qorong'ida to'ldirish SHAFFOF: to'q sirt ustida shaffof qatlam sirt
+       chuqurligini saqlaydi, qattiq rang esa "yamoq" bo'lib ko'rinadi. */
+    --danger-soft:      rgba(244, 63, 94, 0.16);
+
+    --warn:             #fbbf24;
+    --warn-ink:         #fcd34d;
+    --warn-soft:        rgba(251, 191, 36, 0.16);
 
     --focus-ring:       rgba(158, 174, 207, 0.25);
     --shadow-soft:      0 1px 2px 0 rgb(0 0 0 / 0.35);

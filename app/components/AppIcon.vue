@@ -48,6 +48,9 @@ const NAME_MAP: Record<string, string> = {
 
   bookmark:      'lucide:bookmark',
   target:        'lucide:target',
+  shield:        'lucide:shield-check',
+  eye:           'lucide:eye',
+  'eye-off':     'lucide:eye-off',
   car:           'lucide:car',
   alert:         'lucide:triangle-alert',
   activity:      'lucide:activity',
