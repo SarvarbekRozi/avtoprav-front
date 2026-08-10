@@ -16,9 +16,9 @@ const i18n = useI18n()
          class="absolute -top-24 -left-16 w-64 h-64 rounded-full blur-3xl pointer-events-none"
          style="background: radial-gradient(circle, rgba(255,255,255,0.22), transparent 70%);"></div>
 
-    <!-- max-w — illyustratsiya kattalashgani uchun: 56% da matn rasm ustiga
-         14px chiqib ketardi (o'lchangan). 51% da hamma o'lchamda bo'shliq bor. -->
-    <div class="relative z-10 max-w-[60%] sm:max-w-[51%]">
+    <!-- max-w illyustratsiya kengligiga bog'liq: ikkisi qo'shilib 100% dan
+         oshmasligi kerak, aks holda matn rasm ustiga chiqadi (o'lchangan). -->
+    <div class="relative z-10 max-w-[62%] sm:max-w-[62%]">
       <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
         <!-- `text-white` SHART: main.css'dagi `h1,h2,h3,h4 { color: var(--text-1) }`
              to'g'ridan-to'g'ri qoida bo'lgani uchun ota elementdan MEROS bo'lib
@@ -62,7 +62,7 @@ const i18n = useI18n()
          768px va 1280px atrofida matn ustiga chiqib ketardi. -->
     <img src="/exam-art.webp" alt="" aria-hidden="true" width="560" height="508"
       class="exam-art pointer-events-none select-none absolute right-0 bottom-0
-             w-[130px] sm:w-[48%] sm:max-w-[360px]" />
+             w-[112px] sm:w-[34%] sm:max-w-[250px]" />
   </section>
 </template>
 
