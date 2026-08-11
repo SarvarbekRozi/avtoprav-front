@@ -20,16 +20,32 @@ const showPwd = ref(false)
 
 // Mehmon hisobini yuksaltirish — BUTUN progress saqlanadi (bir xil hisob,
 // bir xil token). Sarlavha va matnlar shunga qarab o'zgaradi.
-const isUpgrade = computed(() => auth.user?.is_guest ?? false)
+//
+// `acct` cookie ZAXIRA sifatida: token bor-u `/me` so'rovi tarmoq xatosi
+// bilan yiqilgan bo'lsa `auth.user` null qoladi va `is_guest` ni bilib
+// bo'lmaydi. O'shanda `isUpgrade` jimgina `false` bo'lib YANGI hisob
+// yaratilardi — mehmonning XP'si, seriyasi va natijalari eski hisobda tashlab
+// ketilardi. Hisob turi allaqachon shu cookie'da saqlanadi (stores/auth.ts).
+const acct = useCookie<'user' | 'guest' | null>('acct')
+const isUpgrade = computed(() => {
+  if (auth.user) return auth.user.is_guest
+  return !!auth.token && acct.value === 'guest'
+})
+
+const SHOWN_FIELDS = ['login', 'full_name', 'phone', 'password', 'password_confirmation']
 
 async function submit() {
+  // Ikki marta tez bosishdan qo'riqchi — tugmada `disabled` emas
+  // `aria-disabled` ishlatiladi (fokus yo'qolmasligi uchun).
+  if (auth.loading) return
+
   errors.value = {}
   error.value = ''
   try {
     const payload = { ...form, locale: i18n.locale.value }
     if (isUpgrade.value) await auth.completeRegistration(payload)
     else await auth.register(payload)
-    await navigateTo((route.query.redirect as string) || '/')
+    await navigateTo(safeRedirect(route.query.redirect))
   }
   catch (e: any) {
     const fromServer = e?.data?.errors as Record<string, string[]> | undefined
@@ -39,8 +55,7 @@ async function submit() {
       // xato qaytarsa (masalan `locale`), foydalanuvchi hech narsa ko'rmasdi —
       // tugma bosiladi, sahifa jim turadi. Shunday kalitlarni umumiy
       // bannerga chiqaramiz.
-      const shown = ['login', 'full_name', 'phone', 'password', 'password_confirmation']
-      const orphan = Object.keys(fromServer).filter(k => !shown.includes(k))
+      const orphan = Object.keys(fromServer).filter(k => !SHOWN_FIELDS.includes(k))
       if (orphan.length) error.value = orphan.map(k => fromServer[k]?.[0]).filter(Boolean).join(' ')
     }
     else {
@@ -48,6 +63,23 @@ async function submit() {
     }
   }
 }
+
+/**
+ * Xatolardan keyin BIRINCHI xato maydoniga fokusni ko'chiradi.
+ *
+ * Usiz ko'zi ojiz foydalanuvchi "Hisob yaratish"ni bosib HECH NARSA
+ * eshitmasdi: maydon xatolari oddiy <p> bo'lib chizilardi, live region emas,
+ * inputga bog'lanmagan, umumiy banner ham (faqat "orphan" kalitlar uchun
+ * to'lgani sababli) bo'sh qolardi — mutlaq jimlik (WCAG 3.3.1).
+ */
+watch(errors, (next) => {
+  const first = SHOWN_FIELDS.find(f => next[f]?.length)
+  if (!first) return
+  nextTick(() => {
+    const el = document.getElementById(first)
+    el?.focus()
+  })
+})
 </script>
 
 <template>
@@ -72,6 +104,12 @@ async function submit() {
       </NuxtLink>
 
       <div class="w-full max-w-[430px] mx-auto">
+        <!-- Bosh sahifaga qaytish — login.vue dagi bilan bir xil (sabab u yerda). -->
+        <NuxtLink to="/" class="back-link">
+          <AppIcon name="arrow-left" :size="16" />
+          {{ i18n.t({ uz: 'Bosh sahifaga', kr: 'Бош саҳифага' }) }}
+        </NuxtLink>
+
         <section class="auth-card">
           <h1 class="auth-title">
             {{ isUpgrade
@@ -101,9 +139,10 @@ async function submit() {
                 {{ i18n.t({ uz: 'Login', kr: 'Логин' }) }} <span class="req">*</span>
               </label>
               <input id="login" v-model="form.login" required autofocus autocomplete="username"
+                     :aria-describedby="errors.login ? 'login-err' : undefined"
                      placeholder="ali2024" class="field"
                      :aria-invalid="!!errors.login" />
-              <p v-if="errors.login" class="field-err">{{ errors.login[0] }}</p>
+              <p v-if="errors.login" id="login-err" class="field-err" role="alert">{{ errors.login[0] }}</p>
             </div>
 
             <div>
@@ -111,8 +150,10 @@ async function submit() {
                 {{ i18n.t({ uz: 'F.I.Sh.', kr: 'Ф.И.Ш.' }) }}
               </label>
               <input id="full_name" v-model="form.full_name" autocomplete="name" class="field"
+                     :aria-invalid="!!errors.full_name"
+                     :aria-describedby="errors.full_name ? 'full_name-err' : undefined"
                      :placeholder="i18n.t({ uz: 'Aliyev Ali Akbarovich', kr: 'Алиев Али Акбарович' })" />
-              <p v-if="errors.full_name" class="field-err">{{ errors.full_name[0] }}</p>
+              <p v-if="errors.full_name" id="full_name-err" class="field-err" role="alert">{{ errors.full_name[0] }}</p>
             </div>
 
             <div>
@@ -120,8 +161,10 @@ async function submit() {
                 {{ i18n.t({ uz: 'Telefon', kr: 'Телефон' }) }}
               </label>
               <input id="phone" v-model="form.phone" autocomplete="tel" inputmode="tel"
+                     :aria-invalid="!!errors.phone"
+                     :aria-describedby="errors.phone ? 'phone-err' : undefined"
                      placeholder="+998 90 123 45 67" class="field" />
-              <p v-if="errors.phone" class="field-err">{{ errors.phone[0] }}</p>
+              <p v-if="errors.phone" id="phone-err" class="field-err" role="alert">{{ errors.phone[0] }}</p>
             </div>
 
             <div>
@@ -138,19 +181,21 @@ async function submit() {
               <div class="relative">
                 <input id="password" v-model="form.password" :type="showPwd ? 'text' : 'password'"
                        required autocomplete="new-password" placeholder="••••••••"
-                       class="field pr-11" :aria-invalid="!!errors.password" />
+                       class="field field-pw" :aria-invalid="!!errors.password"
+                       :aria-describedby="errors.password ? 'password-err' : 'password-hint'" />
+                <!-- `aria-label` O'ZGARMAYDI, holatni faqat `aria-pressed`
+                     bildiradi: ikkisi birga o'zgarsa ekran o'quvchi
+                     qarama-qarshi e'lon beradi ("Ko'rsatish, bosilgan"). -->
                 <button type="button" class="reveal-icon" :aria-pressed="showPwd"
-                        :aria-label="showPwd
-                          ? i18n.t({ uz: 'Parolni yashirish', kr: 'Паролни яшириш' })
-                          : i18n.t({ uz: 'Parolni ko\'rsatish', kr: 'Паролни кўрсатиш' })"
+                        :aria-label="i18n.t({ uz: 'Parolni ko\'rsatish', kr: 'Паролни кўрсатиш' })"
                         @click="showPwd = !showPwd">
                   <AppIcon :name="showPwd ? 'eye-off' : 'eye'" :size="18" />
                 </button>
               </div>
-              <p v-if="errors.password" class="field-err">{{ errors.password[0] }}</p>
+              <p v-if="errors.password" id="password-err" class="field-err" role="alert">{{ errors.password[0] }}</p>
               <!-- 6, 8 EMAS: backend qoidasi `min:6` (AuthController). 8 deb
                    yozilgani foydalanuvchiga haqiqatdan qattiqroq shart aytardi. -->
-              <p v-else class="field-hint">{{ i18n.t({ uz: 'Kamida 6 ta belgi', kr: 'Камида 6 та белги' }) }}</p>
+              <p v-else id="password-hint" class="field-hint">{{ i18n.t({ uz: 'Kamida 6 ta belgi', kr: 'Камида 6 та белги' }) }}</p>
             </div>
 
             <div>
@@ -159,18 +204,23 @@ async function submit() {
               </label>
               <input id="password_confirmation" v-model="form.password_confirmation"
                      :type="showPwd ? 'text' : 'password'" required autocomplete="new-password"
-                     placeholder="••••••••" class="field" />
-              <p v-if="errors.password_confirmation" class="field-err">{{ errors.password_confirmation[0] }}</p>
+                     placeholder="••••••••" class="field"
+                     :aria-invalid="!!errors.password_confirmation"
+                     :aria-describedby="errors.password_confirmation ? 'password_confirmation-err' : undefined" />
+              <p v-if="errors.password_confirmation" id="password_confirmation-err" class="field-err" role="alert">{{ errors.password_confirmation[0] }}</p>
             </div>
 
-            <button type="submit" :disabled="auth.loading" class="submit-btn mt-1">
+            <!-- Matn HAR DOIM DOMda: ilgari yuklanishda faqat spinner qolib, tugmaning
+                 hisoblangan NOMI bo'sh bo'lardi (WCAG 4.1.2). -->
+            <button type="submit" class="submit-btn mt-1"
+                    :aria-disabled="auth.loading" :aria-busy="auth.loading">
               <span v-if="auth.loading" class="spinner" aria-hidden="true" />
-              <span v-else>{{ isUpgrade
+              <span>{{ isUpgrade
                 ? i18n.t({ uz: 'Hisobni saqlash', kr: 'Ҳисобни сақлаш' })
                 : i18n.t({ uz: 'Hisob yaratish', kr: 'Ҳисоб яратиш' }) }}</span>
             </button>
 
-            <p class="text-xs text-center leading-relaxed" style="color: var(--text-4);">
+            <p class="text-xs text-center leading-relaxed" style="color: var(--text-3);">
               {{ i18n.t({
                 uz: 'Ro\'yxatdan o\'tish orqali siz xizmat shartlariga rozilik bildirasiz.',
                 kr: 'Рўйхатдан ўтиш орқали сиз хизмат шартларига розилик билдирасиз.',
@@ -185,12 +235,12 @@ async function submit() {
 
         <p class="mt-6 text-center text-sm" style="color: var(--text-3);">
           {{ i18n.t({ uz: 'Hisobingiz bormi?', kr: 'Ҳисобингиз борми?' }) }}
-          <NuxtLink to="/login" class="auth-link ml-1">
+          <NuxtLink :to="{ path: '/login', query: route.query }" class="auth-link ml-1">
             {{ i18n.t({ uz: 'Kirish', kr: 'Кириш' }) }}
           </NuxtLink>
         </p>
 
-        <p class="mt-9 flex items-center justify-center gap-1.5 text-xs" style="color: var(--text-4);">
+        <p class="mt-9 flex items-center justify-center gap-1.5 text-xs" style="color: var(--text-3);">
           <AppIcon name="shield" :size="14" />
           {{ i18n.t({
             uz: 'Avtoprav — sizning imtihonga ishonchli yo\'ldoshingiz',
@@ -225,6 +275,22 @@ async function submit() {
   letter-spacing: -0.025em;
   color: var(--text-1);
 }
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-bottom: 0.875rem;
+  padding: 0.375rem 0.625rem 0.375rem 0.5rem;
+  margin-left: -0.5rem;      /* matn karta chetiga tekis tursin */
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-3);
+  transition: color .15s, background .15s;
+}
+.back-link:hover { color: var(--text-1); background: var(--surface-inset); }
+.back-link:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--primary-ring); }
 
 .auth-card {
   background: var(--surface);
@@ -264,7 +330,9 @@ async function submit() {
   color: var(--text-1);
   transition: border-color .15s, box-shadow .15s;
 }
-.field::placeholder { color: var(--text-muted); }
+/* --text-muted EMAS: yorug'da oq fonda 1.98:1 — AA (4.5:1) dan juda past. */
+.field::placeholder { color: var(--text-3); opacity: 1; }
+.field-pw { padding-right: 2.75rem; }
 .field:focus {
   outline: none;
   border-color: var(--primary);
@@ -273,11 +341,12 @@ async function submit() {
 .field[aria-invalid='true'] { border-color: var(--danger); }
 
 .field-err  { font-size: 12px; margin-top: 0.375rem; color: var(--danger-ink); }
-.field-hint { font-size: 12px; margin-top: 0.375rem; color: var(--text-4); }
+/* --text-3: 12px matn uchun --text-4 yorug'da AA dan o'tmaydi (3.3:1). */
+.field-hint { font-size: 12px; margin-top: 0.375rem; color: var(--text-3); }
 
 .reveal-text {
   font-size: 13px;
-  color: var(--text-4);
+  color: var(--text-3);
   transition: color .15s;
 }
 .reveal-text:hover { color: var(--text-1); }
@@ -315,8 +384,21 @@ async function submit() {
 }
 .submit-btn:hover:not(:disabled) { background: var(--text-2); }
 .submit-btn:active:not(:disabled) { transform: translateY(1px); }
-.submit-btn:disabled { opacity: .6; cursor: not-allowed; }
+.submit-btn[aria-disabled='true'] { opacity: .6; cursor: progress; }
+.submit-btn[aria-disabled='true']:hover { background: var(--text-1); }
 .submit-btn:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--primary-ring); }
+
+/* Yuqori kontrast rejimida box-shadow butunlay o'chiriladi — fokus
+   ko'rsatkichi yo'qolmasligi uchun shaffof outline qoldiriladi. */
+@media (forced-colors: active) {
+  .submit-btn:focus-visible,
+  .field:focus,
+  .reveal-icon:focus-visible,
+  .auth-link:focus-visible {
+    outline: 2px solid CanvasText;
+    outline-offset: 2px;
+  }
+}
 
 .spinner {
   width: 18px;
@@ -337,9 +419,12 @@ async function submit() {
   border-radius: 12px;
   font-size: 13.5px;
   line-height: 1.45;
-  background: var(--danger-soft);
-  color: var(--danger-ink);
 }
+/* Modifikatorlar login.vue bilan BIR XIL: ranglar bazaviy .note ga
+   singdirilsa, kelajakda ogohlantirish bloki qo'shilganda xato rangida
+   chiqib ketardi. */
+.note-error { background: var(--danger-soft); color: var(--danger-ink); }
+.note-warn  { background: var(--warn-soft);   color: var(--warn-ink); }
 
 .auth-link {
   font-weight: 600;
@@ -350,5 +435,15 @@ async function submit() {
 @media (prefers-reduced-motion: reduce) {
   .submit-btn, .submit-btn:active { transition: none; transform: none; }
   .spinner { animation-duration: 2s; }
+}
+
+/* PAST EKRAN (1366x768 va shunga o'xshash laptoplar). Scroll aslida SHU
+   ustundan chiqadi (karta + pastdagi havolalar), chap ustundan emas —
+   brauzerda o'lchab aniqlangan. */
+@media (max-height: 820px) {
+  .auth-side { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+  .auth-card { padding: 24px 28px; }
+  .auth-title { font-size: 21px; }
+  .back-link { margin-bottom: 0.5rem; }
 }
 </style>

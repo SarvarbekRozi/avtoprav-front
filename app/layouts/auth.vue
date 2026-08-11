@@ -39,14 +39,20 @@ const themeLabel = computed(() => theme.isDark.value
       <!-- `hidden sm:flex` EMAS: 640px dan tor ekranda til almashtirgich
            yashirilsa, kirill foydalanuvchisi kirish sahifasida tilni umuman
            o'zgartira olmaydi (default.vue da aynan shu kamchilik bor). -->
+      <!-- `aria-pressed` — tanlangan alifboni faqat RANG bildirsa, ekran
+           o'quvchi ikki bir xil tugmani o'qib, qaysi biri faol ekanini
+           aytmaydi. `role="group"` ikkisini bitta boshqaruv sifatida bog'laydi. -->
       <div class="flex items-center rounded-md p-0.5 text-xs font-medium"
+           role="group" :aria-label="i18n.t({ uz: 'Alifbo', kr: 'Алифбо' })"
            style="background: var(--surface-inset);">
         <button type="button" class="px-2 py-1 rounded transition-colors"
+                :aria-pressed="i18n.locale.value === 'uz_latn'"
                 :style="i18n.locale.value === 'uz_latn'
                   ? { background: 'var(--surface)', boxShadow: 'var(--shadow-soft)', color: 'var(--text-1)' }
                   : { color: 'var(--text-3)' }"
                 @click="changeLocale('uz_latn')">Lotin</button>
         <button type="button" class="px-2 py-1 rounded transition-colors"
+                :aria-pressed="i18n.locale.value === 'uz_cyrl'"
                 :style="i18n.locale.value === 'uz_cyrl'
                   ? { background: 'var(--surface)', boxShadow: 'var(--shadow-soft)', color: 'var(--text-1)' }
                   : { color: 'var(--text-3)' }"

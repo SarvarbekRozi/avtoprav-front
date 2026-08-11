@@ -117,8 +117,9 @@ async function renderGoogle() {
   }
 }
 
-// Sayt mavzusi o'zgarsa Google tugmasini qayta chizamiz (o'z mavzusi bor).
-watch(() => google.isDark.value, () => {
+// Sayt mavzusi YOKI tili o'zgarsa Google tugmasini qayta chizamiz — u o'z
+// mavzusi va tilini mount paytida bir marta oladi, keyin o'zi yangilanmaydi.
+watch([() => google.isDark.value, () => google.locale.value], () => {
   if (googleReady.value) void renderGoogle()
 })
 
@@ -205,8 +206,14 @@ onBeforeUnmount(() => {
           />
         </div>
 
-        <p v-if="busy" class="mt-3 text-center text-xs" style="color: var(--text-4);">
-          {{ i18n.t({ uz: 'Kirilmoqda…', kr: 'Кирилмоқда…' }) }}
+        <!-- Konteyner DOIM mavjud, faqat matni to'ladi: `v-if` bilan butun
+             `role="status"` tuguni paydo bo'lsa, ba'zi ekran o'quvchilar yangi
+             live region'ni kuzatishga ulguray olmaydi va jarayon jim ketadi.
+             `--text-3`, `--text-4` EMAS: 12px matn uchun --text-4 yorug'da
+             AA dan o'tmaydi. -->
+        <p class="mt-3 text-center text-xs min-h-[1rem]" role="status"
+           style="color: var(--text-3);">
+          {{ busy ? i18n.t({ uz: 'Kirilmoqda…', kr: 'Кирилмоқда…' }) : '' }}
         </p>
       </div>
     </ClientOnly>

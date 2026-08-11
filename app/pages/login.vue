@@ -14,11 +14,15 @@ const showPwd = ref(false)
 const sessionExpired = computed(() => route.query.expired === '1')
 
 async function submit() {
+  // Ikki marta tez bosishdan qo'riqchi. Tugmada `disabled` EMAS, `aria-disabled`
+  // ishlatiladi: disabled bo'lgan tugma fokusni <body>ga tashlaydi va klaviatura
+  // foydalanuvchisi sahifada joyini butunlay yo'qotadi.
+  if (auth.loading) return
+
   error.value = ''
   try {
     await auth.login(form)
-    const redirect = (route.query.redirect as string) || '/'
-    await navigateTo(redirect)
+    await navigateTo(safeRedirect(route.query.redirect))
   }
   catch (e: any) {
     error.value = e?.data?.message || i18n.t({ uz: 'Xatolik yuz berdi', kr: 'Хатолик юз берди' })
@@ -42,6 +46,15 @@ async function submit() {
       </NuxtLink>
 
       <div class="w-full max-w-[430px] mx-auto">
+        <!-- Bosh sahifaga qaytish. Chap ustundagi logotip ham `/` ga olib
+             boradi, lekin u `xl` dan pastda yashiringan va logotip
+             "qaytish" ekani ko'rinib turmaydi — shuning uchun ochiq,
+             matnli havola. Karta ustida, uning chap qirrasiga tekislangan. -->
+        <NuxtLink to="/" class="back-link">
+          <AppIcon name="arrow-left" :size="16" />
+          {{ i18n.t({ uz: 'Bosh sahifaga', kr: 'Бош саҳифага' }) }}
+        </NuxtLink>
+
         <section class="auth-card">
           <h1 class="auth-title">
             {{ i18n.t({ uz: 'Hisobingizga kiring', kr: 'Ҳисобингизга киринг' }) }}
@@ -90,22 +103,33 @@ async function submit() {
                 </button>
               </div>
               <div class="relative">
+                <!-- `field-pw`, Tailwind `pr-11` EMAS: scoped `.field[data-v-…]`
+                     ning aniqligi (0,2,0) Tailwind `.pr-11` (0,1,0) dan yuqori,
+                     shuning uchun `padding: 0 .875rem` qisqartmasi o'ng
+                     paddingni bosib ketardi — parol matni ko'z tugmasi ostiga
+                     kirib ketgan edi (jonli buildda o'lchandi: 14px). -->
                 <input id="password" v-model="form.password" :type="showPwd ? 'text' : 'password'"
                        required autocomplete="current-password" placeholder="••••••••"
-                       class="field pr-11" />
+                       class="field field-pw" />
+                <!-- `aria-label` O'ZGARMAYDI, holatni faqat `aria-pressed`
+                     bildiradi: ikkisi birga o'zgarsa ekran o'quvchi
+                     qarama-qarshi e'lon beradi ("Ko'rsatish, bosilgan"). -->
                 <button type="button" class="reveal-icon" :aria-pressed="showPwd"
-                        :aria-label="showPwd
-                          ? i18n.t({ uz: 'Parolni yashirish', kr: 'Паролни яшириш' })
-                          : i18n.t({ uz: 'Parolni ko\'rsatish', kr: 'Паролни кўрсатиш' })"
+                        :aria-label="i18n.t({ uz: 'Parolni ko\'rsatish', kr: 'Паролни кўрсатиш' })"
                         @click="showPwd = !showPwd">
                   <AppIcon :name="showPwd ? 'eye-off' : 'eye'" :size="18" />
                 </button>
               </div>
             </div>
 
-            <button type="submit" :disabled="auth.loading" class="submit-btn mt-1">
+            <!-- Matn HAR DOIM DOMda: ilgari yuklanish paytida faqat spinner
+                 qolardi (`aria-hidden`), ya'ni tugmaning hisoblangan NOMI bo'sh
+                 bo'lib, ekran o'quvchi "button, dimmed" deb o'qirdi (WCAG 4.1.2).
+                 `disabled` emas `aria-disabled` — fokus tugmada qoladi. -->
+            <button type="submit" class="submit-btn mt-1"
+                    :aria-disabled="auth.loading" :aria-busy="auth.loading">
               <span v-if="auth.loading" class="spinner" aria-hidden="true" />
-              <span v-else>{{ i18n.t({ uz: 'Davom etish', kr: 'Давом этиш' }) }}</span>
+              <span>{{ i18n.t({ uz: 'Davom etish', kr: 'Давом этиш' }) }}</span>
             </button>
           </form>
 
@@ -115,12 +139,14 @@ async function submit() {
 
         <p class="mt-6 text-center text-sm" style="color: var(--text-3);">
           {{ i18n.t({ uz: 'Hisobingiz yo\'qmi?', kr: 'Ҳисобингиз йўқми?' }) }}
-          <NuxtLink to="/register" class="auth-link ml-1">
+          <!-- `query: route.query` — ?redirect= saqlanadi. Usiz /pricing dan
+               kelgan odam ro'yxatdan o'tgach bosh sahifaga tushib qolardi. -->
+          <NuxtLink :to="{ path: '/register', query: route.query }" class="auth-link ml-1">
             {{ i18n.t({ uz: 'Ro\'yxatdan o\'tish', kr: 'Рўйхатдан ўтиш' }) }}
           </NuxtLink>
         </p>
 
-        <p class="mt-9 flex items-center justify-center gap-1.5 text-xs" style="color: var(--text-4);">
+        <p class="mt-9 flex items-center justify-center gap-1.5 text-xs" style="color: var(--text-3);">
           <AppIcon name="shield" :size="14" />
           {{ i18n.t({
             uz: 'Avtoprav — sizning imtihonga ishonchli yo\'ldoshingiz',
@@ -151,6 +177,22 @@ async function submit() {
   letter-spacing: -0.025em;
   color: var(--text-1);
 }
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-bottom: 0.875rem;
+  padding: 0.375rem 0.625rem 0.375rem 0.5rem;
+  margin-left: -0.5rem;      /* matn karta chetiga tekis tursin */
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-3);
+  transition: color .15s, background .15s;
+}
+.back-link:hover { color: var(--text-1); background: var(--surface-inset); }
+.back-link:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--primary-ring); }
 
 .auth-card {
   background: var(--surface);
@@ -195,16 +237,20 @@ async function submit() {
   color: var(--text-1);
   transition: border-color .15s, box-shadow .15s;
 }
-.field::placeholder { color: var(--text-muted); }
+/* `--text-muted` EMAS: yorug' rejimda u oq fonda 1.98:1 beradi — WCAG AA
+   (4.5:1) dan juda past, placeholder o'qilmaydi. `--text-3` = 6.4:1. */
+.field::placeholder { color: var(--text-3); opacity: 1; }
 .field:focus {
   outline: none;
   border-color: var(--primary);
   box-shadow: 0 0 0 4px var(--primary-ring);
 }
+/* Ko'z tugmasi uchun joy — Tailwind `pr-11` scoped `.field` dan zaifroq. */
+.field-pw { padding-right: 2.75rem; }
 
 .reveal-text {
   font-size: 13px;
-  color: var(--text-4);
+  color: var(--text-3);
   transition: color .15s;
 }
 .reveal-text:hover { color: var(--text-1); }
@@ -244,8 +290,23 @@ async function submit() {
 }
 .submit-btn:hover:not(:disabled) { background: var(--text-2); }
 .submit-btn:active:not(:disabled) { transform: translateY(1px); }
-.submit-btn:disabled { opacity: .6; cursor: not-allowed; }
+/* `[aria-disabled]`, `:disabled` EMAS — sabab script blokida. */
+.submit-btn[aria-disabled='true'] { opacity: .6; cursor: progress; }
+.submit-btn[aria-disabled='true']:hover { background: var(--text-1); }
 .submit-btn:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--primary-ring); }
+
+/* Yuqori kontrast (forced-colors) rejimida `box-shadow` BUTUNLAY o'chiriladi —
+   ya'ni fokus ko'rsatkichi yo'qoladi. Shaffof outline esa tizim rangiga
+   aylanadi, shuning uchun uni ochiq qoldiramiz. */
+@media (forced-colors: active) {
+  .submit-btn:focus-visible,
+  .field:focus,
+  .reveal-icon:focus-visible,
+  .auth-link:focus-visible {
+    outline: 2px solid CanvasText;
+    outline-offset: 2px;
+  }
+}
 
 .spinner {
   width: 18px;
@@ -285,5 +346,15 @@ async function submit() {
 @media (prefers-reduced-motion: reduce) {
   .submit-btn, .submit-btn:active { transition: none; transform: none; }
   .spinner { animation-duration: 2s; }
+}
+
+/* PAST EKRAN (1366x768 va shunga o'xshash laptoplar). Scroll aslida SHU
+   ustundan chiqadi (karta + pastdagi havolalar), chap ustundan emas —
+   brauzerda o'lchab aniqlangan. */
+@media (max-height: 820px) {
+  .auth-side { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+  .auth-card { padding: 24px 28px; }
+  .auth-title { font-size: 21px; }
+  .back-link { margin-bottom: 0.5rem; }
 }
 </style>

@@ -209,4 +209,18 @@ const features = computed(() => [
 /* Rasm yorug' rejim uchun chizilgan — qorong'ida uni butunlay qoraytirib
    bo'lmaydi, shuning uchun shaffofligi kamaytiriladi va fonga singiydi. */
 .dark .road { opacity: 0.4; }
+
+/* PAST LAPTOP EKRANLARI (1366x768, 1440x800 — juda keng tarqalgan). Chap
+   ustun mazmuni bunday balandlikda ekrandan oshib, sahifa keraksiz vertikal
+   scroll olardi. Bu yerda hamma vertikal o'lchamlar bir joyda qisqartiriladi. */
+@media (max-height: 820px) {
+  .showcase { padding-top: 24px; }
+  .showcase-title { font-size: 30px; margin-top: 0.625rem; }
+  .trust-chip { height: 30px; font-size: 12.5px; }
+  .showcase-pad ul { gap: 0.625rem; margin-top: 1.125rem; }
+  .showcase-pad ul p { margin-top: 0.125rem; }
+  .showcase-pad > div { margin-top: 1.25rem; }
+  .road { max-height: 21vh; }
+}
+
 </style>

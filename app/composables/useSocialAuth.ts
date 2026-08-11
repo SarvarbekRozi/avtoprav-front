@@ -79,6 +79,7 @@ export function useGoogleAuth() {
   const clientId = String(config.public.googleClientId || '')
   const enabled = !!clientId
   const theme = useTheme()
+  const i18n = useI18n()
 
   // initialize() global — bir marta chaqiriladi, callback esa oxirgi
   // render qilingan tugmaga yo'naltiriladi.
@@ -129,11 +130,15 @@ export function useGoogleAuth() {
       // qayta bo'yash yoki balandligini o'zgartirish Google brend talablariga
       // zid, shuning uchun qilinmaydi — balandlik `size: 'large'` = 40px.
       shape: 'rectangular',
-      locale: 'ru',
+      // Ilgari qat'iy 'ru' edi — o'zbek saytida Google tugmasi majburan rus
+      // tilida chiqardi. Endi saytning joriy alifbosiga qarab: lotin uchun
+      // 'uz', kirill uchun 'ru' (Google 'uz' ni qo'llamasa inglizchaga tushadi,
+      // bu lotin foydalanuvchisi uchun rus tilidan tushunarliroq).
+      locale: i18n.locale.value === 'uz_cyrl' ? 'ru' : 'uz',
     })
   }
 
-  return { enabled, isDark: theme.isDark, renderGoogleButton }
+  return { enabled, isDark: theme.isDark, locale: i18n.locale, renderGoogleButton }
 }
 
 // ─── Telegram Login Widget ──────────────────────────────────────────────────
