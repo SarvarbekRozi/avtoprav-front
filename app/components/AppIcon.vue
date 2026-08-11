@@ -55,6 +55,11 @@ const NAME_MAP: Record<string, string> = {
   alert:         'lucide:triangle-alert',
   activity:      'lucide:activity',
 
+  // biletlar sahifasi: qidiruv va ko'rinish almashtirgich
+  search:         'lucide:search',
+  grid:           'lucide:layout-grid',
+  list:           'lucide:list',
+
   // outlined status circles (activity feed)
   'check-circle': 'lucide:circle-check-big',
   'x-circle':     'lucide:circle-x',

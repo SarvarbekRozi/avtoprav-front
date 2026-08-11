@@ -15,12 +15,20 @@ const auth = useAuthStore()
  * `watch` mehmon yaralgan (yoki foydalanuvchi almashgan) zahoti qayta so'raydi.
  * Ayni naqsh `useTopicStats.ts` da ham ishlatilgan.
  */
-const { data: topicsRes, pending, error, refresh } = await useAsyncData(
+const { data: topicsRes, status, error, refresh } = await useAsyncData(
   'topics',
   () => apiFetch<{ data: any[] }>('/topics'),
   { server: false, default: () => ({ data: [] as any[] }), watch: [() => auth.user?.id] },
 )
 const topics = computed(() => topicsRes.value?.data || [])
+
+/**
+ * `pending` EMAS, `status`: `server: false` da so'rov serverda bajarilmaydi
+ * va status 'idle' qoladi, Nuxt 4 da esa `experimental.pendingWhenIdle`
+ * sukut bo'yicha false — ya'ni `pending` ham false. Natijada SSR skeletni
+ * emas, "Mavzular mavjud emas" bo'sh holatini chizardi.
+ */
+const yuklanmoqda = computed(() => status.value === 'idle' || status.value === 'pending')
 
 function name(t: any) { return i18n.locale.value === 'uz_cyrl' ? t.name_kr : t.name_uz }
 
@@ -209,7 +217,7 @@ const stats = computed(() => [
 
     <!-- Yuklanmoqda. 12 ta: uch ustunda to'rt qator — haqiqiy ro'yxatga
          yaqinroq, sahifa balandligi kamroq sakraydi. -->
-    <div v-if="pending" class="grid-topics">
+    <div v-if="yuklanmoqda" class="grid-topics">
       <div v-for="i in 12" :key="i" class="topic-card skeleton" aria-hidden="true" />
       <span class="sr-only" role="status">
         {{ i18n.t({ uz: 'Mavzular yuklanmoqda…', kr: 'Мавзулар юкланмоқда…' }) }}
