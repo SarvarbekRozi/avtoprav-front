@@ -116,18 +116,17 @@ watch(errors, (next) => {
       }) : ''" />
 
     <div class="auth-side flex flex-col justify-center px-5 py-10 sm:px-8 xl:px-10">
-      <AuthHomeLink class="xl:hidden inline-flex items-center gap-2.5 self-center mb-8">
+      <NuxtLink to="/" class="xl:hidden inline-flex items-center gap-2.5 self-center mb-8">
         <img src="/logo-mark.svg" alt="" aria-hidden="true" width="36" height="36" class="w-9 h-9 rounded-[10px]" />
         <span class="wordmark">Avtoprav</span>
-      </AuthHomeLink>
+      </NuxtLink>
 
       <div class="w-full max-w-[430px] mx-auto">
-        <!-- Bosh sahifaga qaytish — login.vue dagi bilan bir xil (sabab u yerda).
-             `AuthHomeLink`: sessiya yo'qolgan holatda oddiy havola ko'r yo'l. -->
-        <AuthHomeLink explicit class="back-link">
+        <!-- Bosh sahifaga qaytish — login.vue dagi bilan bir xil (sabab u yerda). -->
+        <NuxtLink to="/" class="back-link">
           <AppIcon name="arrow-left" :size="16" />
           {{ i18n.t({ uz: 'Bosh sahifaga', kr: 'Бош саҳифага' }) }}
-        </AuthHomeLink>
+        </NuxtLink>
 
         <section class="auth-card">
           <h1 class="auth-title">

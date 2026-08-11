@@ -43,32 +43,28 @@ export default defineNuxtRouteMiddleware(async () => {
   }
 
   const ensureSession = async () => {
-    // TELEGRAM KIRISHI ENG BIRINCHI — "sessiya yo'qolgan" xulosasidan ham OLDIN.
+    // TELEGRAM KIRISHI ENG BIRINCHI — mehmon yaratishdan ham OLDIN.
     //
     // initData o'zi to'liq huquqli, imzolangan hisob ma'lumoti. Agar u bo'lsa,
-    // foydalanuvchini /login ga uloqtirishning ma'nosi yo'q: bot orqali
-    // ro'yxatdan o'tgan odamning PAROLI YO'Q, u o'sha sahifada kira olmaydi.
-    // Bu tartib muhim, chunki token yo'qolishi endi ODATIY hodisa: qurilma
-    // limiti (2 ta) eski tokenni siqib chiqaradi, token muddati tugaydi yoki
-    // webview cookie'ni tozalaydi. O'shanda `acct=user` cookie'si qolib,
-    // quyidagi lostRegisteredSession sharti Mini App foydalanuvchisini
-    // avto-kirishga yetkazmasdan /login ga yuborib yuborardi.
+    // undan foydalanmasdan mehmon yaratish xato bo'ladi: Mini App'da bot
+    // orqali ro'yxatdan o'tgan odam o'z hisobiga kirmasdan mehmon bo'lib
+    // qolardi. Token yo'qolishi ODATIY hodisa: qurilma limiti (2 ta) eski
+    // tokenni siqib chiqaradi, muddati tugaydi yoki webview cookie'ni
+    // tozalaydi — shuning uchun bu tartib har safar ishlaydi.
     await tryTelegramLogin()
 
-    // Ro'yxatdan o'tgan hisob sessiyasi yo'qolgan bo'lsa — JIMGINA mehmon
-    // yaratmaymiz. Aks holda foydalanuvchi sezmasdan mehmonga aylanadi va
-    // yechgan testlari, XP'si begona hisobga yozilib ketadi.
-    if (auth.lostRegisteredSession) {
-      return navigateTo('/login?expired=1')
-    }
-
+    // Sessiya yo'qolganda /login ga QAYTARMAYMIZ. Ilgari shunday edi
+    // (`lostRegisteredSession` → /login?expired=1) va maqsad to'g'ri edi:
+    // ro'yxatdan o'tgan odam sezmasdan mehmonga aylanib, yangi natijalari
+    // boshqa hisobga yozilmasin. Amalda esa bu foydalanuvchini login
+    // sahifasida QAMAB qo'yardi: bosh sahifaga ham, boshqa sahifaga ham
+    // o'tolmaydi, paroli bo'lmasa (bot orqali kirgan) esa umuman kira
+    // olmaydi. Sayt ishlamay qolgani — sezdirmay mehmon bo'lishdan yomonroq.
+    // Shuning uchun endi oddiy mehmon oqimi: token yo'q → mehmon yaraladi.
+    // Eski hisob va undagi natijalar serverda turadi, foydalanuvchi xohlagan
+    // paytda "Kirish" orqali qaytadi.
     if (!auth.token) await auth.startGuest()
     if (auth.token && !auth.user) await auth.fetchMe() // 401 bo'lsa tokenni tozalaydi
-
-    // fetchMe 401 qaytarib tokenni tozalagan bo'lishi mumkin — qayta tekshiramiz
-    if (auth.lostRegisteredSession) {
-      return navigateTo('/login?expired=1')
-    }
 
     if (!auth.user) {
       await auth.startGuest()

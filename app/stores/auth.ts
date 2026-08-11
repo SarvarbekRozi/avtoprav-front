@@ -228,24 +228,9 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
   }
 
-  /**
-   * "Bu qurilmada ro'yxatdan o'tgan hisob bor edi" xotirasini o'chiradi.
-   * FAQAT foydalanuvchi mehmon sifatida davom etishni O'ZI tanlaganda
-   * chaqiriladi — `logout()` dan farqi shu: bu yerda serverga chiqish so'rovi
-   * yuborilmaydi, chunki token allaqachon yo'q.
-   *
-   * Usiz `lostRegisteredSession` rost qolib, auth middleware har qanday
-   * sahifadan /login?expired=1 ga qaytarib yuborardi va foydalanuvchi shu
-   * sahifada qamalib qolardi.
-   */
-  function forgetAccountKind() {
-    kindCookie.value = null
-  }
-
   return {
     user, token, isAuthenticated, loading, lostRegisteredSession,
     login, register, startGuest, completeRegistration, fetchMe, logout, clear,
-    forgetAccountKind,
     loginWithGoogle, loginWithTelegram, loginWithTelegramWebApp,
   }
 })
