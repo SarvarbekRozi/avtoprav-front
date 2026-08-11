@@ -37,7 +37,12 @@ const titleParts = computed(() => {
   })
   const i = full.trimEnd().lastIndexOf(' ')
   if (i < 0) return { head: '', tail: full }
-  return { head: full.slice(0, i), tail: full.slice(i + 1) }
+  // Bo'sh joy `head` NING O'ZIDA qoldiriladi (`i + 1`), shablonda alohida
+  // yozilmaydi. Sabab: shablondagi yakka bo'sh joyni Vue kompilyatori
+  // "whitespace condense" bilan yo'q qilib tashlaydi va so'zlar bir-biriga
+  // yopishib qolardi ("ishonch bilantayyorlaning" — aynan shu xato bo'lgan).
+  // Satr ichidagi bo'sh joy esa matn qiymatining bir qismi, u saqlanadi.
+  return { head: full.slice(0, i + 1), tail: full.slice(i + 1) }
 })
 
 const features = computed(() => [
@@ -96,7 +101,14 @@ const features = computed(() => [
         <span class="wordmark">Avtoprav</span>
       </NuxtLink>
 
-      <div class="mt-7 lg:mt-9 max-w-[540px]">
+      <!-- 620px, 540px EMAS: register'ning "Progressingizni yo'qotmang"
+           sarlavhasi 43px shriftda 567px (kirill 605px) joy oladi — 540px
+           cheklovida u ikki qatorga bo'linib, "yo'qotmang" pastga tushib
+           ketardi. Ustunda 727px joy bor, shuning uchun 620px sig'adi.
+           Login sarlavhasi 1023px — u baribir ikki qatorda qoladi (shunday
+           mo'ljallangan). Tavsif paragrafi esa o'z 540px chekloviga ega:
+           620px kenglikda satr o'qishga noqulay uzun bo'lardi. -->
+      <div class="mt-7 lg:mt-9 max-w-[620px]">
         <!-- Ishonch chipi -->
         <span class="trust-chip">
           <AppIcon name="shield" :size="14" />
@@ -107,12 +119,10 @@ const features = computed(() => [
              kiring" (sahifaning haqiqiy vazifasi). Bu blok reklama matni va
              `lg` dan pastda butunlay yashiriladi; agar u h1 bo'lsa, desktopda
              ikkita h1 bo'lardi, mobilda esa h1 umuman qolmasdi. -->
-        <p class="showcase-title">
-          {{ titleParts.head }}<template v-if="titleParts.head"> </template
-          ><span class="title-accent">{{ titleParts.tail }}</span>
-        </p>
+        <p class="showcase-title">{{ titleParts.head
+        }}<span class="title-accent">{{ titleParts.tail }}</span></p>
 
-        <p class="mt-4 text-[15px] leading-[1.65]" style="color: var(--text-3);">
+        <p class="mt-4 max-w-[540px] text-[15px] leading-[1.65]" style="color: var(--text-3);">
           {{ subtitle || i18n.t({
             uz: 'Avtoprav bilan bilimni mustahkamlang, xatolaringiz ustida ishlang va imtihondan muvaffaqiyatli o\'ting.',
             kr: 'Avtoprav билан билимни мустаҳкамланг, хатоларингиз устида ишланг ва имтиҳондан муваффақиятли ўтинг.',

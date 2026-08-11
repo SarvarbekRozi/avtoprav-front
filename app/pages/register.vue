@@ -85,12 +85,16 @@ watch(errors, (next) => {
 <template>
   <div class="auth-page flex-1 grid xl:grid-cols-[minmax(0,52fr)_minmax(0,48fr)]">
     <!-- Mehmon yuksalayotganda chap ustun sarlavhasi ham shu kontekstni aytadi:
-         odam nima yo'qotmasligini bilib turishi kerak. -->
+         odam nima yo'qotmasligini bilib turishi kerak.
+         Sarlavha QISQA ataylab: uzun variant ("… — hisobingizni saqlang")
+         43px shriftda uch qatorga bo'linib, "yo'qotmang" pastga tushib
+         ketardi. Bundan tashqari "Hisobingizni saqlang" allaqachon kartaning
+         h1 sarlavhasi — panelda takrorlanishi ortiqcha edi. -->
     <AuthShowcase
       class="hidden xl:flex"
       :title="isUpgrade ? i18n.t({
-        uz: 'Progressingizni yo\'qotmang — hisobingizni saqlang',
-        kr: 'Прогрессингизни йўқотманг — ҳисобингизни сақланг',
+        uz: 'Progressingizni yo\'qotmang',
+        kr: 'Прогрессингизни йўқотманг',
       }) : ''"
       :subtitle="isUpgrade ? i18n.t({
         uz: 'Barcha ballaringiz, seriyangiz va natijalaringiz shu hisobda qoladi — faqat login va parol qo\'shamiz.',
