@@ -60,6 +60,12 @@ const NAME_MAP: Record<string, string> = {
   grid:           'lucide:layout-grid',
   list:           'lucide:list',
 
+  // natija sahifasi
+  flag:           'lucide:flag',
+  percent:        'lucide:percent',
+  circle:         'lucide:circle',
+  ai:             'lucide:message-square-text',
+
   // outlined status circles (activity feed)
   'check-circle': 'lucide:circle-check-big',
   'x-circle':     'lucide:circle-x',

@@ -5,90 +5,147 @@ const route = useRoute()
 const i18n = useI18n()
 const attemptId = Number(route.params.attemptId)
 
-const { data } = await useAsyncData(`result-${attemptId}`, () => apiFetch<any>(`/test/${attemptId}/result`))
-const showAll = ref(false)
+const { data, status } = await useAsyncData(`result-${attemptId}`, () => apiFetch<any>(`/test/${attemptId}/result`))
 
 const a = computed(() => data.value?.attempt)
-const answers = computed(() => data.value?.answers || [])
-const wrongAnswers = computed(() => answers.value.filter((x: any) => !x.is_correct))
-const firstWrong = computed(() => wrongAnswers.value[0])
 
-// AI instructor explanation. Always behind the button — even when the text is
-// already cached in the DB it "types out" like a live AI response.
-const explaining = ref<Record<number, boolean>>({})
-const explainErr = ref<Record<number, string>>({})
-const aiShown = ref<Record<number, boolean>>({})
-const aiTyping = ref<Record<number, boolean>>({})
-const aiTyped = ref<Record<number, string>>({})
-
-function typewrite(id: number, full: string) {
-  aiTyping.value[id] = true
-  aiTyped.value[id] = ''
-  let i = 0
-  const step = () => {
-    if (!aiTyping.value[id]) return
-    i = Math.min(full.length, i + 3)
-    aiTyped.value[id] = full.slice(0, i)
-    if (i < full.length) setTimeout(step, 24)
-    else aiTyping.value[id] = false
-  }
-  step()
+/* ── Savol holati ────────────────────────────────────────────────────────
+   DIQQAT: backend `is_skipped` ni AMALDA hech qachon `true` qilmaydi —
+   80 yozuvli blits urinishida ham hammasi `false` bo'lib keladi (o'lchandi).
+   Javob berilmaganini FAQAT `chosen_option_id = null` bildiradi; backenddagi
+   `skipped_count` esa API'da ko'rsatilmaydigan `answered_at` dan hisoblanadi.
+   Shuning uchun `is_skipped` ga suyanib bo'lmaydi, u faqat qo'shimcha belgi.  */
+type Holat = 'togri' | 'xato' | 'javobsiz'
+function holat(x: any): Holat {
+  if (x.is_correct) return 'togri'
+  if (!x.chosen_option_id || x.is_skipped) return 'javobsiz'
+  return 'xato'
 }
 
-async function explain(q: any) {
-  if (explaining.value[q.id] || aiShown.value[q.id]) return
-  explaining.value[q.id] = true
-  explainErr.value[q.id] = ''
-  try {
-    if (q.explanation_uz) {
-      // Cached — brief "thinking" pause so it still feels like the AI is working
-      await new Promise(r => setTimeout(r, 700 + Math.random() * 500))
-    }
-    else {
-      const r = await apiFetch<{ explanation_uz: string, explanation_kr: string }>(`/questions/${q.id}/explain`, { method: 'POST' })
-      q.explanation_uz = r.explanation_uz
-      q.explanation_kr = r.explanation_kr
-    }
-    aiShown.value[q.id] = true
-    typewrite(q.id, i18n.t({ uz: q.explanation_uz, kr: q.explanation_kr }))
-  }
-  catch (e: any) {
-    explainErr.value[q.id] = e?.data?.message || i18n.t({ uz: 'Xatolik yuz berdi', kr: 'Хатолик юз берди' })
-  }
-  finally {
-    explaining.value[q.id] = false
-  }
+/**
+ * BLITS ALOHIDA: 60 soniya tugagach yetib BORILMAGAN savollar ham `answers`
+ * ichida keladi, lekin foydalanuvchi ularni ko'rmagan ham. Backend ularni
+ * `total_questions` ga qo'shmaydi (`total = correct + wrong`), shuning uchun
+ * ro'yxatdan ham chiqaramiz — aks holda sahifa o'ziga qarshi gapirardi:
+ * xulosada "11 / 41", chipda esa "Barchasi 80" (o'lchandi).
+ * Boshqa rejimlarda javobsiz savol — KO'RILGAN, lekin tashlab ketilgani,
+ * ya'ni tahlilda kerak.
+ */
+const answers = computed<any[]>(() => {
+  const xs: any[] = data.value?.answers || []
+  return a.value?.mode === 'blitz' ? xs.filter(x => holat(x) !== 'javobsiz') : xs
+})
+const yuklanmoqda = computed(() => status.value === 'idle' || status.value === 'pending')
+
+const HOLAT: Record<Holat, { soz: { uz: string, kr: string }, icon: string }> = {
+  togri:    { soz: { uz: 'To\'g\'ri javob', kr: 'Тўғри жавоб' }, icon: 'check' },
+  xato:     { soz: { uz: 'Xato javob', kr: 'Хато жавоб' }, icon: 'x' },
+  javobsiz: { soz: { uz: 'Javob berilmagan', kr: 'Жавоб берилмаган' }, icon: 'circle' },
 }
 
-function fmtTime(sec: number) {
-  const m = Math.floor(sec / 60), s = sec % 60
+const sonlar = computed(() => {
+  const s = { all: answers.value.length, togri: 0, xato: 0, javobsiz: 0 }
+  for (const x of answers.value) s[holat(x)]++
+  return s
+})
+
+/* ── Filtrlar ──────────────────────────────────────────────────────────── */
+const filtr = ref<'all' | Holat>('all')
+const chiplar = computed(() => [
+  { id: 'all' as const, label: i18n.t({ uz: 'Barchasi', kr: 'Барчаси' }), son: sonlar.value.all },
+  { id: 'togri' as const, label: i18n.t({ uz: 'To\'g\'ri', kr: 'Тўғри' }), son: sonlar.value.togri },
+  { id: 'xato' as const, label: i18n.t({ uz: 'Xato', kr: 'Хато' }), son: sonlar.value.xato },
+  { id: 'javobsiz' as const, label: i18n.t({ uz: 'Javobsiz', kr: 'Жавобсиз' }), son: sonlar.value.javobsiz },
+])
+
+/* Uzun testlar (marafon) uchun 20 talik oraliqlar. Maketda ham shu tanlagich
+   bor; savol 20 ta bo'lsa bitta oraliq qoladi. */
+const ORALIQ = 20
+const oraliqlar = computed(() => {
+  // `Math.max(1, ...)` EMAS: savol bo'lmasa (60 soniyada birorta ham javob
+  // bermagan blits) yorliq "1–0 savollar" bo'lib chiqardi. Bo'sh massiv →
+  // tanlagich umuman ko'rsatilmaydi.
+  const n = Math.ceil(answers.value.length / ORALIQ)
+  return Array.from({ length: n }, (_, i) => ({
+    id: i,
+    label: `${i * ORALIQ + 1}–${Math.min((i + 1) * ORALIQ, answers.value.length)} ${i18n.t({ uz: 'savollar', kr: 'саволлар' })}`,
+  }))
+})
+const oraliq = ref(0)
+watch(oraliqlar, (v) => { if (oraliq.value >= v.length) oraliq.value = 0 })
+
+const korinadigan = computed(() => answers.value.filter((x, i) => {
+  if (Math.floor(i / ORALIQ) !== oraliq.value) return false
+  return filtr.value === 'all' || holat(x) === filtr.value
+}))
+
+/* ── Xulosa kartasi ────────────────────────────────────────────────────── */
+const otdi = computed(() => !!a.value?.is_passed)
+const foiz = computed(() => {
+  if (!a.value?.total_questions) return 0
+  return Math.round((a.value.correct_count / a.value.total_questions) * 100)
+})
+const ulush = (n: number) => a.value?.total_questions ? Math.round((n / a.value.total_questions) * 100) : 0
+
+/* O'tish chegarasi backenddan keladi (rejimga qarab 90/80/100%). Bu yerda
+   qotirib qo'yilsa, chegara o'zgarganda sayt yolg'on son ko'rsatardi. */
+const chegara = computed(() => a.value?.pass_threshold_percent ?? 100)
+/* Chegara o'ngga yaqin bo'lsa (imtihon 90%, bilet 100%) yorliq chiziqdan
+   CHAPGA o'giriladi — aks holda kartadan chiqib ketardi. */
+const chegaraChapda = computed(() => chegara.value > 60)
+
+function vaqt(sek: number) {
+  const m = Math.floor(sek / 60); const s = sek % 60
   return `${m}:${s.toString().padStart(2, '0')}`
 }
-function fmtTimeWord(sec: number) {
-  const m = Math.floor(sec / 60), s = sec % 60
+function vaqtSoz(sek: number) {
+  const m = Math.floor(sek / 60); const s = sek % 60
   return `${m} ${i18n.t({ uz: 'daq', kr: 'дақ' })} ${s} ${i18n.t({ uz: 'son', kr: 'сон' })}`
 }
 
-const passed = computed(() => a.value?.is_passed)
-const percent = computed(() => {
-  if (!a.value || a.value.total_questions === 0) return 0
-  return Math.round((a.value.correct_count / a.value.total_questions) * 100)
-})
-
-const modeLabels: Record<string, { uz: string, kr: string }> = {
-  exam:     { uz: 'Imtihon rejimi',     kr: 'Имтиҳон режими' },
-  topic:    { uz: 'Mavzu',               kr: 'Мавзу' },
-  ticket:   { uz: 'Bilet',               kr: 'Билет' },
-  random:   { uz: 'Tasodifiy',           kr: 'Тасодифий' },
-  mistakes: { uz: 'Xatolar ustida ish', kr: 'Хатолар устида иш' },
-  marathon: { uz: 'Marafon',             kr: 'Марафон' },
-  memorize: { uz: 'Yodlash',             kr: 'Ёдлаш' },
-  daily:    { uz: 'Kunlik challenge',    kr: 'Кунлик челлендж' },
-  blitz:    { uz: 'Blits · 60 soniya',   kr: 'Блиц · 60 сония' },
+const OYLAR = {
+  uz: ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'],
+  kr: ['январ', 'феврал', 'март', 'апрел', 'май', 'июн', 'июл', 'август', 'сентабр', 'октабр', 'ноябр', 'декабр'],
 }
-const modeLabel = computed(() => a.value ? i18n.t(modeLabels[a.value.mode] ?? { uz: a.value.mode, kr: a.value.mode }) : '')
+/* Sana FAQAT brauzerda hisoblanadi: "Bugun" serverning vaqt mintaqasiga
+   bog'liq, ya'ni SSR va mijoz turli natija berib gidratsiya ogohlantirishiga
+   olib kelardi. Oddiy `ref` EMAS, `computed`: aks holda til almashtirilganda
+   "Bugun"/"Бугун" va oy nomi eski alifboda muzlab qolardi. */
+const mijoz = ref(false)
+function sanaMatn(iso: string) {
+  const d = new Date(iso)
+  const kun = (x: Date) => `${x.getFullYear()}-${x.getMonth()}-${x.getDate()}`
+  const hozir = new Date()
+  const kecha = new Date(hozir.getTime() - 86400000)
+  const soat = `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}`
+  if (kun(d) === kun(hozir)) return `${i18n.t({ uz: 'Bugun', kr: 'Бугун' })}, ${soat}`
+  if (kun(d) === kun(kecha)) return `${i18n.t({ uz: 'Kecha', kr: 'Кеча' })}, ${soat}`
+  const oy = i18n.locale.value === 'uz_cyrl' ? OYLAR.kr[d.getMonth()] : OYLAR.uz[d.getMonth()]
+  return `${d.getDate()}-${oy}, ${soat}`
+}
+const sana = computed(() => (mijoz.value && a.value?.finished_at) ? sanaMatn(a.value.finished_at) : '')
 
-const retakeLink = computed(() => {
+const REJIM: Record<string, { uz: string, kr: string }> = {
+  exam:     { uz: 'Imtihon rejimi', kr: 'Имтиҳон режими' },
+  topic:    { uz: 'Mavzu', kr: 'Мавзу' },
+  ticket:   { uz: 'Bilet', kr: 'Билет' },
+  random:   { uz: 'Tasodifiy', kr: 'Тасодифий' },
+  mistakes: { uz: 'Xatolar ustida ish', kr: 'Хатолар устида иш' },
+  marathon: { uz: 'Marafon', kr: 'Марафон' },
+  memorize: { uz: 'Yodlash', kr: 'Ёдлаш' },
+  daily:    { uz: 'Kunlik challenge', kr: 'Кунлик челлендж' },
+  blitz:    { uz: 'Blits · 60 soniya', kr: 'Блиц · 60 сония' },
+}
+const rejim = computed(() => a.value ? i18n.t(REJIM[a.value.mode] ?? { uz: a.value.mode, kr: a.value.mode }) : '')
+
+function baho(p: number) {
+  if (p >= 95) return i18n.t({ uz: 'A\'lo', kr: 'Аъло' })
+  if (p >= 85) return i18n.t({ uz: 'Yaxshi', kr: 'Яхши' })
+  if (p >= 70) return i18n.t({ uz: 'O\'rtacha', kr: 'Ўртача' })
+  return i18n.t({ uz: 'Past', kr: 'Паст' })
+}
+
+const qaytaHavola = computed(() => {
   if (!a.value) return '/'
   const base = `/test/start/${a.value.mode}`
   if (a.value.mode === 'topic' && a.value.topic_id) return `${base}?topic_id=${a.value.topic_id}`
@@ -96,216 +153,716 @@ const retakeLink = computed(() => {
   return base
 })
 
-function chosenLetter(ans: any) {
-  if (!ans.chosen_option_id) return null
-  const idx = ans.question.options.findIndex((o: any) => o.id === ans.chosen_option_id)
-  return idx >= 0 ? String.fromCharCode(65 + idx) : null
+/* ── Javob variantlari ─────────────────────────────────────────────────── */
+function harf(ans: any, id: number | null) {
+  if (!id) return null
+  const i = ans.question.options.findIndex((o: any) => o.id === id)
+  return i >= 0 ? String.fromCharCode(65 + i) : null
 }
-function correctLetter(ans: any) {
-  const idx = ans.question.options.findIndex((o: any) => o.is_correct)
-  return idx >= 0 ? String.fromCharCode(65 + idx) : null
+const tanlanganHarf = (ans: any) => harf(ans, ans.chosen_option_id)
+const togriHarf = (ans: any) => {
+  const i = ans.question.options.findIndex((o: any) => o.is_correct)
+  return i >= 0 ? String.fromCharCode(65 + i) : null
 }
-function correctText(ans: any) {
-  return ans.question.options.find((o: any) => o.is_correct)?.text || ''
-}
-function chosenText(ans: any) {
-  return ans.question.options.find((o: any) => o.id === ans.chosen_option_id)?.text || i18n.t({ uz: 'O\'tkazib yuborilgan', kr: 'Ўтказиб юборилган' })
-}
-
-const avgTime = computed(() => {
-  if (!a.value || a.value.total_questions === 0) return 0
-  return Math.round(a.value.time_spent_sec / a.value.total_questions)
-})
-
-function gradeLabel(p: number) {
-  if (p >= 95) return i18n.t({ uz: 'A\'lo', kr: 'Аъло' })
-  if (p >= 85) return i18n.t({ uz: 'Yaxshi', kr: 'Яхши' })
-  if (p >= 70) return i18n.t({ uz: 'O\'rtacha', kr: 'Ўртача' })
-  return i18n.t({ uz: 'Past', kr: 'Паст' })
+const togriMatn = (ans: any) => ans.question.options.find((o: any) => o.is_correct)?.text || '—'
+/* Variant BORLIGINI tekshiramiz, matni bo'sh-yo'qligini emas: ilgari
+   `?.text || 'Javob berilmagan'` edi va joriy tilda tarjimasi kiritilmagan
+   variant tanlangan bo'lsa, javob bergan foydalanuvchiga "Javob berilmagan"
+   deb yozilardi. */
+const tanlanganMatn = (ans: any) => {
+  const o = ans.question.options.find((x: any) => x.id === ans.chosen_option_id)
+  if (o) return o.text || '—'
+  return i18n.t({ uz: 'Javob berilmagan', kr: 'Жавоб берилмаган' })
 }
 
-const pointsEarned = computed(() => a.value?.points_earned ?? 0)
+/* ── AI izoh ───────────────────────────────────────────────────────────────
+   Keshlangan izoh maketdagidek DARROV ko'rinadi. Izohi yo'q savolda esa
+   `POST /questions/{id}/explain` TUGMASI YO'Q — ataylab. U endpoint hech nima
+   generatsiya qilmaydi, faqat bazadagi izohni qaytaradi va
+   `blank(uz) || blank(kr)` bo'lsa 404 `explanation_not_ready` beradi
+   (QuestionController.php:39). Natija endpoint'i esa ikkala izohni allaqachon
+   yuboradi, ya'ni tugma bosilganda YANGI hech nima kelmaydi — faqat 404.
+   Izohlar admin panelidan to'planadi, shuning uchun izohi yo'q savolda
+   rostini yozamiz.                                                          */
 
-// Achievements unlocked by this attempt (handed over from the play page)
-const newAchievements = ref<any[]>([])
+/** Joriy tildagi izoh; yo'q bo'lsa — ikkinchi tildagisi.
+    `izohBor()` "yoki-yoki" tekshirgani uchun zaxira SHART: aks holda faqat
+    lotincha izohi bor savol kirill rejimida BO'SH panel bo'lib chiqardi. */
+function izoh(q: any): string {
+  const kr = i18n.locale.value === 'uz_cyrl'
+  return (kr ? (q.explanation_kr || q.explanation_uz) : (q.explanation_uz || q.explanation_kr)) || ''
+}
+function izohBor(q: any) {
+  return !!izoh(q)
+}
+
+/* ── Ekran o'quvchi uchun e'lonlar ─────────────────────────────────────────
+   Bitta DOIMIY live region. Matni bilan BIRGA paydo bo'ladigan
+   `role="status"` bloki e'lon qilinmaydi — brauzer region'ni allaqachon
+   matn bilan ko'radi va o'zgarish sanamaydi.                              */
+const elon = ref('')
+function elonQil(matn: string) {
+  elon.value = ''
+  nextTick(() => { elon.value = matn })
+}
+
+/* ── Shikoyat ──────────────────────────────────────────────────────────────
+   Backend qismi hali yo'q (jadval ham, endpoint ham). Tugma maketdagidek
+   turadi, lekin soxta "yuborildi" demaydi — rostini aytadi.               */
+const shikoyat = ref<Record<number, boolean>>({})
+function shikoyatBos(x: any) {
+  shikoyat.value[x.question.id] = true
+  elonQil(i18n.t({
+    uz: 'Shikoyat funksiyasi hali ishga tushmagan.',
+    kr: 'Шикоят функцияси ҳали ишга тушмаган.',
+  }))
+}
+
+/* ── Savolga o'tish ────────────────────────────────────────────────────── */
+function savolgaOt(pos: number) {
+  const x = answers.value.find(v => v.position === pos)
+  if (x && filtr.value !== 'all' && holat(x) !== filtr.value) filtr.value = 'all'
+  nextTick(() => {
+    const el = document.getElementById(`savol-${pos}`)
+    if (!el) return
+    // CSS `scroll-behavior` dan farqli, JS'dagi `behavior: 'smooth'` foydalanuvchi
+    // "animatsiyani kamaytir" deb qo'yganini O'ZI hisobga olmaydi — qo'lda so'raymiz.
+    const kamaytir = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    el.scrollIntoView({ behavior: kamaytir ? 'auto' : 'smooth', block: 'start' })
+    // Faqat surish yetarli emas: klaviatura fokusi plitkada qolsa, keyingi Tab
+    // xaritaga qaytarib yuboradi va ekran o'quvchi ham hech nima aytmaydi.
+    el.focus({ preventScroll: true })
+  })
+}
+
+/* ── Shu urinishda ochilgan yutuqlar (play sahifasidan uzatiladi) ──────── */
+const yutuqlar = ref<any[]>([])
 onMounted(() => {
+  mijoz.value = true
   try {
     const raw = sessionStorage.getItem('testRewards:' + attemptId)
     if (raw) {
-      newAchievements.value = JSON.parse(raw)
+      yutuqlar.value = JSON.parse(raw)
       sessionStorage.removeItem('testRewards:' + attemptId)
     }
-  } catch {}
-  // Refresh points + daily free-test allowance shown on the home page
+  }
+  catch {}
+  // Bosh sahifadagi ball va kunlik bepul test qoldig'ini yangilaymiz
   useAuthStore().fetchMe().catch(() => {})
 })
 </script>
 
 <template>
-  <div class="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-10" v-if="a">
-    <!-- Result summary: hero + stats in one compact card -->
-    <div class="card overflow-hidden mb-6">
-      <div class="px-5 pt-5 pb-4 text-center">
-        <div class="inline-flex items-center gap-1.5 px-2.5 h-6 rounded-full text-2xs font-semibold uppercase tracking-wider"
-             :class="passed ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'">
-          <AppIcon :name="passed ? 'check' : 'x'" :size="11" />
-          {{ passed ? i18n.t({ uz: 'Muvaffaqiyatli', kr: 'Муваффақиятли' }) : i18n.t({ uz: 'O\'tilmadi', kr: 'Ўтилмади' }) }}
-        </div>
-        <div class="text-3xl sm:text-4xl font-semibold tracking-tightest mt-2.5 text-ink-900 tabular-nums">
-          {{ a.correct_count }} <span class="text-ink-300">/ {{ a.total_questions }}</span>
-        </div>
-        <div class="mt-1 text-sm text-ink-500">
-          {{ modeLabel }} · {{ fmtTimeWord(a.time_spent_sec) }} · {{ percent }}%
-        </div>
-        <div v-if="pointsEarned > 0" class="mt-2 inline-flex items-center gap-1 px-2.5 h-6 rounded-full bg-amber-100 text-amber-700 font-semibold text-xs">
-          <AppIcon name="spark" :size="12" /> +{{ pointsEarned }} {{ i18n.t({ uz: 'ball', kr: 'балл' }) }}
-        </div>
-        <div v-else-if="pointsEarned < 0" class="mt-2 inline-flex items-center gap-1 px-2.5 h-6 rounded-full bg-rose-100 text-rose-700 font-semibold text-xs">
-          <AppIcon name="x" :size="12" /> {{ pointsEarned }} {{ i18n.t({ uz: 'ball', kr: 'балл' }) }}
-        </div>
-      </div>
-      <!-- Compact stat strip -->
-      <div class="grid grid-cols-4 border-t" style="border-color: var(--divider);">
-        <div class="py-3 text-center">
-          <div class="text-2xs uppercase tracking-wider" style="color: var(--text-4);">{{ i18n.t({ uz: 'To\'g\'ri', kr: 'Тўғри' }) }}</div>
-          <div class="text-lg font-bold tabular-nums text-emerald-700 mt-0.5">{{ a.correct_count }}</div>
-        </div>
-        <div class="py-3 text-center border-l" style="border-color: var(--divider);">
-          <div class="text-2xs uppercase tracking-wider" style="color: var(--text-4);">{{ i18n.t({ uz: 'Xato', kr: 'Хато' }) }}</div>
-          <div class="text-lg font-bold tabular-nums text-rose-700 mt-0.5">{{ a.wrong_count }}</div>
-        </div>
-        <div class="py-3 text-center border-l" style="border-color: var(--divider);">
-          <div class="text-2xs uppercase tracking-wider" style="color: var(--text-4);">{{ i18n.t({ uz: 'Vaqt', kr: 'Вақт' }) }}</div>
-          <div class="text-lg font-bold tabular-nums text-ink-900 mt-0.5">{{ avgTime }}<span class="text-2xs font-medium" style="color: var(--text-4);">s</span></div>
-        </div>
-        <div class="py-3 text-center border-l" style="border-color: var(--divider);">
-          <div class="text-2xs uppercase tracking-wider" style="color: var(--text-4);">{{ i18n.t({ uz: 'Daraja', kr: 'Даража' }) }}</div>
-          <div class="text-base sm:text-lg font-bold text-ink-900 mt-0.5 leading-tight">{{ gradeLabel(percent) }}</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Newly unlocked achievements -->
-    <div v-if="newAchievements.length" class="card p-5 mb-6"
-         style="background: rgba(251,191,36,0.08); border-color: rgba(251,191,36,0.35);">
-      <div class="text-sm font-semibold mb-3 flex items-center gap-2 text-amber-700">
-        <AppIcon name="trophy" :size="16" />
-        {{ i18n.t({ uz: 'Yangi yutuq qo\'lga kiritildi!', kr: 'Янги ютуқ қўлга киритилди!' }) }}
-      </div>
-      <div class="flex flex-wrap gap-3">
-        <div v-for="ach in newAchievements" :key="ach.id"
-             class="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/70 border border-amber-200">
-          <IconTile :icon="ach.icon" :tone="ach.tone" :size="36" />
-          <div>
-            <div class="text-sm font-semibold text-ink-900">{{ i18n.t(ach.title) }}</div>
-            <div class="text-2xs font-semibold text-amber-600">+{{ ach.reward }} {{ i18n.t({ uz: 'ball', kr: 'балл' }) }}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Compete: daily / blitz leaderboard right after playing -->
-    <div v-if="a.mode === 'daily' || a.mode === 'blitz'" class="mb-6">
-      <ScoreLeaderboard v-if="a.mode === 'daily'"
-        endpoint="/leaderboard/daily"
-        :board-key="`daily-result-${attemptId}`"
-        :title="{ uz: 'Bugungi challenge · TOP 10', kr: 'Бугунги челлендж · ТОП 10' }"
-        :subtitle="{ uz: '20 savoldan nechta to\'g\'ri', kr: '20 саволдан нечта тўғри' }"
-        icon="star" tone="violet" />
-      <ScoreLeaderboard v-else
-        endpoint="/leaderboard/blitz"
-        :board-key="`blitz-result-${attemptId}`"
-        :title="{ uz: 'Blits rekordlar · TOP 10', kr: 'Блиц рекордлар · ТОП 10' }"
-        :subtitle="{ uz: '60 soniyada eng ko\'p to\'g\'ri', kr: '60 сонияда энг кўп тўғри' }"
-        icon="bolt" tone="amber" />
-    </div>
-
-    <!-- Per-question matrix -->
-    <div class="card p-5 mb-6">
-      <div class="flex items-center justify-between mb-3">
-        <div class="text-sm font-semibold text-ink-900">{{ i18n.t({ uz: 'Savollar bo\'yicha', kr: 'Саволлар бўйича' }) }}</div>
-        <button @click="showAll = !showAll" class="text-2xs font-medium text-ink-500 hover:text-ink-900">
-          {{ showAll
-            ? i18n.t({ uz: 'Faqat xatolar', kr: 'Фақат хатолар' })
-            : i18n.t({ uz: 'Hammasini ko\'rsat →', kr: 'Ҳаммасини кўрсат →' }) }}
-        </button>
-      </div>
-      <div class="grid grid-cols-10 gap-1.5">
-        <div v-for="ans in answers" :key="ans.position"
-             class="aspect-square rounded-md flex items-center justify-center text-xs font-semibold tabular-nums border"
-             :style="ans.is_correct
-               ? 'background: rgba(16,185,129,0.12); color: #047857; border-color: rgba(16,185,129,0.30);'
-               : ans.is_skipped
-                 ? 'background: var(--surface-soft); color: var(--text-4); border-color: var(--border-1);'
-                 : 'background: rgba(244,63,94,0.10); color: #be123c; border-color: rgba(244,63,94,0.30);'">
-          {{ ans.position }}
-        </div>
-      </div>
-    </div>
-
-    <!-- Wrong question reviews -->
-    <div v-if="wrongAnswers.length" class="space-y-3 mb-6">
-      <div v-for="(ans, idx) in (showAll ? answers : wrongAnswers)" :key="ans.position"
-           class="card p-5"
-           v-show="showAll || !ans.is_correct">
-        <div class="flex items-center gap-2 mb-3">
-          <span class="w-7 h-7 rounded-lg grid place-items-center flex-shrink-0"
-                :class="ans.is_correct ? 'bg-emerald-50 text-emerald-700' : ans.is_skipped ? 'bg-ink-100 text-ink-500' : 'bg-rose-50 text-rose-600'">
-            <AppIcon v-if="ans.is_correct" name="check" :size="14" />
-            <AppIcon v-else-if="ans.is_skipped" name="info" :size="14" />
-            <AppIcon v-else name="x" :size="14" />
-          </span>
-          <div class="text-sm font-semibold text-ink-900">
-            {{ i18n.t({ uz: 'Savol', kr: 'Савол' }) }} {{ ans.position }} ·
-            <span v-if="ans.is_correct" class="text-emerald-700">{{ i18n.t({ uz: 'To\'g\'ri', kr: 'Тўғри' }) }}</span>
-            <span v-else-if="ans.is_skipped" class="text-ink-500">{{ i18n.t({ uz: 'O\'tkazib yuborilgan', kr: 'Ўтказиб юборилган' }) }}</span>
-            <span v-else class="text-rose-600">{{ i18n.t({ uz: 'Xato javob', kr: 'Хато жавоб' }) }}</span>
-          </div>
-        </div>
-        <div class="text-[15px] leading-relaxed mb-3 text-ink-800">{{ ans.question.text }}</div>
-        <img v-if="ans.question.image" :src="ans.question.image" @error="onQuestionImageError" class="rounded-lg border border-ink-200 max-h-40 mb-3">
-
-        <div v-if="!ans.is_correct" class="space-y-2">
-          <div v-if="ans.chosen_option_id" class="px-3 py-2 rounded-lg bg-rose-50 text-rose-800 text-sm leading-snug">
-            <span class="font-semibold">{{ i18n.t({ uz: 'Sizning javobingiz:', kr: 'Сизнинг жавобингиз:' }) }} {{ chosenLetter(ans) }}</span>
-            · {{ chosenText(ans) }}
-          </div>
-          <div class="px-3 py-2 rounded-lg bg-emerald-50 text-emerald-800 text-sm leading-snug">
-            <span class="font-semibold">{{ i18n.t({ uz: 'To\'g\'ri javob:', kr: 'Тўғри жавоб:' }) }} {{ correctLetter(ans) }}</span>
-            · {{ correctText(ans) }}
-          </div>
-        </div>
-
-        <div v-if="aiShown[ans.question.id]" class="mt-3 px-3.5 py-2.5 bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/30 rounded-lg text-sm">
-          <div class="flex items-center gap-1.5 text-violet-700 dark:text-violet-300 font-semibold text-xs mb-1.5">
-            <span>🤖</span>
-            <span>{{ i18n.t({ uz: 'AI instruktor', kr: 'AI инструктор' }) }}</span>
-          </div>
-          <div class="text-violet-900 dark:text-violet-200 leading-relaxed whitespace-pre-line">{{ aiTyping[ans.question.id] ? aiTyped[ans.question.id] : i18n.t({ uz: ans.question.explanation_uz, kr: ans.question.explanation_kr }) }}<span v-if="aiTyping[ans.question.id]" class="inline-block w-0.5 h-4 bg-violet-500 align-middle ml-0.5 animate-pulse" /></div>
-        </div>
-        <div v-else class="mt-3">
-          <button @click="explain(ans.question)" :disabled="explaining[ans.question.id]"
-            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/30 text-violet-700 dark:text-violet-300 text-sm font-medium hover:bg-violet-100 dark:hover:bg-violet-500/20 disabled:opacity-60">
-            <span v-if="explaining[ans.question.id]" class="inline-flex gap-1 items-center">
-              <span class="w-1.5 h-1.5 rounded-full bg-violet-500 animate-bounce" style="animation-delay: 0ms" />
-              <span class="w-1.5 h-1.5 rounded-full bg-violet-500 animate-bounce" style="animation-delay: 150ms" />
-              <span class="w-1.5 h-1.5 rounded-full bg-violet-500 animate-bounce" style="animation-delay: 300ms" />
-            </span>
-            {{ explaining[ans.question.id] ? i18n.t({ uz: 'AI o\'ylanmoqda…', kr: 'AI ўйланмоқда…' }) : i18n.t({ uz: '🤖 AI tushuntirish', kr: '🤖 AI тушунтириш' }) }}
-          </button>
-          <div v-if="explainErr[ans.question.id]" class="mt-1.5 text-xs text-rose-600">{{ explainErr[ans.question.id] }}</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Action buttons -->
-    <div class="flex flex-wrap gap-2">
-      <NuxtLink :to="retakeLink" class="btn-primary btn-lg flex-1 min-w-fit">
-        {{ i18n.t({ uz: 'Qayta urinish', kr: 'Қайта уриниш' }) }}
-        <AppIcon name="arrow" :size="14" />
+  <div class="result mx-auto w-full max-w-[1800px] px-4 sm:px-6 lg:px-8 xl:px-10 pt-6 lg:pt-8 pb-16 md:pb-12">
+    <!-- ── Yuqori qator ──────────────────────────────────────────────────
+         Maketda o'ng tepada XP chip ham bor edi, lekin u yon menyuda
+         ("XP darajangiz") allaqachon turibdi — biletlar sahifasidagi kabi
+         takrorlanmasin uchun qo'yilmadi. -->
+    <div class="topbar">
+      <NuxtLink to="/" class="back-btn">
+        <AppIcon name="arrow-left" :size="16" />
+        {{ i18n.t({ uz: 'Bosh sahifaga qaytish', kr: 'Бош саҳифага қайтиш' }) }}
       </NuxtLink>
-      <NuxtLink to="/" class="btn-outline btn-lg">{{ i18n.t({ uz: 'Bosh sahifa', kr: 'Бош саҳифа' }) }}</NuxtLink>
-      <NuxtLink to="/me/stats" class="btn-outline btn-lg">{{ i18n.t({ uz: 'Statistika', kr: 'Статистика' }) }}</NuxtLink>
     </div>
+
+    <!-- DOIMIY live region: `role="status"` bloki matni bilan BIRGA paydo
+         bo'lsa e'lon qilinmaydi, shuning uchun region har doim DOM'da turadi
+         va faqat ichidagi matn o'zgaradi. -->
+    <p class="sr-only" role="status" aria-live="polite">{{ elon }}</p>
+
+    <!-- Maketda ko'rinadigan sarlavha yo'q, lekin sahifada h1 bo'lishi shart:
+         layoutda ham, sidebar'da ham h1 yo'q edi, ya'ni ekran o'quvchi
+         sarlavha bo'yicha yura olmasdi. Shuning uchun `sr-only`. -->
+    <h1 class="sr-only">
+      {{ i18n.t({ uz: 'Test natijasi', kr: 'Тест натижаси' }) }}{{ a ? ' — ' + rejim : '' }}
+    </h1>
+
+    <!-- ── Yuklanmoqda ─────────────────────────────────────────────────── -->
+    <div v-if="yuklanmoqda" class="skel-wrap">
+      <div class="skel skel-hero" />
+      <div class="skel skel-nav" />
+      <div class="skel skel-q" />
+      <span class="sr-only">{{ i18n.t({ uz: 'Natija yuklanmoqda…', kr: 'Натижа юкланмоқда…' }) }}</span>
+    </div>
+
+    <!-- ── Xato ────────────────────────────────────────────────────────── -->
+    <div v-else-if="!a" class="panel-card empty">
+      <p class="empty-text">{{ i18n.t({ uz: 'Natijani yuklab bo\'lmadi.', kr: 'Натижани юклаб бўлмади.' }) }}</p>
+      <NuxtLink to="/" class="btn-ghost">{{ i18n.t({ uz: 'Bosh sahifa', kr: 'Бош саҳифа' }) }}</NuxtLink>
+    </div>
+
+    <template v-else>
+      <!-- ── Xulosa kartasi ────────────────────────────────────────────── -->
+      <section class="panel-card hero">
+        <div class="hero-left">
+          <div class="badges">
+            <span class="verdict" :class="otdi ? 'v-ok' : 'v-fail'">
+              <AppIcon :name="otdi ? 'check' : 'x'" :size="12" />
+              {{ otdi ? i18n.t({ uz: 'O\'tildi', kr: 'Ўтилди' }) : i18n.t({ uz: 'O\'tilmadi', kr: 'Ўтилмади' }) }}
+            </span>
+            <span v-if="a.points_earned" class="pts" :class="a.points_earned > 0 ? 'p-plus' : 'p-minus'">
+              <AppIcon :name="a.points_earned > 0 ? 'spark' : 'x'" :size="12" />
+              {{ a.points_earned > 0 ? '+' : '' }}{{ a.points_earned }} XP
+            </span>
+          </div>
+
+          <div class="score tabular-nums">
+            <span class="score-n" :class="otdi ? 's-ok' : 's-fail'">{{ a.correct_count }}</span>
+            <span class="score-d">/ {{ a.total_questions }}</span>
+          </div>
+
+          <p class="hero-mode">{{ rejim }} <span class="dot">•</span> {{ vaqtSoz(a.time_spent_sec) }}</p>
+          <p class="hero-date">
+            {{ i18n.t({ uz: 'O\'tkazilgan sana:', kr: 'Ўтказилган сана:' }) }}
+            <span>{{ sana }}</span>
+          </p>
+
+          <div class="hero-acts">
+            <NuxtLink :to="qaytaHavola" class="act act-primary">
+              {{ i18n.t({ uz: 'Qayta urinish', kr: 'Қайта уриниш' }) }}
+            </NuxtLink>
+            <NuxtLink to="/test/start/mistakes" class="act act-ghost">
+              <AppIcon name="wrench" :size="15" />
+              {{ i18n.t({ uz: 'Xatolar ustida ishlash', kr: 'Хатолар устида ишлаш' }) }}
+            </NuxtLink>
+          </div>
+        </div>
+
+        <div class="hero-right">
+          <div class="stats">
+            <div class="stat">
+              <div class="stat-top">
+                <span class="stat-ic si-ok"><AppIcon name="target" :size="17" /></span>
+                <span class="stat-lbl">{{ i18n.t({ uz: 'To\'g\'ri javoblar', kr: 'Тўғри жавоблар' }) }}</span>
+              </div>
+              <div class="stat-val tabular-nums">{{ a.correct_count }}</div>
+              <div class="stat-sub tabular-nums">{{ ulush(a.correct_count) }}%</div>
+            </div>
+
+            <div class="stat">
+              <div class="stat-top">
+                <span class="stat-ic si-bad"><AppIcon name="x-circle" :size="17" /></span>
+                <span class="stat-lbl">{{ i18n.t({ uz: 'Xato javoblar', kr: 'Хато жавоблар' }) }}</span>
+              </div>
+              <div class="stat-val tabular-nums">{{ a.wrong_count }}</div>
+              <div class="stat-sub tabular-nums">{{ ulush(a.wrong_count) }}%</div>
+            </div>
+
+            <div class="stat">
+              <div class="stat-top">
+                <span class="stat-ic si-time"><AppIcon name="clock" :size="17" /></span>
+                <span class="stat-lbl">{{ i18n.t({ uz: 'Vaqt', kr: 'Вақт' }) }}</span>
+              </div>
+              <div class="stat-val tabular-nums">
+                {{ vaqt(a.time_spent_sec) }}
+                <span v-if="a.time_limit_sec" class="stat-inline">/ {{ vaqt(a.time_limit_sec) }}</span>
+              </div>
+            </div>
+
+            <div class="stat">
+              <div class="stat-top">
+                <span class="stat-ic si-pct"><AppIcon name="percent" :size="17" /></span>
+                <span class="stat-lbl">{{ i18n.t({ uz: 'Foiz ko\'rsatkichi', kr: 'Фоиз кўрсаткичи' }) }}</span>
+              </div>
+              <div class="stat-val tabular-nums">
+                {{ foiz }}%
+                <span class="stat-inline">{{ baho(foiz) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Natija chizig'i + o'tish chegarasi markeri -->
+          <div class="bar">
+            <div class="bar-you">
+              <div class="bar-lbl">{{ i18n.t({ uz: 'Sizning natijangiz', kr: 'Сизнинг натижангиз' }) }}</div>
+              <div class="bar-val tabular-nums" :class="otdi ? 's-ok' : 's-fail'">{{ foiz }}%</div>
+            </div>
+            <div class="bar-goal" :class="{ 'g-left': chegaraChapda }" :style="{ left: chegara + '%' }">
+              <div class="bar-lbl">{{ i18n.t({ uz: 'O\'tish chegarasi:', kr: 'Ўтиш чегараси:' }) }} {{ chegara }}%</div>
+              <div class="bar-val tabular-nums">{{ chegara }}%</div>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" :class="otdi ? 'f-ok' : 'f-fail'" :style="{ width: Math.max(foiz, 1) + '%' }" />
+            </div>
+            <span class="bar-marker" :style="{ left: chegara + '%' }" aria-hidden="true" />
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Yangi yutuqlar ────────────────────────────────────────────── -->
+      <section v-if="yutuqlar.length" class="panel-card ach">
+        <div class="ach-head">
+          <AppIcon name="trophy" :size="16" />
+          {{ i18n.t({ uz: 'Yangi yutuq qo\'lga kiritildi!', kr: 'Янги ютуқ қўлга киритилди!' }) }}
+        </div>
+        <div class="ach-list">
+          <div v-for="y in yutuqlar" :key="y.id" class="ach-item">
+            <IconTile :icon="y.icon" :tone="y.tone" :size="36" />
+            <div>
+              <div class="ach-title">{{ i18n.t(y.title) }}</div>
+              <div class="ach-rew">+{{ y.reward }} XP</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Kunlik / blits reytingi ───────────────────────────────────── -->
+      <div v-if="a.mode === 'daily' || a.mode === 'blitz'" class="board">
+        <ScoreLeaderboard
+          v-if="a.mode === 'daily'"
+          endpoint="/leaderboard/daily"
+          :board-key="`daily-result-${attemptId}`"
+          :title="{ uz: 'Bugungi challenge · TOP 10', kr: 'Бугунги челлендж · ТОП 10' }"
+          :subtitle="{ uz: '20 savoldan nechta to\'g\'ri', kr: '20 саволдан нечта тўғри' }"
+          icon="star" tone="violet"
+        />
+        <ScoreLeaderboard
+          v-else
+          endpoint="/leaderboard/blitz"
+          :board-key="`blitz-result-${attemptId}`"
+          :title="{ uz: 'Blits rekordlar · TOP 10', kr: 'Блиц рекордлар · ТОП 10' }"
+          :subtitle="{ uz: '60 soniyada eng ko\'p to\'g\'ri', kr: '60 сонияда энг кўп тўғри' }"
+          icon="bolt" tone="amber"
+        />
+      </div>
+
+      <!-- ── Savollar xaritasi ─────────────────────────────────────────── -->
+      <section class="panel-card nav-card">
+        <div class="nav-head">
+          <div class="nav-title-wrap">
+            <h2 class="nav-title">{{ i18n.t({ uz: 'Savollar bo\'yicha natijalar', kr: 'Саволлар бўйича натижалар' }) }}</h2>
+            <div class="legend">
+              <span class="lg lg-ok"><AppIcon name="check" :size="12" />{{ i18n.t({ uz: 'To\'g\'ri', kr: 'Тўғри' }) }}</span>
+              <span class="lg lg-bad"><AppIcon name="x" :size="12" />{{ i18n.t({ uz: 'Xato', kr: 'Хато' }) }}</span>
+              <span class="lg lg-non"><AppIcon name="circle" :size="12" />{{ i18n.t({ uz: 'Javob berilmagan', kr: 'Жавоб берилмаган' }) }}</span>
+            </div>
+          </div>
+
+          <div class="nav-tools">
+            <div class="chips" role="group" :aria-label="i18n.t({ uz: 'Savollarni filtrlash', kr: 'Саволларни филтрлаш' })">
+              <button
+                v-for="c in chiplar" :key="c.id" type="button" class="chip"
+                :class="[`chip-${c.id}`, { on: filtr === c.id }]"
+                :aria-pressed="filtr === c.id"
+                @click="filtr = c.id"
+              >
+                {{ c.label }}<span class="chip-n tabular-nums">{{ c.son }}</span>
+              </button>
+            </div>
+
+            <div v-if="oraliqlar.length" class="range">
+              <select v-model.number="oraliq" class="range-sel" :aria-label="i18n.t({ uz: 'Savollar oralig\'i', kr: 'Саволлар оралиғи' })">
+                <option v-for="o in oraliqlar" :key="o.id" :value="o.id">{{ o.label }}</option>
+              </select>
+              <AppIcon name="chev-d" :size="15" class="range-ic" />
+            </div>
+          </div>
+        </div>
+
+        <div class="qgrid">
+          <button
+            v-for="x in korinadigan" :key="x.position" type="button"
+            class="qtile" :class="`q-${holat(x)}`"
+            :aria-label="`${i18n.t({ uz: 'Savol', kr: 'Савол' })} ${x.position} — ${i18n.t(HOLAT[holat(x)].soz)}`"
+            @click="savolgaOt(x.position)"
+          >
+            <span class="qtile-n tabular-nums">{{ x.position }}</span>
+            <AppIcon :name="HOLAT[holat(x)].icon" :size="11" />
+          </button>
+        </div>
+        <p v-if="!korinadigan.length" class="qgrid-empty">
+          {{ answers.length
+            ? i18n.t({ uz: 'Bu filtr bo\'yicha savol yo\'q.', kr: 'Бу филтр бўйича савол йўқ.' })
+            : i18n.t({ uz: 'Bu testda birorta savolga javob berilmagan.', kr: 'Бу тестда бирорта саволга жавоб берилмаган.' }) }}
+        </p>
+      </section>
+
+      <!-- ── Savollar tahlili ──────────────────────────────────────────── -->
+      <h2 v-if="korinadigan.length" class="sr-only">
+        {{ i18n.t({ uz: 'Savollar tahlili', kr: 'Саволлар таҳлили' }) }}
+      </h2>
+      <!-- `tabindex="-1"` — plitka bosilganda fokus shu kartaga ko'chadi,
+           aks holda keyingi Tab xaritaga qaytarib yuborardi. -->
+      <section
+        v-for="x in korinadigan" :id="`savol-${x.position}`" :key="x.position" tabindex="-1"
+        class="panel-card qcard" :class="{ 'no-img': !x.question.image }"
+        :aria-label="`${i18n.t({ uz: 'Savol', kr: 'Савол' })} ${x.position} — ${i18n.t(HOLAT[holat(x)].soz)}`"
+      >
+        <div class="qhead">
+          <span class="qnum" :class="`n-${holat(x)}`">{{ x.position }}</span>
+          <span class="qstat" :class="`t-${holat(x)}`">{{ i18n.t(HOLAT[holat(x)].soz) }}</span>
+          <button
+            type="button" class="qflag"
+            :aria-label="`${i18n.t({ uz: 'Shikoyat qilish', kr: 'Шикоят қилиш' })} — ${i18n.t({ uz: 'savol', kr: 'савол' })} ${x.position}`"
+            @click="shikoyatBos(x)"
+          >
+            <AppIcon name="flag" :size="14" />
+            {{ i18n.t({ uz: 'Shikoyat qilish', kr: 'Шикоят қилиш' }) }}
+          </button>
+        </div>
+
+        <p v-if="shikoyat[x.question.id]" class="qflag-note">
+          {{ i18n.t({
+            uz: 'Shikoyat yuborish funksiyasi hali ishga tushmagan — tez orada qo\'shiladi.',
+            kr: 'Шикоят юбориш функцияси ҳали ишга тушмаган — тез орада қўшилади.'
+          }) }}
+        </p>
+
+        <h3 class="qtext">{{ x.question.text }}</h3>
+
+        <div class="qbody">
+          <!-- `alt=""` EMAS: yo'l harakati savolining butun vaziyati rasmda,
+               ya'ni u dekorativ emas. O'yin sahifasi ham shu nomni beradi. -->
+          <div v-if="x.question.image" class="qimg-wrap">
+            <img
+              :src="x.question.image" class="qimg"
+              :alt="i18n.t({ uz: 'Savol rasmi', kr: 'Савол расми' })"
+              @error="onQuestionImageError"
+            >
+          </div>
+
+          <div class="qans">
+            <div class="ans-lbl">{{ i18n.t({ uz: 'Sizning javobingiz', kr: 'Сизнинг жавобингиз' }) }}</div>
+            <div class="ans" :class="`a-${holat(x)}`">
+              <span v-if="tanlanganHarf(x)" class="ans-h">{{ tanlanganHarf(x) }}</span>
+              <span class="ans-t">{{ tanlanganMatn(x) }}</span>
+              <AppIcon :name="HOLAT[holat(x)].icon" :size="15" class="ans-ic" />
+            </div>
+
+            <div class="ans-lbl lbl-ok">{{ i18n.t({ uz: 'To\'g\'ri javob', kr: 'Тўғри жавоб' }) }}</div>
+            <div class="ans a-togri">
+              <span class="ans-h">{{ togriHarf(x) }}</span>
+              <span class="ans-t">{{ togriMatn(x) }}</span>
+              <AppIcon name="check" :size="15" class="ans-ic" />
+            </div>
+          </div>
+
+          <div class="qai">
+            <div class="ai">
+              <div class="ai-head">
+                <AppIcon name="ai" :size="14" />
+                {{ i18n.t({ uz: 'AI izoh', kr: 'AI изоҳ' }) }}
+              </div>
+              <p v-if="izohBor(x.question)" class="ai-text">{{ izoh(x.question) }}</p>
+              <p v-else class="ai-none">
+                {{ i18n.t({
+                  uz: 'Bu savol uchun izoh hozircha tayyor emas.',
+                  kr: 'Бу савол учун изоҳ ҳозирча тайёр эмас.'
+                }) }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </template>
   </div>
 </template>
+
+<style scoped>
+/* ── Sahifaga xos tokenlar ────────────────────────────────────────────────
+   `--ok-soft` global to'plamda yo'q (faqat --danger-soft/--warn-soft bor),
+   AI paneli rangi ham shu sahifada birinchi marta kerak bo'ldi. Qorong'i
+   rejimda to'ldirishlar SHAFFOF: to'q sirt ustida qattiq rang "yamoq"
+   bo'lib ko'rinadi.                                                       */
+.result {
+  --ok-soft:   #d1fae5;
+  --ai-bg:     #eef2ff;
+  --ai-border: rgba(99, 102, 241, 0.20);
+  --ai-ink:    #3730a3;
+  --ai-accent: #4f46e5;
+}
+/* `.dark` <html> da turadi (useTheme.ts documentElement ga qo'yadi), ya'ni
+   bu ajdod selektori — scoped CSS uni bemalol ko'radi. */
+.dark .result {
+  --ok-soft:   rgba(16, 185, 129, 0.16);
+  --ai-bg:     rgba(99, 102, 241, 0.12);
+  --ai-border: rgba(129, 140, 248, 0.30);
+  --ai-ink:    #c7d2fe;
+  --ai-accent: #a5b4fc;
+}
+
+.panel-card {
+  background: var(--surface);
+  border: 1px solid var(--border-1);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-card);
+}
+
+/* ── Yuqori qator ────────────────────────────────────────────────────── */
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; }
+.back-btn {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  height: 2.5rem; padding: 0 1rem;
+  border-radius: 0.625rem;
+  border: 1px solid var(--border-1); background: var(--surface);
+  font-size: 0.875rem; font-weight: 600; color: var(--text-2);
+  box-shadow: var(--shadow-soft);
+  transition: border-color 0.15s, color 0.15s;
+}
+.back-btn:hover { border-color: var(--primary); color: var(--primary-ink); }
+
+/* ── Yuklanish skeleti ───────────────────────────────────────────────── */
+.skel-wrap { display: grid; gap: 1rem; }
+.skel { border-radius: 1rem; background: var(--surface-soft); border: 1px solid var(--border-soft); animation: puls 1.4s ease-in-out infinite; }
+.skel-hero { height: 15rem; }
+.skel-nav  { height: 12rem; }
+.skel-q    { height: 18rem; }
+@keyframes puls { 0%, 100% { opacity: 1 } 50% { opacity: 0.55 } }
+@media (prefers-reduced-motion: reduce) { .skel { animation: none } }
+
+.empty { padding: 3rem 1.5rem; text-align: center; }
+.empty-text { font-size: 0.9375rem; color: var(--text-3); margin-bottom: 1rem; }
+
+/* ── Xulosa kartasi ──────────────────────────────────────────────────── */
+.hero {
+  display: grid; gap: 1.5rem; padding: 1.5rem;
+  grid-template-columns: minmax(0, 1fr);
+  margin-bottom: 1rem;
+}
+@media (min-width: 1100px) {
+  .hero { grid-template-columns: minmax(17rem, 0.42fr) minmax(0, 1fr); gap: 2rem; }
+}
+
+.badges { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.verdict, .pts {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  height: 1.75rem; padding: 0 0.7rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+}
+.v-ok   { background: var(--ok-soft);     color: var(--ok-ink); }
+.v-fail { background: var(--danger-soft); color: var(--danger-ink); }
+.p-plus  { background: var(--warn-soft);   color: var(--warn-ink); }
+.p-minus { background: var(--danger-soft); color: var(--danger-ink); }
+
+.score { margin-top: 0.75rem; display: flex; align-items: baseline; gap: 0.4rem; letter-spacing: -0.03em; }
+.score-n { font-size: 3.25rem; font-weight: 700; line-height: 1; }
+.score-d { font-size: 2.5rem; font-weight: 700; line-height: 1; color: var(--text-1); }
+.s-ok   { color: var(--ok-ink); }
+.s-fail { color: var(--danger-ink); }
+
+.hero-mode { margin-top: 0.6rem; font-size: 0.875rem; color: var(--text-3); }
+.dot { color: var(--text-muted); }
+.hero-date { margin-top: 0.2rem; font-size: 0.8125rem; color: var(--text-3); min-height: 1.2em; }
+
+.hero-acts { display: flex; flex-wrap: wrap; gap: 0.625rem; margin-top: 1.25rem; }
+.act {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;
+  height: 2.75rem; padding: 0 1.25rem;
+  border-radius: 0.625rem;
+  font-size: 0.9375rem; font-weight: 600;
+  transition: background 0.15s, border-color 0.15s;
+}
+/* `--primary` EMAS, `--primary-strong`: #4f6ef0 oq matn ostida 4.36:1 beradi
+   (AA 4.5:1 dan past), #3f5ad8 esa 5.72:1 — ko'rinishi maketdagi ko'k bilan
+   deyarli bir xil. */
+.act-primary { background: var(--primary-strong); color: var(--primary-contrast); }
+.act-primary:hover { background: var(--primary); }
+.act-ghost { border: 1px solid var(--border-1); background: var(--surface); color: var(--text-2); }
+.act-ghost:hover { border-color: var(--primary); color: var(--primary-ink); }
+
+/* ── Statistika plitalari ────────────────────────────────────────────── */
+.hero-right { container-type: inline-size; }
+/* `@container` — `@media` DERAZANI o'lchaydi va yon menyu (~280px) ni
+   hisobga olmaydi, ya'ni plitalar noto'g'ri kenglikda sinardi. */
+.stats { display: grid; gap: 0.75rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@container (min-width: 40rem) { .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+.stat { padding: 0.875rem; border: 1px solid var(--border-1); border-radius: 0.75rem; background: var(--surface); }
+.stat-top { display: flex; align-items: center; gap: 0.55rem; }
+.stat-ic { flex-shrink: 0; display: grid; place-items: center; width: 2.125rem; height: 2.125rem; border-radius: 0.625rem; }
+.si-ok   { background: var(--ok-soft);      color: var(--ok-ink); }
+.si-bad  { background: var(--danger-soft);  color: var(--danger-ink); }
+.si-time { background: var(--primary-soft); color: var(--primary-ink); }
+.si-pct  { background: var(--ai-bg);        color: var(--ai-accent); }
+.stat-lbl { font-size: 0.8125rem; color: var(--text-3); line-height: 1.25; }
+.stat-val { margin-top: 0.7rem; font-size: 1.375rem; font-weight: 700; color: var(--text-1); letter-spacing: -0.02em; }
+.stat-inline { margin-left: 0.3rem; font-size: 0.875rem; font-weight: 500; color: var(--text-3); }
+.stat-sub { margin-top: 0.1rem; font-size: 0.8125rem; color: var(--text-3); }
+
+/* ── Natija chizig'i ─────────────────────────────────────────────────── */
+.bar { position: relative; margin-top: 1.5rem; padding-top: 2.75rem; }
+.bar-you { position: absolute; left: 0; top: 0; }
+.bar-goal { position: absolute; top: 0; padding-left: 0.6rem; white-space: nowrap; }
+/* Chegara o'ngda bo'lsa (90–100%) yorliq chiziqning chap tomoniga o'tadi */
+.bar-goal.g-left { transform: translateX(-100%); padding-left: 0; padding-right: 0.6rem; text-align: right; }
+.bar-lbl { font-size: 0.75rem; color: var(--text-3); }
+.bar-val { margin-top: 0.1rem; font-size: 0.875rem; font-weight: 700; color: var(--text-2); }
+/* `.bar-val` va `.s-ok` bir xil xususiyatga ega (0,2,0), lekin `.bar-val`
+   keyin turgani uchun u g'olib chiqib, "Sizning natijangiz" foizi hech qachon
+   qizil/yashil bo'lmasdi. Birlashtirilgan selektor (0,3,0) — aniq. */
+.bar-val.s-ok   { color: var(--ok-ink); }
+.bar-val.s-fail { color: var(--danger-ink); }
+
+.bar-track { height: 0.5rem; border-radius: 9999px; background: var(--surface-inset); overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 9999px; transition: width 0.5s ease; }
+.f-ok   { background: var(--ok-surface-2); }
+.f-fail { background: var(--danger); }
+.bar-marker { position: absolute; top: 0; bottom: 0; border-left: 1px dashed var(--text-4); }
+
+/* ── Yutuqlar ────────────────────────────────────────────────────────── */
+.ach { padding: 1.25rem; margin-bottom: 1rem; background: var(--warn-soft); border-color: var(--warn); }
+.ach-head { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 700; color: var(--warn-ink); margin-bottom: 0.75rem; }
+.ach-list { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.ach-item { display: flex; align-items: center; gap: 0.625rem; padding: 0.5rem 0.75rem; border-radius: 0.75rem; background: var(--surface); border: 1px solid var(--border-1); }
+.ach-title { font-size: 0.875rem; font-weight: 600; color: var(--text-1); }
+.ach-rew { font-size: 0.75rem; font-weight: 700; color: var(--warn-ink); }
+
+.board { margin-bottom: 1rem; }
+
+/* ── Savollar xaritasi ───────────────────────────────────────────────── */
+.nav-card { padding: 1.5rem; margin-bottom: 1rem; }
+.nav-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; }
+.nav-title-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; min-width: 0; }
+.nav-title { font-size: 1rem; font-weight: 600; color: var(--text-1); }
+.legend { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.lg { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.8125rem; color: var(--text-3); }
+.lg-ok  { color: var(--ok-ink); }
+.lg-bad { color: var(--danger-ink); }
+.lg-non { color: var(--text-3); }
+
+.nav-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 0.625rem; }
+.chips { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+.chip {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  height: 2.125rem; padding: 0 0.75rem;
+  border-radius: 0.5rem; border: 1px solid transparent;
+  font-size: 0.8125rem; font-weight: 600; color: var(--text-3);
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.chip:hover { background: var(--surface-hover); }
+.chip.on { background: var(--surface); border-color: var(--primary); color: var(--primary-ink); box-shadow: var(--shadow-soft); }
+.chip-n {
+  display: inline-grid; place-items: center; min-width: 1.375rem; height: 1.25rem; padding: 0 0.3rem;
+  border-radius: 0.375rem; background: var(--surface-inset);
+  font-size: 0.75rem; font-weight: 700; color: var(--text-3);
+}
+.chip-togri .chip-n    { background: var(--ok-soft);     color: var(--ok-ink); }
+.chip-xato .chip-n     { background: var(--danger-soft); color: var(--danger-ink); }
+.chip.on .chip-n       { background: var(--primary-soft); color: var(--primary-ink); }
+.chip-xato             { color: var(--danger-ink); }
+
+.range { position: relative; }
+.range-sel {
+  appearance: none; -webkit-appearance: none;
+  height: 2.125rem; padding: 0 2rem 0 0.75rem;
+  border-radius: 0.5rem; border: 1px solid var(--border-1); background: var(--surface);
+  font-size: 0.8125rem; font-weight: 600; color: var(--text-2); cursor: pointer;
+}
+.range-ic { position: absolute; right: 0.6rem; top: 50%; transform: translateY(-50%); color: var(--text-4); pointer-events: none; }
+
+/* 20 ustun — 19 ta oraliq x 0.5rem = 9.5rem. `100%` KONTEYNERga nisbatan
+   hisoblanadi, shuning uchun yon menyu kengligi ahamiyatsiz. */
+.qgrid { display: grid; gap: 0.5rem; grid-template-columns: repeat(auto-fill, minmax(max(2.75rem, (100% - 9.5rem) / 20), 1fr)); }
+.qtile {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem;
+  height: 3.5rem; border-radius: 0.625rem; border: 1px solid;
+  font-weight: 600; transition: transform 0.12s, box-shadow 0.12s;
+}
+.qtile:hover { transform: translateY(-1px); box-shadow: var(--shadow-card); }
+.qtile-n { font-size: 0.875rem; }
+.q-togri    { background: var(--ok-soft);     border-color: var(--ok);      color: var(--ok-ink); }
+.q-xato     { background: var(--danger-soft); border-color: var(--danger);  color: var(--danger-ink); }
+.q-javobsiz { background: var(--surface);     border-color: var(--border-1); color: var(--text-3); }
+.qgrid-empty { font-size: 0.875rem; color: var(--text-3); }
+
+/* ── Savol kartasi ───────────────────────────────────────────────────── */
+.qcard { padding: 1.5rem; margin-bottom: 1rem; container-type: inline-size; scroll-margin-top: 1rem; }
+/* `tabindex="-1"` tufayli sichqoncha bilan bosilganda ham fokus keladi —
+   halqa faqat klaviatura bilan kelganda ko'rinsin. */
+.qcard:focus { outline: none; }
+.qcard:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.qhead { display: flex; align-items: center; gap: 0.625rem; }
+.qnum {
+  flex-shrink: 0; display: grid; place-items: center;
+  width: 2rem; height: 2rem; border-radius: 0.5rem;
+  font-size: 0.875rem; font-weight: 700;
+}
+.n-togri    { background: var(--ok-soft);     color: var(--ok-ink); }
+.n-xato     { background: var(--danger-soft); color: var(--danger-ink); }
+.n-javobsiz { background: var(--surface-inset); color: var(--text-3); }
+.qstat { font-size: 0.9375rem; font-weight: 600; }
+.t-togri    { color: var(--ok-ink); }
+.t-xato     { color: var(--danger-ink); }
+.t-javobsiz { color: var(--text-3); }
+.qflag {
+  margin-left: auto; flex-shrink: 0;
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  height: 2.125rem; padding: 0 0.75rem;
+  border-radius: 0.5rem; border: 1px solid var(--border-1); background: var(--surface);
+  font-size: 0.8125rem; font-weight: 500; color: var(--text-3);
+  transition: border-color 0.15s, color 0.15s;
+}
+.qflag:hover { border-color: var(--danger); color: var(--danger-ink); }
+.qflag-note { margin-top: 0.625rem; font-size: 0.8125rem; color: var(--text-3); }
+
+.qtext { margin-top: 1rem; font-size: 1rem; font-weight: 600; line-height: 1.5; color: var(--text-1); }
+
+.qbody { display: grid; gap: 1.25rem; margin-top: 1rem; grid-template-columns: minmax(0, 1fr); }
+@container (min-width: 56rem) {
+  .qbody { grid-template-columns: minmax(0, 0.95fr) minmax(0, 0.85fr) minmax(0, 1.3fr); }
+  .no-img .qbody { grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); }
+}
+
+.qimg-wrap { min-width: 0; }
+/* `max-height` shart: `object-fit: contain` element o'lchamini CHEKLAMAYDI,
+   faqat uning ichidagi rasmni joylaydi. Bo'yiga uzun savol rasmi (masalan
+   4:5) balandlikni belgilamasa kartani cho'zib yuborardi. */
+.qimg {
+  width: 100%; max-height: 17rem;
+  border-radius: 0.75rem; border: 1px solid var(--border-1);
+  object-fit: contain; background: var(--surface-soft);
+}
+
+.qans { min-width: 0; }
+.ans-lbl { font-size: 0.8125rem; color: var(--text-3); margin-bottom: 0.4rem; }
+.ans-lbl.lbl-ok { color: var(--ok-ink); margin-top: 0.875rem; }
+.ans {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.625rem 0.75rem; border-radius: 0.625rem; border: 1px solid;
+  font-size: 0.875rem; line-height: 1.4;
+}
+.a-togri    { background: var(--ok-soft);      border-color: var(--ok);       color: var(--ok-ink); }
+.a-xato     { background: var(--danger-soft);  border-color: var(--danger);   color: var(--danger-ink); }
+.a-javobsiz { background: var(--surface-soft); border-color: var(--border-1); color: var(--text-3); }
+.ans-h {
+  flex-shrink: 0; display: grid; place-items: center;
+  width: 1.375rem; height: 1.375rem; border-radius: 0.375rem;
+  background: rgba(255, 255, 255, 0.55);
+  font-size: 0.75rem; font-weight: 700;
+}
+.dark .ans-h { background: rgba(255, 255, 255, 0.10); }
+.ans-t { flex: 1 1 auto; min-width: 0; }
+.ans-ic { flex-shrink: 0; }
+
+/* ── AI izoh ─────────────────────────────────────────────────────────── */
+.qai { min-width: 0; }
+.ai { padding: 0.875rem 1rem; border-radius: 0.75rem; background: var(--ai-bg); border: 1px solid var(--ai-border); height: 100%; }
+.ai-head { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8125rem; font-weight: 600; color: var(--ai-accent); margin-bottom: 0.5rem; }
+.ai-text { font-size: 0.8438rem; line-height: 1.7; color: var(--ai-ink); white-space: pre-line; }
+.ai-none { font-size: 0.8438rem; line-height: 1.6; color: var(--text-3); }
+
+@media (prefers-reduced-motion: reduce) {
+  /* Chiziq kengligining animatsiyasi ham harakat — o'chiriladi */
+  .bar-fill { transition: none; }
+  .qtile { transition: none; }
+}
+
+/* ── Mobil ───────────────────────────────────────────────────────────────
+   Mobil menyu tugmasi `fixed top-3 left-3` (40px) — "Bosh sahifaga qaytish"
+   uning ostida qolmasin. Xuddi shu tuzatish /tickets va /topics da ham bor. */
+@media (max-width: 767px) {
+  .result { padding-top: 3.75rem; }
+  .hero, .nav-card, .qcard { padding: 1.125rem; }
+  /* Suzuvchi menyu tugmasi (40px + 12px chetdan) savol kartasining
+     sarlavhasini bosib qolmasin — plitka bosilganda karta shundan pastda
+     to'xtaydi. */
+  .qcard { scroll-margin-top: 4rem; }
+  .score-n { font-size: 2.75rem; }
+  .score-d { font-size: 2.125rem; }
+  .hero-acts .act { flex: 1 1 100%; }
+  .nav-tools { width: 100%; }
+  .chips { flex: 1 1 auto; }
+  .range, .range-sel { width: 100%; }
+}
+</style>
