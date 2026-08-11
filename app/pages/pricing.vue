@@ -17,14 +17,25 @@ interface Tariff {
 // Narxlar backenddagi config/payme.php bilan bir xil (2 900 000 / 4 500 000 tiyin).
 const monthly: Tariff = { id: '1month', price: '45 000', perDay: '1 500', period: { uz: '1 oy', kr: '1 ой' } }
 const biweekly: Tariff = { id: '2weeks', price: '29 000', perDay: '2 071', period: { uz: '2 hafta', kr: '2 ҳафта' } }
+const tariffs = [monthly, biweekly]
 
-// Narx bosilganda to'lov oynasi ochiladi (to'g'ridan-to'g'ri Paymega emas).
-const selected = ref<Tariff | null>(null)
+/**
+ * Ikki qadam: radio bilan tarif TANLANADI, keyin CTA to'lov oynasini ochadi.
+ * Ilgari tarifning o'zi tugma edi — bosish bilanoq oyna chiqardi, shuning uchun
+ * ikkinchi tarifni "ko'rib qo'yish" imkonsiz edi.
+ */
+const chosen = ref<Tariff>(monthly)
+const sheetFor = ref<Tariff | null>(null)
+
+function openSheet() {
+  sheetFor.value = chosen.value
+}
 
 /**
  * Ijtimoiy dalil — faqat HAQIQIY raqamlar. Backend to'langan buyurtmalarni va
  * faol o'quvchilarni sanaydi; son ishonarli chegaradan past bo'lsa null
- * qaytaradi va bu blok umuman ko'rinmaydi.
+ * qaytaradi va bu blok umuman ko'rinmaydi. Maketda "45 000+ foydalanuvchi"
+ * yozilgan, lekin qo'lda yozilgan son to'lov sahifasida yolg'on va'da bo'ladi.
  */
 const { data: stats } = await useAsyncData('pricing-stats',
   () => apiFetch<{
@@ -33,21 +44,91 @@ const { data: stats } = await useAsyncData('pricing-stats',
   }>('/pricing/stats'),
   { default: () => ({ proof: null, activity: null }), server: false })
 
-const socialProof = computed(() => {
+/** Pilldagi qalin ko'k son — matndan alohida, chunki u alohida stillanadi. */
+const socialProof = computed<{ count: string, text: string } | null>(() => {
   const p = stats.value?.proof
   if (p) {
-    return p.window === 'day'
-      ? i18n.t({ uz: `So'nggi 24 soatda ${p.count} kishi Premium oldi`, kr: `Сўнгги 24 соатда ${p.count} киши Премиум олди` })
-      : i18n.t({ uz: `So'nggi 7 kunda ${p.count} kishi Premium oldi`, kr: `Сўнгги 7 кунда ${p.count} киши Премиум олди` })
+    return {
+      count: String(p.count),
+      text: p.window === 'day'
+        ? i18n.t({ uz: 'kishi bugun Premium oldi', kr: 'киши бугун Премиум олди' })
+        : i18n.t({ uz: 'kishi shu hafta Premium oldi', kr: 'киши шу ҳафта Премиум олди' }),
+    }
   }
   const a = stats.value?.activity
   if (a) {
-    return i18n.t({
-      uz: `${a.learners_7d} kishi shu hafta imtihonga tayyorlanmoqda`,
-      kr: `${a.learners_7d} киши шу ҳафта имтиҳонга тайёрланмоқда`,
-    })
+    return {
+      count: String(a.learners_7d),
+      text: i18n.t({ uz: 'kishi shu hafta imtihonga tayyorlanmoqda', kr: 'киши шу ҳафта имтиҳонга тайёрланмоқда' }),
+    }
   }
   return null
+})
+
+/** Taqqoslash jadvali. `free: null` → ✕ belgisi. */
+const rows = computed(() => [
+  {
+    icon: 'check-circle', tone: 'violet',
+    title: i18n.t({ uz: 'Cheklovsiz test yechish', kr: 'Чекловсиз тест ечиш' }),
+    desc: i18n.t({ uz: 'Istagancha test yeching', kr: 'Истаганча тест ечинг' }),
+    free: null,
+  },
+  {
+    icon: 'exam', tone: 'primary',
+    title: i18n.t({ uz: 'Imtihon rejimi', kr: 'Имтиҳон режими' }),
+    desc: i18n.t({ uz: 'Vaqt bilan mashq qilib, tayyor bo\'ling', kr: 'Вақт билан машқ қилиб, тайёр бўлинг' }),
+    free: i18n.t({ uz: `${dailyLimit.value} ta / kuniga`, kr: `${dailyLimit.value} та / кунига` }),
+  },
+  {
+    icon: 'target', tone: 'warn',
+    title: i18n.t({ uz: 'Xatolar ustida ishlash', kr: 'Хатолар устида ишлаш' }),
+    desc: i18n.t({ uz: 'Xatolarni tahlil qiling va yodingizda saqlang', kr: 'Хатоларни таҳлил қилинг ва ёдингизда сақланг' }),
+    free: i18n.t({ uz: 'Cheklangan', kr: 'Чекланган' }),
+  },
+  {
+    icon: 'user', tone: 'primary',
+    title: i18n.t({ uz: 'AI shaxsiy tavsiyalar', kr: 'AI шахсий тавсиялар' }),
+    desc: i18n.t({ uz: 'Zaif tomonlaringiz bo\'yicha aqlli tavsiyalar', kr: 'Заиф томонларингиз бўйича ақлли тавсиялар' }),
+    free: null,
+  },
+  {
+    icon: 'spark', tone: 'ok',
+    title: i18n.t({ uz: 'To\'liq reyting va XP', kr: 'Тўлиқ рейтинг ва XP' }),
+    desc: i18n.t({ uz: 'Reytingda ko\'tariling va ko\'proq XP oling', kr: 'Рейтингда кўтарилинг ва кўпроқ XP олинг' }),
+    free: i18n.t({ uz: 'Cheklangan', kr: 'Чекланган' }),
+  },
+  {
+    icon: 'ban', tone: 'danger',
+    title: i18n.t({ uz: 'Reklamasiz tajriba', kr: 'Рекламасиз тажриба' }),
+    desc: i18n.t({ uz: 'E\'tiboringizni hech narsa chalg\'itmaydi', kr: 'Эътиборингизни ҳеч нарса чалғитмайди' }),
+    free: null,
+  },
+])
+
+/**
+ * Qabul qilinadigan to'lov usullari. Maketda Apple Pay bor edi, lekin Payme
+ * orqali u ishlamaydi — ko'rsatish yolg'on va'da bo'lardi, o'rniga Payme
+ * logotipi turadi. Usul qo'shish/olib tashlash faqat shu massivда.
+ */
+const brands = [
+  { name: 'Visa', kind: 'visa' as const },
+  { name: 'Humo', kind: 'humo' as const },
+  { name: 'Uzcard', kind: 'uzcard' as const },
+  { name: 'Payme', img: '/payment/payme.png' },
+]
+
+/** Kafolat muddati — bitta joyda, matnlarda takrorlanmasin. */
+const GUARANTEE_DAYS = 7
+
+/** premium_until — ISO sana. `toLocaleDateString` o'zbek tilini hamma yerda
+    to'g'ri bermaydi, shuning uchun qo'lda kun.oy.yil. */
+const premiumUntil = computed(() => {
+  const raw = auth.user?.premium_until
+  if (!raw) return null
+  const d = new Date(raw)
+  if (Number.isNaN(d.getTime())) return null
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()}`
 })
 
 // Paymedan qaytish: ?order=<id>
@@ -67,334 +148,639 @@ onMounted(async () => {
   }
   checking.value = false
 })
-
-// Kartada darrov ko'rinadigan qisqa ro'yxat — "Premium nima beradi" aniq bo'lsin.
-const perks = computed(() => [
-  i18n.t({ uz: 'Cheksiz test — kunlik cheklov yo\'q', kr: 'Чексиз тест — кунлик чеклов йўқ' }),
-  i18n.t({ uz: 'Imtihon rejimi — vaqt bilan mashq', kr: 'Имтиҳон режими — вақт билан машқ' }),
-  i18n.t({ uz: 'Xatolaringiz ustida alohida ishlash', kr: 'Хатоларингиз устида алоҳида ишлаш' }),
-  i18n.t({ uz: 'AI shaxsiy tavsiyalar', kr: 'AI шахсий тавсиялар' }),
-  i18n.t({ uz: 'To\'liq reyting va XP', kr: 'Тўлиқ рейтинг ва XP' }),
-])
-
-/** Pastdagi kengaytirilgan tushuntirishlar — foyda tilida. */
-const benefits = computed(() => [
-  { icon: 'bolt', title: i18n.t({ uz: 'Cheksiz mashq', kr: 'Чексиз машқ' }),
-    desc: i18n.t({ uz: 'Imtihondan o\'tish imkoniyatingizni oshiradigan cheksiz testlar', kr: 'Имтиҳондан ўтиш имкониятингизни оширадиган чексиз тестлар' }) },
-  { icon: 'exam', title: i18n.t({ uz: 'Imtihon rejimi', kr: 'Имтиҳон режими' }),
-    desc: i18n.t({ uz: 'Haqiqiy imtihon sharoitida, vaqt bilan mashq qilasiz', kr: 'Ҳақиқий имтиҳон шароитида, вақт билан машқ қиласиз' }) },
-  { icon: 'refresh', title: i18n.t({ uz: 'Xatolar ustida ish', kr: 'Хатолар устида иш' }),
-    desc: i18n.t({ uz: 'Xato qilgan savollaringiz to\'planadi — ularni yakson qilasiz', kr: 'Хато қилган саволларингиз тўпланади — уларни яксон қиласиз' }) },
-  { icon: 'spark', title: i18n.t({ uz: 'AI tahlil', kr: 'AI таҳлил' }),
-    desc: i18n.t({ uz: 'Eng ko\'p xato qilayotgan mavzuingizni aniqlab, nimadan boshlashni aytadi', kr: 'Энг кўп хато қилаётган мавзуингизни аниқлаб, нимадан бошлашни айтади' }) },
-  { icon: 'trophy', title: i18n.t({ uz: 'Reyting va XP', kr: 'Рейтинг ва XP' }),
-    desc: i18n.t({ uz: 'To\'liq ochiladi — haftalik reytingda yuqoriga chiqasiz', kr: 'Тўлиқ очилади — ҳафталик рейтингда юқорига чиқасиз' }) },
-  { icon: 'book', title: i18n.t({ uz: 'Barcha biletlar', kr: 'Барча билетлар' }),
-    desc: i18n.t({ uz: 'Rasmiy biletlar va mavzular bo\'yicha cheklovsiz kirish', kr: 'Расмий билетлар ва мавзулар бўйича чекловсиз кириш' }) },
-])
 </script>
 
 <template>
-  <div class="pricing-wrap">
-    <!-- Yumshoq ko'k porlash — Apple/Stripe uslubidagi fon -->
-    <div class="glow glow-a" aria-hidden="true" />
-    <div class="glow glow-b" aria-hidden="true" />
-
-    <div class="relative max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
-      <!-- Sarlavha -->
-      <div class="text-center">
-        <div v-if="socialProof" class="proof-pill">
-          <span class="proof-dot" /> {{ socialProof }}
+  <!-- Konteyner dashboard bilan AYNAN bir xil: sidebar'dan keyingi joyni
+       to'ldiradi, chetlari bir chizig'da turadi. -->
+  <div class="pricing mx-auto w-full max-w-[1800px] px-4 sm:px-6 lg:px-8 xl:px-10 pt-6 lg:pt-8 pb-16 md:pb-12">
+    <!-- ── TEPA: sarlavha (chapda, markazlashgan) + joriy rejim (o'ngda) ── -->
+    <div class="top">
+      <div class="hero">
+        <div v-if="socialProof" class="proof">
+          <span class="proof-faces" aria-hidden="true">
+            <span v-for="n in 4" :key="n" class="proof-face" :class="`proof-face-${n}`">
+              <AppIcon name="user" :size="12" />
+            </span>
+          </span>
+          <span class="proof-text">
+            <strong class="proof-count">{{ socialProof.count }}</strong> {{ socialProof.text }}
+          </span>
         </div>
 
-        <h1 class="mt-4 text-[1.75rem] sm:text-5xl font-semibold tracking-tightest text-ink-900 leading-[1.1]">
-          {{ i18n.t({ uz: 'Imtihonga ishonch bilan', kr: 'Имтиҳонга ишонч билан' }) }}<br class="hidden sm:block">
-          {{ i18n.t({ uz: 'tayyorlaning', kr: 'тайёрланинг' }) }}
+        <h1 class="hero-title">
+          {{ i18n.t({ uz: 'Imtihonga ishonch bilan', kr: 'Имтиҳонга ишонч билан' }) }}<br>
+          <span class="hero-accent">{{ i18n.t({ uz: 'tayyorlaning', kr: 'тайёрланинг' }) }}</span>
         </h1>
-        <p class="mt-4 max-w-lg mx-auto text-[15px] sm:text-base" style="color: var(--text-3)">
+
+        <p class="hero-sub">
           {{ i18n.t({
-            uz: 'Bepul rejimni sinab ko\'ring yoki Premium bilan cheklovlarsiz mashq qiling.',
-            kr: 'Бепул режимни синаб кўринг ёки Премиум билан чекловларсиз машқ қилинг.'
+            uz: 'Premium bilan hech qanday cheklovsiz o\'rganing, xatolaringiz ustida ishlang va imtihonda eng yaxshi natijaga erishing.',
+            kr: 'Премиум билан ҳеч қандай чекловсиз ўрганинг, хатоларингиз устида ишланг ва имтиҳонда энг яхши натижага эришинг.'
           }) }}
         </p>
       </div>
 
-      <!-- To'lov natijasi -->
-      <div v-if="paidOk" class="max-w-md mx-auto mt-8 px-4 py-3.5 rounded-xl flex items-center gap-3"
-           style="background: #d1fae5; border: 1px solid #6ee7b7; color: #065f46;">
-        <AppIcon name="check" :size="18" />
-        <div class="text-sm font-medium">
-          {{ i18n.t({ uz: 'To\'lov muvaffaqiyatli — Premium faollashtirildi! 🎉', kr: 'Тўлов муваффақиятли — Премиум фаоллаштирилди! 🎉' }) }}
+      <!-- Joriy rejim -->
+      <aside class="status">
+        <div class="status-label">{{ i18n.t({ uz: 'Joriy rejim', kr: 'Жорий режим' }) }}</div>
+        <div class="status-plan">
+          {{ isPremium
+            ? 'Premium'
+            : i18n.t({ uz: 'Bepul rejim', kr: 'Бепул режим' }) }}
         </div>
-      </div>
-      <div v-else-if="checking" class="max-w-md mx-auto mt-8 px-4 py-3.5 rounded-xl text-sm text-center"
-           style="background: var(--surface-inset); color: var(--text-3);">
-        {{ i18n.t({ uz: 'To\'lov holati tekshirilmoqda…', kr: 'Тўлов ҳолати текширилмоқда…' }) }}
-      </div>
 
-      <!-- ASOSIY: Premium karta markazda -->
-      <div class="mt-10 sm:mt-12 flex justify-center">
-        <div class="hero-card">
-          <div class="hero-badge">
-            <AppIcon name="star" :size="11" /> {{ i18n.t({ uz: 'Eng mashhur', kr: 'Энг машҳур' }) }}
+        <template v-if="isPremium">
+          <p class="status-note">
+            {{ premiumUntil
+              ? i18n.t({ uz: `${premiumUntil} gacha faol.`, kr: `${premiumUntil} гача фаол.` })
+              : i18n.t({ uz: 'Barcha imkoniyatlar ochilgan.', kr: 'Барча имкониятлар очилган.' }) }}
+          </p>
+          <div class="status-ok">
+            <AppIcon name="check" :size="15" />
+            {{ i18n.t({ uz: 'Faol', kr: 'Фаол' }) }}
           </div>
+        </template>
 
-          <div class="text-center">
-            <div class="text-xs font-semibold uppercase tracking-[0.16em]" style="color: rgba(255,255,255,0.5)">
-              Premium
-            </div>
-            <p class="mt-1.5 text-sm" style="color: rgba(255,255,255,0.62)">
-              {{ i18n.t({ uz: 'Cheklovlarsiz, jiddiy tayyorgarlik', kr: 'Чекловларсиз, жиддий тайёргарлик' }) }}
-            </p>
-          </div>
+        <template v-else>
+          <p class="status-note">
+            {{ i18n.t({ uz: 'Premium imkoniyatlar ochilmagan.', kr: 'Премиум имкониятлар очилмаган.' }) }}
+          </p>
+          <button type="button" class="status-btn" @click="openSheet">
+            <AppIcon name="bolt" :size="15" />
+            {{ i18n.t({ uz: 'Premium ga o\'tish', kr: 'Премиумга ўтиш' }) }}
+          </button>
+        </template>
+      </aside>
+    </div>
 
-          <!-- Premium nima beradi — kartada, aniq ko'rinib tursin -->
-          <ul class="mt-5 space-y-2.5">
-            <li v-for="p in perks" :key="p" class="flex items-start gap-2.5 text-left">
-              <span class="perk-tick"><AppIcon name="check" :size="11" /></span>
-              <span class="text-sm" style="color: rgba(255,255,255,0.9)">{{ p }}</span>
-            </li>
-          </ul>
+    <!-- To'lov natijasi -->
+    <div v-if="paidOk" class="notice notice-ok">
+      <AppIcon name="check" :size="18" class="shrink-0" />
+      <span>{{ i18n.t({ uz: 'To\'lov muvaffaqiyatli — Premium faollashtirildi! 🎉', kr: 'Тўлов муваффақиятли — Премиум фаоллаштирилди! 🎉' }) }}</span>
+    </div>
+    <div v-else-if="checking" class="notice notice-wait">
+      {{ i18n.t({ uz: 'To\'lov holati tekshirilmoqda…', kr: 'Тўлов ҳолати текширилмоқда…' }) }}
+    </div>
 
-          <template v-if="isPremium">
-            <div class="w-full mt-6 h-12 inline-flex items-center justify-center gap-2 px-4 rounded-xl font-medium"
-                 style="background: rgba(110,231,183,0.15); color: #6ee7b7;">
-              <AppIcon name="check" :size="16" />
+    <!-- ── ASOSIY: taqqoslash + tariflar ── -->
+    <div class="cols">
+      <!-- Taqqoslash jadvali -->
+      <section class="card compare">
+        <table class="cmp">
+          <thead>
+            <tr>
+              <th scope="col" class="cmp-th-feature">
+                {{ i18n.t({ uz: 'Nima uchun Premium?', kr: 'Нима учун Премиум?' }) }}
+              </th>
+              <th scope="col" class="cmp-th-free">
+                {{ i18n.t({ uz: 'Bepul', kr: 'Бепул' }) }}
+              </th>
+              <th scope="col" class="cmp-th-prem">Premium</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="r in rows" :key="r.title">
+              <!-- Flex ICHKI `span`da: `<th>` ning o'zига `display: flex` bersak,
+                   u jadval katakchasi bo'lishdan to'xtaydi va ustun kengliklari
+                   buziladi. -->
+              <th scope="row" class="cmp-feature">
+                <span class="cmp-row">
+                  <span class="tile" :class="`tile-${r.tone}`">
+                    <AppIcon :name="r.icon" :size="17" />
+                  </span>
+                  <span class="cmp-text">
+                    <span class="cmp-title">{{ r.title }}</span>
+                    <span class="cmp-desc">{{ r.desc }}</span>
+                  </span>
+                </span>
+              </th>
+
+              <td class="cmp-free">
+                <span v-if="r.free" class="cmp-limit">{{ r.free }}</span>
+                <template v-else>
+                  <AppIcon name="x" :size="17" class="cmp-no" aria-hidden="true" />
+                  <span class="sr-only">{{ i18n.t({ uz: 'yo\'q', kr: 'йўқ' }) }}</span>
+                </template>
+              </td>
+
+              <td class="cmp-prem">
+                <AppIcon name="check-circle" :size="20" class="cmp-yes" aria-hidden="true" />
+                <span class="sr-only">{{ i18n.t({ uz: 'bor', kr: 'бор' }) }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Tariflar -->
+      <section class="card plans">
+        <div class="plans-head">
+          <AppIcon name="star" :size="15" />
+          {{ i18n.t({ uz: 'Eng ma\'qul tanlov', kr: 'Энг маъқул танлов' }) }}
+        </div>
+
+        <div class="plans-body">
+          <!-- Premium allaqachon faol: tarif tanlash ma'nosiz -->
+          <div v-if="isPremium" class="plans-active">
+            <span class="plans-active-icon"><AppIcon name="check" :size="24" /></span>
+            <div class="plans-active-title">
               {{ i18n.t({ uz: 'Sizda Premium faol', kr: 'Сизда Премиум фаол' }) }}
             </div>
-          </template>
+            <p class="plans-active-note">
+              {{ premiumUntil
+                ? i18n.t({ uz: `Obuna ${premiumUntil} gacha ishlaydi. Cheklovlarsiz mashq qilishingiz mumkin.`, kr: `Обуна ${premiumUntil} гача ишлайди. Чекловларсиз машқ қилишингиз мумкин.` })
+                : i18n.t({ uz: 'Cheklovlarsiz mashq qilishingiz mumkin.', kr: 'Чекловларсиз машқ қилишингиз мумкин.' }) }}
+            </p>
+            <NuxtLink to="/" class="plans-active-link">
+              {{ i18n.t({ uz: 'Mashqni davom ettirish', kr: 'Машқни давом эттириш' }) }}
+              <AppIcon name="arrow" :size="15" />
+            </NuxtLink>
+          </div>
 
           <template v-else>
-            <!-- Ikkala tarif ham ko'rinadigan tugma -->
-            <div class="mt-6 space-y-2.5">
-              <!-- 1 oy — tavsiya etilgan, sariq -->
-              <button type="button" class="plan plan-primary" @click="selected = monthly">
-                <span class="plan-left">
-                  <span class="plan-name">{{ i18n.t(monthly.period) }}</span>
-                  <span class="plan-tag">{{ i18n.t({ uz: 'eng qulay', kr: 'энг қулай' }) }}</span>
-                </span>
-                <span class="plan-right">
-                  <span class="plan-price">{{ monthly.price }} <span class="plan-cur">{{ i18n.t({ uz: 'so\'m', kr: 'сўм' }) }}</span></span>
-                  <span class="plan-perday">≈ {{ monthly.perDay }} {{ i18n.t({ uz: 'so\'m/kun', kr: 'сўм/кун' }) }}</span>
-                </span>
-              </button>
+            <fieldset class="plan-group">
+              <legend class="sr-only">{{ i18n.t({ uz: 'Tarifni tanlang', kr: 'Тарифни танланг' }) }}</legend>
 
-              <!-- 2 hafta — ikkinchi darajali, lekin baribir tugma -->
-              <button type="button" class="plan plan-secondary" @click="selected = biweekly">
-                <span class="plan-left">
-                  <span class="plan-name">{{ i18n.t(biweekly.period) }}</span>
+              <label v-for="t in tariffs" :key="t.id" class="plan" :class="chosen.id === t.id && 'plan-on'">
+                <input
+                  type="radio"
+                  name="tariff"
+                  class="plan-radio"
+                  :value="t.id"
+                  :checked="chosen.id === t.id"
+                  @change="chosen = t"
+                >
+                <span class="plan-main">
+                  <span class="plan-top">
+                    <span class="plan-name">{{ i18n.t(t.period) }}</span>
+                    <span v-if="t.id === monthly.id" class="plan-badge">
+                      {{ i18n.t({ uz: 'Eng qulay', kr: 'Энг қулай' }) }}
+                    </span>
+                  </span>
+                  <span class="plan-desc">{{ i18n.t({ uz: 'To\'liq Premium tajriba', kr: 'Тўлиқ Премиум тажриба' }) }}</span>
                 </span>
-                <span class="plan-right">
-                  <span class="plan-price">{{ biweekly.price }} <span class="plan-cur">{{ i18n.t({ uz: 'so\'m', kr: 'сўм' }) }}</span></span>
-                  <span class="plan-perday">≈ {{ biweekly.perDay }} {{ i18n.t({ uz: 'so\'m/kun', kr: 'сўм/кун' }) }}</span>
+                <span class="plan-side">
+                  <span class="plan-price">
+                    {{ t.price }}<span class="plan-cur">{{ i18n.t({ uz: 'so\'m', kr: 'сўм' }) }}</span>
+                  </span>
+                  <span class="plan-perday">
+                    ≈ {{ t.perDay }} {{ i18n.t({ uz: 'so\'m / kun', kr: 'сўм / кун' }) }}
+                  </span>
                 </span>
-              </button>
-            </div>
+              </label>
+            </fieldset>
 
-            <div v-if="isGuest" class="mt-3 px-3.5 py-2.5 rounded-lg text-2xs leading-relaxed text-left"
-                 style="background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7);">
+            <button type="button" class="cta" @click="openSheet">
+              <AppIcon name="bolt" :size="19" />
+              {{ i18n.t({ uz: 'Premium ga o\'tish', kr: 'Премиумга ўтиш' }) }}
+            </button>
+
+            <p class="cta-note">
+              <AppIcon name="shield" :size="15" class="shrink-0" />
+              {{ i18n.t({
+                uz: `${GUARANTEE_DAYS} kunlik kafolat — yoqmasa, pulingiz qaytariladi`,
+                kr: `${GUARANTEE_DAYS} кунлик кафолат — ёқмаса, пулингиз қайтарилади`
+              }) }}
+            </p>
+
+            <p v-if="isGuest" class="guest-note">
               {{ i18n.t({
                 uz: 'Premium olish uchun avval ro\'yxatdan o\'tasiz — progressingiz to\'liq saqlanib qoladi.',
                 kr: 'Премиум олиш учун аввал рўйхатдан ўтасиз — прогрессингиз тўлиқ сақланиб қолади.'
               }) }}
-            </div>
-
-            <div class="mt-5 pt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-2xs"
-                 style="border-top: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.55)">
-              <span>🔒 {{ i18n.t({ uz: 'Payme orqali', kr: 'Payme орқали' }) }}</span>
-              <span>✓ {{ i18n.t({ uz: 'Bir martalik to\'lov', kr: 'Бир марталик тўлов' }) }}</span>
-              <span>✓ {{ i18n.t({ uz: 'Avtomatik yechim yo\'q', kr: 'Автоматик ечим йўқ' }) }}</span>
-            </div>
+            </p>
           </template>
         </div>
-      </div>
-
-      <!-- Bepul — kichik, ikkinchi darajali -->
-      <div class="mt-5 max-w-lg mx-auto free-row">
-        <div class="min-w-0">
-          <div class="text-sm font-medium text-ink-900">
-            {{ i18n.t({ uz: 'Bepul davom etish', kr: 'Бепул давом этиш' }) }}
-          </div>
-          <div class="text-2xs mt-0.5" style="color: var(--text-4)">
-            {{ i18n.t({
-              uz: `Kuniga ${dailyLimit} ta test · kunlik limit mavjud`,
-              kr: `Кунига ${dailyLimit} та тест · кунлик лимит мавжуд`
-            }) }}
-          </div>
-        </div>
-        <NuxtLink to="/" class="free-link">0 {{ i18n.t({ uz: 'so\'m', kr: 'сўм' }) }}</NuxtLink>
-      </div>
-
-      <!-- Afzalliklar — ikonkalar bilan, batafsil -->
-      <div class="mt-14">
-        <h2 class="text-center text-lg sm:text-xl font-semibold tracking-tightish text-ink-900">
-          {{ i18n.t({ uz: 'Premium bilan siz nima olasiz', kr: 'Премиум билан сиз нима оласиз' }) }}
-        </h2>
-        <div class="mt-7 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          <div v-for="b in benefits" :key="b.title" class="benefit">
-            <span class="benefit-icon"><AppIcon :name="b.icon" :size="17" /></span>
-            <div class="min-w-0">
-              <div class="text-sm font-semibold text-ink-900">{{ b.title }}</div>
-              <p class="mt-1 text-2xs leading-relaxed" style="color: var(--text-3)">{{ b.desc }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <p class="text-center text-2xs mt-10" style="color: var(--text-4)">
-        {{ i18n.t({ uz: 'Bepul tarif doim bepul qoladi.', kr: 'Бепул тариф доим бепул қолади.' }) }}
-      </p>
+      </section>
     </div>
 
-    <PaymentSheet :open="selected !== null" :tariff="selected" @close="selected = null" />
+    <!-- ── PASTKI: ishonch bloki ── -->
+    <section class="card trust">
+      <div class="trust-col">
+        <span class="trust-icon"><AppIcon name="shield" :size="19" /></span>
+        <div class="min-w-0">
+          <div class="trust-title">{{ i18n.t({ uz: 'Xavfsiz to\'lov', kr: 'Хавфсиз тўлов' }) }}</div>
+          <p class="trust-desc">
+            {{ i18n.t({ uz: 'Ma\'lumotlaringiz 256-bit SSL bilan himoyalangan', kr: 'Маълумотларингиз 256-bit SSL билан ҳимояланган' }) }}
+          </p>
+        </div>
+      </div>
+
+      <div class="trust-col">
+        <span class="trust-icon"><AppIcon name="card" :size="19" /></span>
+        <div class="min-w-0">
+          <div class="trust-title">{{ i18n.t({ uz: 'Qulay to\'lov usullari', kr: 'Қулай тўлов усуллари' }) }}</div>
+          <ul class="brands">
+            <li v-for="b in brands" :key="b.name" class="brand">
+              <img v-if="b.img" :src="b.img" :alt="b.name">
+              <span v-else class="bm" :class="`bm-${b.kind}`">{{ b.name.toUpperCase() }}</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="trust-col">
+        <span class="trust-icon"><AppIcon name="refresh" :size="19" /></span>
+        <div class="min-w-0">
+          <div class="trust-title">
+            {{ i18n.t({ uz: `${GUARANTEE_DAYS} kunlik kafolat`, kr: `${GUARANTEE_DAYS} кунлик кафолат` }) }}
+          </div>
+          <p class="trust-desc">
+            {{ i18n.t({
+              uz: `Agar yoqmasa, ${GUARANTEE_DAYS} kun ichida pulingizni to'liq qaytaramiz`,
+              kr: `Агар ёқмаса, ${GUARANTEE_DAYS} кун ичида пулингизни тўлиқ қайтарамиз`
+            }) }}
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <PaymentSheet :open="sheetFor !== null" :tariff="sheetFor" @close="sheetFor = null" />
   </div>
 </template>
 
 <style scoped>
-.pricing-wrap { position: relative; overflow: hidden; }
+/* Binafsha — dizayn tizimida yo'q, faqat shu sahifaning birinchi qatoriga
+   kerak. `-soft` fon, o'zi esa shu fon ustidagi ikonka rangi (kontrast 3:1). */
+.pricing {
+  --violet:      #7c3aed;
+  --violet-soft: #f3e8ff;
+}
+.dark .pricing {
+  --violet:      #c4b5fd;
+  --violet-soft: rgba(139, 92, 246, 0.20);
+}
 
-/* Yumshoq ko'k porlash — fon chuqurlik beradi, lekin matnga xalaqit qilmaydi */
-.glow {
-  position: absolute;
-  border-radius: 9999px;
-  filter: blur(90px);
-  pointer-events: none;
-  z-index: 0;
-}
-.glow-a {
-  top: -14rem; left: 50%; transform: translateX(-50%);
-  width: 44rem; height: 30rem;
-  background: radial-gradient(closest-side, rgba(63, 88, 148, 0.30), transparent);
-}
-.glow-b {
-  top: 18rem; right: -12rem;
-  width: 30rem; height: 26rem;
-  background: radial-gradient(closest-side, rgba(99, 102, 241, 0.18), transparent);
-}
-@media (max-width: 640px) { .glow-a { width: 26rem; height: 20rem; top: -9rem; } .glow-b { display: none; } }
+/* ── Tepa qator ───────────────────────────────────────────────────────────
+   Sarlavha "Joriy rejim" kartasidan CHAPDA qolgan joyning o'rtasida turadi —
+   maketdagidek. Shuning uchun oddiy grid emas, flex: karta qat'iy kenglikda,
+   sarlavha qolgan joyni oladi va matni markazlashadi. */
+.top { display: flex; flex-direction: column; gap: 1.25rem; }
+.hero { min-width: 0; text-align: center; }
 
-.proof-pill {
-  display: inline-flex; align-items: center; gap: 0.5rem;
-  padding: 0.35rem 0.85rem;
+@media (min-width: 1280px) {
+  .top { flex-direction: row; align-items: flex-start; gap: 4rem; }
+  .hero { flex: 1 1 0%; }
+  .status { flex: 0 0 24rem; }
+}
+
+.proof {
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  padding: 0.35rem 1rem 0.35rem 0.55rem;
   border-radius: 9999px;
-  font-size: 0.75rem; font-weight: 500;
-  color: var(--text-2);
   background: var(--surface);
   border: 1px solid var(--border-soft);
-  box-shadow: 0 2px 10px -4px rgba(15, 23, 42, 0.12);
+  box-shadow: var(--shadow-card);
 }
-.proof-dot {
-  width: 0.4rem; height: 0.4rem; border-radius: 9999px;
-  background: #10b981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
-}
-
-/* Markaziy Premium karta — sahifadagi eng katta element */
-.hero-card {
-  position: relative;
-  width: 100%; max-width: 30rem;
-  padding: 2.5rem 1.5rem 1.75rem;
-  border-radius: 1.75rem;
-  background: linear-gradient(165deg, #161b26 0%, #0b0e15 55%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow:
-    0 32px 80px -24px rgba(11, 14, 21, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-}
-@media (min-width: 640px) { .hero-card { padding: 3rem 2.25rem 2rem; } }
-
-.hero-badge {
-  position: absolute; top: -0.85rem; left: 50%; transform: translateX(-50%);
-  display: inline-flex; align-items: center; gap: 0.3rem;
-  padding: 0.32rem 0.85rem;
-  border-radius: 9999px;
-  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.02em;
-  white-space: nowrap;
-  color: #3d2c00;
-  background: linear-gradient(180deg, #fde68a, #f0b429);
-  box-shadow: 0 6px 18px -6px rgba(240, 180, 41, 0.7);
-}
-
-.perk-tick {
-  width: 1.15rem; height: 1.15rem; border-radius: 9999px;
-  display: grid; place-items: center; flex-shrink: 0; margin-top: 0.1rem;
-  background: rgba(110, 231, 183, 0.18);
-  color: #6ee7b7;
-}
-
-/* Ikkala tarif ham to'liq ko'rinadigan tugma */
-.plan {
-  width: 100%;
-  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
-  padding: 0.85rem 1.1rem;
-  border-radius: 1rem;
-  text-align: left;
-  transition: transform .15s, box-shadow .15s, filter .15s, background .15s, border-color .15s;
-}
-.plan:active { transform: scale(0.99); }
-
-.plan-left { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
-.plan-name { font-size: 1rem; font-weight: 600; }
-.plan-right { text-align: right; flex-shrink: 0; }
-.plan-price { display: block; font-size: 1.0625rem; font-weight: 700; }
-.plan-cur { font-size: 0.75rem; font-weight: 500; opacity: 0.7; }
-.plan-perday { display: block; font-size: 0.6875rem; margin-top: 0.05rem; }
-
-/* 1 oy — sariq, asosiy urg'u */
-.plan-primary {
-  color: #3d2c00;
-  background: linear-gradient(180deg, #fcd34d, #f0b429);
-  box-shadow: 0 12px 28px -12px rgba(240, 180, 41, 0.85);
-}
-.plan-primary:hover { filter: brightness(1.05); transform: translateY(-2px); }
-.plan-primary .plan-perday { color: rgba(61, 44, 0, 0.72); }
-.plan-tag {
-  font-size: 0.62rem; font-weight: 700; letter-spacing: 0.02em;
-  text-transform: uppercase;
-  padding: 0.12rem 0.45rem; border-radius: 9999px;
-  background: rgba(61, 44, 0, 0.16); color: #3d2c00;
-}
-
-/* 2 hafta — ikkinchi darajali, lekin baribir aniq tugma */
-.plan-secondary {
+.proof-faces { display: inline-flex; }
+.proof-face {
+  width: 1.6rem; height: 1.6rem; border-radius: 9999px;
+  display: grid; place-items: center;
   color: #fff;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 2px solid var(--surface);
+  margin-right: -0.5rem;
 }
-.plan-secondary:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.28); transform: translateY(-1px); }
-.plan-secondary .plan-perday { color: rgba(255, 255, 255, 0.5); }
+.proof-face:last-child { margin-right: 0; }
+.proof-face-1 { background: #4f6ef0; }
+.proof-face-2 { background: #6366f1; }
+.proof-face-3 { background: #8b5cf6; }
+.proof-face-4 { background: #a78bfa; }
+.proof-text { font-size: 0.8125rem; color: var(--text-3); }
+.proof-count { font-weight: 700; color: var(--ok-ink); }
 
-.free-row {
-  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-  padding: 0.9rem 1.15rem;
+.hero-title {
+  margin-top: 1.25rem;
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--text-1);
+}
+@media (min-width: 640px)  { .hero-title { font-size: 2.75rem; } }
+@media (min-width: 1024px) { .hero-title { font-size: 3.25rem; } }
+
+/* Gradient matn: `color: transparent` bilan birga `background-clip` — Safari
+   uchun `-webkit-` prefiksi ham shart. */
+.hero-accent {
+  background: var(--grad-progress);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+/* Majburiy ranglar rejimida gradient butunlay yo'qoladi va matn ko'rinmay
+   qoladi — u yerda oddiy tizim rangiga qaytamiz. */
+@media (forced-colors: active) {
+  .hero-accent { -webkit-text-fill-color: currentColor; color: CanvasText; background: none; }
+}
+
+.hero-sub {
+  margin: 1rem auto 0;
+  max-width: 36rem;
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: var(--text-3);
+}
+@media (min-width: 640px) { .hero-sub { font-size: 1rem; } }
+
+/* ── Joriy rejim ── */
+.status {
+  padding: 1.15rem 1.3rem 1.3rem;
   border-radius: 1rem;
   background: var(--surface);
   border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-card);
 }
-.free-link {
-  flex-shrink: 0;
-  padding: 0.45rem 0.9rem;
+.status-label { font-size: 0.8125rem; color: var(--text-3); }
+.status-plan {
+  margin-top: 0.15rem;
+  font-size: 1.1875rem; font-weight: 700; letter-spacing: -0.02em;
+  color: var(--text-1);
+}
+.status-note { margin-top: 0.5rem; font-size: 0.8125rem; line-height: 1.5; color: var(--text-3); }
+
+.status-btn {
+  width: 100%; margin-top: 1rem;
+  height: 2.625rem;
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;
   border-radius: 0.625rem;
-  font-size: 0.8125rem; font-weight: 600;
-  color: var(--text-2);
-  background: var(--surface-inset);
-  transition: background .15s;
+  font-size: 0.875rem; font-weight: 600;
+  color: var(--primary-ink);
+  background: var(--primary-soft);
+  transition: filter .15s, transform .15s;
 }
-.free-link:hover { background: var(--surface-hover); }
+.status-btn:hover { filter: brightness(0.97); }
+.status-btn:active { transform: scale(0.99); }
+.dark .status-btn:hover { filter: brightness(1.2); }
 
-.benefit {
-  display: flex; align-items: flex-start; gap: 0.75rem;
-  padding: 1rem 1.1rem;
-  border-radius: 1rem;
+.status-ok {
+  width: 100%; margin-top: 1rem;
+  height: 2.625rem;
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;
+  border-radius: 0.625rem;
+  font-size: 0.875rem; font-weight: 600;
+  color: var(--ok-ink);
+  background: color-mix(in srgb, var(--ok) 14%, transparent);
+}
+
+/* ── Xabar bloklari ── */
+.notice {
+  display: flex; align-items: center; gap: 0.65rem;
+  margin-top: 1.25rem;
+  padding: 0.85rem 1.1rem;
+  border-radius: 0.875rem;
+  font-size: 0.875rem; font-weight: 500;
+}
+.notice-ok { background: color-mix(in srgb, var(--ok) 14%, transparent); color: var(--ok-ink); }
+.notice-wait { background: var(--surface-inset); color: var(--text-3); justify-content: center; }
+
+/* ── Ikki ustun ─────────────────────────────────────────────────────────
+   55/45 — maketdagi nisbat (724 : 589). `minmax(0, …)` SHART: usiz ichkaridagi
+   jadval ustunni cho'zib yuboradi. */
+.cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+  margin-top: 1.75rem;
+}
+@media (min-width: 1024px) {
+  .cols { grid-template-columns: minmax(0, 1.23fr) minmax(0, 1fr); gap: 1.75rem; }
+}
+
+.card {
   background: var(--surface);
   border: 1px solid var(--border-soft);
-  transition: border-color .18s, transform .18s;
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow-card);
 }
-.benefit:hover { border-color: var(--accent); transform: translateY(-2px); }
-.benefit-icon {
-  width: 2.15rem; height: 2.15rem; border-radius: 0.7rem;
+
+/* ── Taqqoslash jadvali ── */
+.compare { padding: 1.35rem 1.5rem 0.85rem; }
+.cmp { width: 100%; border-collapse: collapse; }
+
+.cmp-th-feature, .cmp-th-free, .cmp-th-prem {
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--divider);
+  font-size: 0.8125rem; font-weight: 600;
+  white-space: nowrap;
+}
+.cmp-th-feature {
+  text-align: left;
+  font-size: 0.9375rem; font-weight: 700; letter-spacing: -0.01em;
+  color: var(--text-1);
+}
+.cmp-th-free { color: var(--text-3); }
+/* `--primary` oq fonda 3.87:1 beradi (AA 4.5:1 dan past) — matn uchun `-ink`. */
+.cmp-th-prem { color: var(--primary-ink); }
+
+.cmp-th-free, .cmp-free { width: 7.5rem; text-align: center; border-left: 1px solid var(--divider); }
+.cmp-th-prem, .cmp-prem { width: 6rem; text-align: center; }
+
+.cmp-feature {
+  padding: 0.7rem 1rem 0.7rem 0;
+  text-align: left; font-weight: 400;
+}
+.cmp-row { display: flex; align-items: center; gap: 0.75rem; }
+.cmp-free, .cmp-prem { vertical-align: middle; }
+
+.tile {
+  width: 2.125rem; height: 2.125rem; border-radius: 0.625rem;
   display: grid; place-items: center; flex-shrink: 0;
-  background: var(--accent-soft);
-  color: var(--accent);
+}
+.tile-violet  { background: var(--violet-soft);  color: var(--violet); }
+.tile-primary { background: var(--primary-soft); color: var(--primary-ink); }
+.tile-warn    { background: var(--warn-soft);    color: var(--warn-ink); }
+.tile-ok      { background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok-ink); }
+.tile-danger  { background: var(--danger-soft);  color: var(--danger-ink); }
+
+.cmp-text { display: block; min-width: 0; }
+.cmp-title { display: block; font-size: 0.84375rem; font-weight: 600; color: var(--text-1); }
+.cmp-desc  { display: block; margin-top: 0.1rem; font-size: 0.75rem; line-height: 1.35; color: var(--text-3); }
+
+.cmp-limit { font-size: 0.78125rem; color: var(--text-3); }
+/* Ma'no tashuvchi ikonka — WCAG 1.4.11 bo'yicha kamida 3:1. `--text-muted`
+   (#b6b8c0) oq fonda 2.06:1 berardi, shuning uchun `--text-4`. */
+.cmp-no  { display: inline-block; color: var(--text-4); }
+/* `--ok` oq fonda 2.3:1 — ikonka uchun ham kam; `-strong` 3.6:1 beradi. */
+.cmp-yes { display: inline-block; color: var(--ok-strong); }
+
+/* ── Tariflar kartasi ── */
+.plans { overflow: hidden; display: flex; flex-direction: column; }
+
+.plans-head {
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  height: 2.75rem;
+  font-size: 0.875rem; font-weight: 600;
+  color: #fff;
+  background: var(--grad-hero);
+}
+.plans-body { padding: 1.25rem; display: flex; flex-direction: column; flex: 1 1 auto; }
+
+/* `flex: 1` + markazlash: chap karta (6 qatorli jadval) balandroq bo'lgani
+   uchun grid ikkinchi kartani ham cho'zadi. Ortiqcha joyni ANIQ egasi bo'lmasa,
+   u kartaning pastida bo'sh tasma bo'lib qolardi — endi tariflar orasida
+   taqsimlanadi va karta to'liq to'ladi. */
+.plan-group {
+  display: flex; flex-direction: column; justify-content: center;
+  flex: 1 1 auto;
+  gap: 0.75rem; border: 0; padding: 0; margin: 0;
+}
+
+.plan {
+  display: flex; align-items: center; gap: 0.9rem;
+  padding: 1rem 1.15rem;
+  border-radius: 0.875rem;
+  border: 1.5px solid var(--border-soft);
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.plan:hover { border-color: var(--primary); }
+.plan-on { border-color: var(--primary); background: var(--primary-soft); }
+
+/* Nativ radio — klaviatura va ekran o'quvchi uchun ishlaydi, faqat ko'rinishi
+   almashtirilgan. `appearance: none` bo'lsa ham `:focus-visible` ishlaydi. */
+.plan-radio {
+  appearance: none; -webkit-appearance: none;
+  width: 1.25rem; height: 1.25rem; flex-shrink: 0;
+  border-radius: 9999px;
+  border: 2px solid var(--border-1);
+  background: var(--surface);
+  transition: border-color .15s, box-shadow .15s;
+}
+.plan-radio:checked {
+  border-color: var(--primary);
+  /* Ichki nuqta — `box-shadow: inset` bilan, qo'shimcha element kerak emas. */
+  box-shadow: inset 0 0 0 0.25rem var(--surface), inset 0 0 0 1rem var(--primary);
+}
+.plan-radio:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.plan-main { flex: 1 1 auto; min-width: 0; }
+.plan-top { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.plan-name { font-size: 1.375rem; font-weight: 800; letter-spacing: -0.02em; color: var(--text-1); }
+.plan-badge {
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--primary-ink);
+  background: var(--primary-soft);
+}
+/* Tanlangan tarifda fon ham `--primary-soft` — nishon ko'rinmay qolmasin. */
+.plan-on .plan-badge { background: var(--surface); }
+.plan-desc { display: block; margin-top: 0.15rem; font-size: 0.8125rem; color: var(--text-3); }
+
+.plan-side { flex-shrink: 0; text-align: right; }
+.plan-price {
+  display: block;
+  font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-1);
+}
+.plan-cur { margin-left: 0.25rem; font-size: 0.8125rem; font-weight: 500; color: var(--text-3); }
+.plan-perday { display: block; margin-top: 0.1rem; font-size: 0.75rem; color: var(--text-3); }
+
+.cta {
+  width: 100%; margin-top: 1.15rem;
+  height: 3.5rem;
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem;
+  border-radius: 0.875rem;
+  font-size: 1.0625rem; font-weight: 700;
+  color: #fff;
+  background: var(--grad-hero);
+  box-shadow: 0 12px 26px -12px rgba(79, 110, 240, 0.75);
+  transition: filter .15s, transform .15s;
+}
+.cta:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.cta:active { transform: translateY(0); }
+.cta:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+
+.cta-note {
+  display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+  margin-top: 0.85rem;
+  font-size: 0.8125rem; line-height: 1.4;
+  color: var(--text-3);
+}
+
+.guest-note {
+  margin-top: 0.85rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 0.625rem;
+  font-size: 0.75rem; line-height: 1.5;
+  background: var(--surface-inset);
+  color: var(--text-3);
+}
+
+/* Premium faol holati */
+.plans-active { text-align: center; padding: 0.75rem 0.5rem 1rem; margin: auto 0; }
+.plans-active-icon {
+  width: 3.25rem; height: 3.25rem; margin: 0 auto;
+  display: grid; place-items: center; border-radius: 9999px;
+  background: color-mix(in srgb, var(--ok) 15%, transparent);
+  color: var(--ok-ink);
+}
+.plans-active-title { margin-top: 1rem; font-size: 1.125rem; font-weight: 700; color: var(--text-1); }
+.plans-active-note { margin-top: 0.5rem; font-size: 0.875rem; line-height: 1.55; color: var(--text-3); }
+.plans-active-link {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  margin-top: 1.25rem;
+  padding: 0.7rem 1.15rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem; font-weight: 600;
+  color: var(--primary-ink); background: var(--primary-soft);
+}
+
+/* ── Ishonch bloki ── */
+.trust {
+  margin-top: 1.5rem;
+  padding: 1.35rem 1.5rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.35rem;
+}
+@media (min-width: 900px) {
+  .trust { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; }
+  /* Ajratkich — ustunlar orasida, chetlarda emas. */
+  .trust-col + .trust-col { border-left: 1px solid var(--divider); padding-left: 2rem; }
+  .trust-col:not(:last-child) { padding-right: 2rem; }
+}
+
+.trust-col { display: flex; align-items: flex-start; gap: 0.85rem; min-width: 0; }
+.trust-icon {
+  width: 2.5rem; height: 2.5rem; border-radius: 0.75rem;
+  display: grid; place-items: center; flex-shrink: 0;
+  background: var(--primary-soft); color: var(--primary-ink);
+}
+.trust-title { font-size: 0.9375rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text-1); }
+.trust-desc { margin-top: 0.25rem; font-size: 0.8125rem; line-height: 1.5; color: var(--text-3); }
+
+/* To'lov usullari — logotiplar DOIM oq "chip" ustida: ba'zilari qorong'i
+   brend rangida bo'lib, to'q fonda ko'rinmay qolardi. */
+.brands { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem; }
+.brand {
+  height: 2.125rem; padding: 0 0.7rem;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 0.5rem;
+  background: #fff;
+  border: 1px solid var(--border-1);
+}
+.brand img { max-height: 1.15rem; max-width: 3.5rem; object-fit: contain; display: block; }
+
+/* Brend yozuvlari — o'z ranglarida, sun'iy chizilgan logotip emas. */
+.bm { font-weight: 800; line-height: 1; white-space: nowrap; }
+.bm-visa   { font-size: 0.9375rem; font-style: italic; font-weight: 900; letter-spacing: 0.01em; color: #1a1f71; }
+.bm-humo   { font-size: 0.8125rem; letter-spacing: 0.07em; color: #0f7dc2; }
+.bm-uzcard { font-size: 0.75rem;   letter-spacing: 0.05em; color: #164a9e; }
+
+/* ── Mobil ── */
+@media (max-width: 640px) {
+  .compare { padding: 1.15rem 1rem 0.65rem; }
+  .cmp-th-free, .cmp-free { width: 5.25rem; }
+  .cmp-th-prem, .cmp-prem { width: 3.5rem; }
+  .cmp-feature { gap: 0.6rem; padding-right: 0.5rem; }
+  .cmp-limit { font-size: 0.6875rem; }
+  .plan { padding: 0.85rem 0.9rem; gap: 0.7rem; }
+  .plan-name { font-size: 1.125rem; }
+  .plan-price { font-size: 1.1875rem; }
 }
 </style>

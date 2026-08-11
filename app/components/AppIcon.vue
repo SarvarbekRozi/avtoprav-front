@@ -58,6 +58,8 @@ const NAME_MAP: Record<string, string> = {
   // outlined status circles (activity feed)
   'check-circle': 'lucide:circle-check-big',
   'x-circle':     'lucide:circle-x',
+  // "reklamasiz" / taqiq — chizilgan doira (tariflar taqqoslash jadvali)
+  ban:            'lucide:ban',
 
   // user
   user:          'lucide:user-round',
