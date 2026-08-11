@@ -258,14 +258,22 @@ const features = computed(() => [
   aspect-ratio: 1400 / 596;
   max-height: min(560px, 56vh);
 
-  /* FAQAT yuqori qirra so'nadi (rasm foni sahifa fonidan to'qroq — usiz
-     gorizontal chok ko'rinardi).
-     GORIZONTAL so'nish OLIB TASHLANDI: u chap va o'ng chetdagi 6% ni shaffof
-     qilib, rasm ustun chetiga yetmagandek — pastda BO'SH TO'RTBURCHAK bo'lib
-     ko'rinardi. Element aslida chetga tegib turadi (o'lchandi: 741 = 741),
-     ko'rinmasligining sababi aynan shu mask edi. */
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 22%);
-  mask-image: linear-gradient(to bottom, transparent 0%, #000 22%);
+  /* Ikki qirra yumshoq so'nadi — rasm to'rtburchak bo'lib tugasa sahifaga
+     "yopishtirilgan surat" bo'lib ajralib turadi:
+       · YUQORI: rasm foni sahifa fonidan to'qroq, usiz gorizontal chok chiqadi;
+       · O'NG: ustun chetida tik chiziq bo'lib uzilardi (siz belgilagan joy).
+     O'ng so'nish UZUN — 82% dan boshlanadi. DIQQAT: ilgari u 6% (94%..100%)
+     edi va aynan torligi sababli "rasm chetga yetmagan, bo'sh to'rtburchak
+     qolgan" bo'lib ko'rinardi. Uzun so'nish esa fonga singib ketadi.
+     CHAP qirra so'nMAYDI — u ekranning o'z cheti, orqasida hech narsa yo'q. */
+  -webkit-mask-image:
+    linear-gradient(to bottom, transparent 0%, #000 22%),
+    linear-gradient(to right, #000 82%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to bottom, transparent 0%, #000 22%),
+    linear-gradient(to right, #000 82%, transparent 100%);
+  mask-composite: intersect;
 }
 
 /* KECHKI rasm — qorong'i rejim uchun alohida chizilgan (yoqilgan chiroqlar,
