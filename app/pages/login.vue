@@ -133,7 +133,6 @@ async function submit() {
                     :aria-disabled="auth.loading" :aria-busy="auth.loading">
               <span v-if="auth.loading" class="spinner" aria-hidden="true" />
               <span>{{ i18n.t({ uz: 'Davom etish', kr: 'Давом этиш' }) }}</span>
-              <AppIcon v-if="!auth.loading" name="arrow" :size="17" class="submit-arrow" />
             </button>
           </form>
 
@@ -285,13 +284,11 @@ async function submit() {
 .reveal-icon:hover { color: var(--text-1); background: var(--surface-inset); }
 .reveal-icon:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--primary-ring); }
 
-/* Maketdagi ko'k GRADIENT tugma. Ilgari `--text-1`/`--surface` juftligi edi
-   (qora tugma, qorong'ida teskari oq bo'lardi) — maketda esa u brend ko'kida
-   va ikkala mavzuda BIR XIL.
-   Oq matn: #3563e8 ustida 5.12:1, #5b4ff0 ustida 5.5:1 — ikkalasi ham AA
-   (4.5:1) dan o'tadi. DIQQAT: dastlab #3b6ef5 olingan edi, u brauzerda
-   o'lchanganda 4.44:1 chiqdi — chegaradan past, shuning uchun to'qlashtirildi. */
+/* Rang `--text-1`/`--surface` juftligi — `.btn-primary` bilan bir xil
+   mantiq: qorong'i rejimda tugma o'z-o'zidan teskari (yorug' fon, to'q matn)
+   bo'ladi. */
 .submit-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -301,29 +298,14 @@ async function submit() {
   border-radius: 14px;
   font-size: 15px;
   font-weight: 600;
-  color: #fff;
-  background: linear-gradient(96deg, #3563e8 0%, #5b4ff0 100%);
-  box-shadow: 0 10px 26px -12px rgba(53, 99, 232, 0.75);
-  transition: filter .15s, transform .15s, box-shadow .15s, opacity .15s;
+  background: var(--text-1);
+  color: var(--surface);
+  box-shadow: var(--shadow-soft);
+  transition: background .15s, transform .15s, opacity .15s;
 }
-.submit-btn:hover:not([aria-disabled='true']) {
-  filter: brightness(1.07);
-  box-shadow: 0 14px 30px -12px rgba(53, 99, 232, 0.85);
-}
+.submit-btn:hover:not([aria-disabled='true']) { background: var(--text-2); }
 .submit-btn:active:not([aria-disabled='true']) { transform: translateY(1px); }
 
-/* Strelka o'ng chetda, matn esa MARKAZDA qoladi — shuning uchun strelka
-   oqimdan chiqarilgan (`absolute`). Flex ichida qoldirilsa matnni chapga
-   surib yuborardi. */
-.submit-btn { position: relative; }
-.submit-arrow {
-  position: absolute;
-  right: 18px;
-  top: 50%;
-  transform: translateY(-50%);
-  transition: transform .18s;
-}
-.submit-btn:hover .submit-arrow { transform: translateY(-50%) translateX(3px); }
 /* `[aria-disabled]`, `:disabled` EMAS — sabab script blokida. */
 .submit-btn[aria-disabled='true'] { opacity: .6; cursor: progress; }
 .submit-btn[aria-disabled='true']:hover { background: var(--text-1); }

@@ -160,8 +160,11 @@ const features = computed(() => [
      cho'zilishi uchun shunday. */
   padding: 32px 0 0;
 }
-@media (min-width: 1024px) { .showcase { padding: 40px 0 0; } }
-@media (min-width: 1280px) { .showcase { padding: 44px 0 0; } }
+/* Yuqori padding ATAYLAB kichik: rasm yo'l tagigacha kesilgani uchun
+   balandroq (2.349 nisbat), va 1660x940 da ustun 16px oshib scroll berardi.
+   Rasmni qirqish o'rniga logotip ustidagi bo'shliq kamaytirildi. */
+@media (min-width: 1024px) { .showcase { padding: 30px 0 0; } }
+@media (min-width: 1280px) { .showcase { padding: 30px 0 0; } }
 
 .showcase-pad { padding: 0 24px; }
 @media (min-width: 1024px) { .showcase-pad { padding: 0 40px; } }
@@ -228,16 +231,20 @@ const features = computed(() => [
      shuning uchun mavzu almashganda balandlik sakramaydi. */
   background-image: url('/auth-road.webp');
   background-size: cover;
-  /* `top`: past ekranda qirqish kerak bo'lsa PASTDAGI bo'sh asfalt kesiladi,
-     mashina joyida qoladi (ilgari `bottom` edi — u mashinaning ustki yarmini
-     kesib tashlardi). */
-  background-position: center top;
+  /* `bottom`: agar qirqish kerak bo'lsa, YUQORIDAN (osmon) kesiladi.
+     Yo'lning tagi har doim ko'rinishi kerak. */
+  background-position: center bottom;
   background-repeat: no-repeat;
 
   /* `aspect-ratio` — element `<div>` bo'lgani uchun tabiiy o'lchami yo'q.
-     Balandlik kenglikdan hisoblanadi, ya'ni CLS bo'lmaydi. */
-  aspect-ratio: 1400 / 538;
-  max-height: min(440px, 46vh);
+     Balandlik kenglikdan hisoblanadi, ya'ni CLS bo'lmaydi.
+     Rasm 2.349 nisbatda kesilgan (yo'l tagigacha).
+     `max-height` ATAYLAB katta: 863px ustunda tabiiy balandlik 367px,
+     703px da 299px — ya'ni odatdagi ekranlarda BU CHEGARA ISHGA TUSHMAYDI va
+     rasm umuman qirqilmaydi. U faqat juda past ekranlar uchun xavfsizlik
+     klapani. Ilgari 46vh edi va 1366x768 da rasmni qirqib tashlardi. */
+  aspect-ratio: 1400 / 596;
+  max-height: min(560px, 56vh);
 
   -webkit-mask-image:
     linear-gradient(to bottom, transparent 0%, #000 22%),
@@ -261,13 +268,13 @@ const features = computed(() => [
    ustun mazmuni bunday balandlikda ekrandan oshib, sahifa keraksiz vertikal
    scroll olardi. Bu yerda hamma vertikal o'lchamlar bir joyda qisqartiriladi. */
 @media (max-height: 820px) {
-  .showcase { padding-top: 24px; }
+  .showcase { padding-top: 14px; }
   .showcase-title { font-size: 30px; margin-top: 0.625rem; }
-  .trust-chip { height: 30px; font-size: 12.5px; }
+  .trust-chip { height: 27px; font-size: 12.5px; }
   .showcase-pad ul { gap: 0.625rem; margin-top: 1.125rem; }
   .showcase-pad ul p { margin-top: 0.125rem; }
-  .showcase-pad > div { margin-top: 1.25rem; }
-  .road { max-height: 30vh; }
+  .showcase-pad > div { margin-top: 0.875rem; }
+  .road { max-height: 44vh; }   /* qirqmaslik uchun tabiiy balandlikdan yuqori */
 }
 
 </style>
