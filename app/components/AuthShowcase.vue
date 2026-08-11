@@ -123,9 +123,15 @@ const features = computed(() => [
 
     <!-- Yo'l illyustratsiyasi: ustunning butun kengligiga (chetdan chetga)
          cho'ziladi va pastiga tegib turadi. `mt-auto` — matn bilan orasidagi
-         bo'shliqni ekran balandligi o'zi taqsimlaydi. -->
-    <img src="/auth-road.webp" alt="" aria-hidden="true" width="1400" height="538"
-         class="road relative z-0 mt-auto w-full select-none pointer-events-none" />
+         bo'shliqni ekran balandligi o'zi taqsimlaydi.
+         `<img>` EMAS, CSS FON: yorug' va qorong'i uchun ikki xil rasm bor
+         (kunduzgi / kechki). `<img :src>` bilan bog'lansa `isDark` SSR'da
+         doim `false` bo'lgani uchun server yorug' rasmni chizib, gidratsiyadan
+         keyin klient qorong'isiga almashtirardi — ko'zga tashlanadigan sakrash
+         va bekorga yuklangan rasm. CSS foni `.dark` klassiga darhol ergashadi
+         va brauzer FAQAT mos kelgan qoidaning rasmini yuklaydi. -->
+    <div class="road relative z-0 mt-auto w-full select-none pointer-events-none"
+         role="presentation" />
   </aside>
 </template>
 
@@ -188,15 +194,22 @@ const features = computed(() => [
      `.road[data-v-…]` yuqori aniqlikda bo'lgani uchun uni bosib ketadi va rasm
      ustunning pastiga tegmay, ostida bo'shliq qolib ketardi. */
   margin-top: auto;
-  height: auto;
-  /* Rasm 2.60 nisbatda kesilgan — 863px ustunda tabiiy balandligi 332px,
-     ya'ni odatdagi ekranda QIRQILMAYDI va mashina to'liq ko'rinadi.
-     Past ekranda `cover` ishga tushadi va `center top` tufayli PASTDAGI bo'sh
-     asfalt kesiladi, mashina esa joyida qoladi (ilgari `center bottom` edi —
-     u yuqorini qirqib, mashinaning ustki yarmini kesib tashlardi). */
+
+  /* KUNDUZGI rasm. Ikki fayl AYNAN bir nisbatda (1400x538 = 2.60) kesilgan —
+     shuning uchun mavzu almashganda balandlik sakramaydi. */
+  background-image: url('/auth-road.webp');
+  background-size: cover;
+  /* `top`: past ekranda qirqish kerak bo'lsa PASTDAGI bo'sh asfalt kesiladi,
+     mashina joyida qoladi (ilgari `bottom` edi — u mashinaning ustki yarmini
+     kesib tashlardi). */
+  background-position: center top;
+  background-repeat: no-repeat;
+
+  /* `aspect-ratio` — element `<div>` bo'lgani uchun tabiiy o'lchami yo'q.
+     Balandlik kenglikdan hisoblanadi, ya'ni CLS bo'lmaydi. */
+  aspect-ratio: 1400 / 538;
   max-height: min(380px, 38vh);
-  object-fit: cover;
-  object-position: center top;
+
   -webkit-mask-image:
     linear-gradient(to bottom, transparent 0%, #000 22%),
     linear-gradient(to right, transparent 0%, #000 6%, #000 94%, transparent 100%);
@@ -206,9 +219,14 @@ const features = computed(() => [
     linear-gradient(to right, transparent 0%, #000 6%, #000 94%, transparent 100%);
   mask-composite: intersect;
 }
-/* Rasm yorug' rejim uchun chizilgan — qorong'ida uni butunlay qoraytirib
-   bo'lmaydi, shuning uchun shaffofligi kamaytiriladi va fonga singiydi. */
-.dark .road { opacity: 0.4; }
+
+/* KECHKI rasm — qorong'i rejim uchun alohida chizilgan (yoqilgan chiroqlar,
+   ho'l asfalt, shahar chiroqlari). Ilgari shu yerda kunduzgi rasm
+   `opacity: 0.4` bilan xiralashtirilardi — u xiralashgan dog' bo'lib
+   ko'rinardi, hozir esa mavzuga mos haqiqiy tasvir. */
+.dark .road {
+  background-image: url('/auth-road-dark.webp');
+}
 
 /* PAST LAPTOP EKRANLARI (1366x768, 1440x800 — juda keng tarqalgan). Chap
    ustun mazmuni bunday balandlikda ekrandan oshib, sahifa keraksiz vertikal
