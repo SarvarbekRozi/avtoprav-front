@@ -61,6 +61,38 @@ const NAME_MAP: Record<string, string> = {
   // "reklamasiz" / taqiq — chizilgan doira (tariflar taqqoslash jadvali)
   ban:            'lucide:ban',
 
+  // Mavzu (PDD bobi) ikonkalari — /topics sahifasi har bobga o'z ikonkasini
+  // beradi, ilgari hammasi bitta 'sign' edi. Nomlar Lucide to'plamiga
+  // tekshirilgan (@iconify-json/lucide).
+  users:          'lucide:users',
+  'traffic-cone': 'lucide:traffic-cone',
+  pedestrian:     'lucide:person-standing',
+  ambulance:      'lucide:ambulance',
+  diamond:        'lucide:diamond',
+  'arrow-lr':     'lucide:arrow-left-right',
+  wrench:         'lucide:wrench',
+  equal:          'lucide:equal',
+  columns:        'lucide:columns-3',
+  'light-signal': 'lucide:circle-dot',
+  'user-cog':     'lucide:user-round-cog',
+  'octagon-alert': 'lucide:octagon-alert',
+  waypoints:      'lucide:waypoints',
+  route:          'lucide:route',
+  gauge:          'lucide:gauge',
+  parking:        'lucide:square-parking',
+  fork:           'lucide:git-fork',
+  train:          'lucide:train-front',
+  mountain:       'lucide:mountain-snow',
+  bus:            'lucide:bus',
+  link:           'lucide:link',
+  graduation:     'lucide:graduation-cap',
+  package:        'lucide:package',
+  bike:           'lucide:bike',
+  clipboard:      'lucide:clipboard-list',
+  'shield-alert': 'lucide:shield-alert',
+  pulse:          'lucide:heart-pulse',
+  layers:         'lucide:layers',
+
   // user
   user:          'lucide:user-round',
   home:          'lucide:home',
