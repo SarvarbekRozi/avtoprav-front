@@ -94,12 +94,13 @@ const features = computed(() => [
          ustunning butun kengligiga (chetdan chetga) cho'zilishi kerak, padding
          `.showcase` da bo'lsa rasm ikki tomondan 64px ichkarida qolardi. -->
     <div class="showcase-pad relative z-10">
-      <!-- Brend -->
-      <NuxtLink to="/" class="inline-flex items-center gap-3">
+      <!-- Brend. `AuthHomeLink`, oddiy `NuxtLink` EMAS: sessiyasi yo'qolgan
+           foydalanuvchi uchun `/` ko'r yo'l (sabab komponent ichida). -->
+      <AuthHomeLink class="inline-flex items-center gap-3">
         <img src="/logo-mark.svg" alt="" aria-hidden="true" width="40" height="40"
              class="w-10 h-10 rounded-xl" />
         <span class="wordmark">Avtoprav</span>
-      </NuxtLink>
+      </AuthHomeLink>
 
       <!-- 620px, 540px EMAS: register'ning "Progressingizni yo'qotmang"
            sarlavhasi 43px shriftda 567px (kirill 605px) joy oladi — 540px

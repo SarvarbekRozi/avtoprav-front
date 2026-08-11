@@ -46,7 +46,14 @@ function messageOf(e: any): string {
 
 async function done() {
   emit('success')
-  await navigateTo((route.query.redirect as string) || '/')
+  // `safeRedirect` SHART: xom `redirect` bilan tashqi manzil (`https://…`,
+  // `//soxta.uz`) kelsa, kirish ALLAQACHON muvaffaqiyatli bo'lgan holda
+  // `navigateTo` istisno otadi, u pastdagi catch'ga tushadi va ekranda
+  // "Kirishda xatolik yuz berdi" chiqadi. Parolsiz (Telegram/Google)
+  // foydalanuvchi uchun bu YAKKA kirish yo'li — u yerda yolg'on xato
+  // ko'rsatish uni butunlay to'sib qo'yadi. login.vue va register.vue
+  // allaqachon shu himoyadan foydalanadi.
+  await navigateTo(safeRedirect(route.query.redirect))
 }
 
 async function onGoogleCredential(idToken: string) {

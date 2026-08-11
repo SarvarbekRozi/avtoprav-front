@@ -11,7 +11,14 @@ const route = useRoute()
 const form = reactive({ login: '', password: '' })
 const error = ref('')
 const showPwd = ref(false)
-const sessionExpired = computed(() => route.query.expired === '1')
+/**
+ * `?expired=1` ga qo'shimcha `lostRegisteredSession` ham tekshiriladi:
+ * foydalanuvchi /login ni O'ZI ochsa (manzilni yozsa, xatcho'pdan kelsa yoki
+ * middleware'ning oxirgi chorasi `navigateTo('/login')` orqali tushsa) query
+ * bo'lmaydi, lekin "Bosh sahifaga" tugmasi baribir mehmon sessiyasini
+ * boshlaydi — ya'ni eslatma AYNI shu tugma bilan bir shartda ko'rinishi kerak.
+ */
+const sessionExpired = computed(() => route.query.expired === '1' || auth.lostRegisteredSession)
 
 async function submit() {
   // Ikki marta tez bosishdan qo'riqchi. Tugmada `disabled` EMAS, `aria-disabled`
@@ -40,20 +47,20 @@ async function submit() {
 
     <div class="auth-side flex flex-col justify-center px-5 py-10 sm:px-8 xl:px-10">
       <!-- Mobil brend: chap ustun yashiringanda logotip yo'qolib qolmasin -->
-      <NuxtLink to="/" class="xl:hidden inline-flex items-center gap-2.5 self-center mb-8">
+      <AuthHomeLink class="xl:hidden inline-flex items-center gap-2.5 self-center mb-8">
         <img src="/logo-mark.svg" alt="" aria-hidden="true" width="36" height="36" class="w-9 h-9 rounded-[10px]" />
         <span class="wordmark">Avtoprav</span>
-      </NuxtLink>
+      </AuthHomeLink>
 
       <div class="w-full max-w-[430px] mx-auto">
         <!-- Bosh sahifaga qaytish. Chap ustundagi logotip ham `/` ga olib
              boradi, lekin u `xl` dan pastda yashiringan va logotip
              "qaytish" ekani ko'rinib turmaydi — shuning uchun ochiq,
              matnli havola. Karta ustida, uning chap qirrasiga tekislangan. -->
-        <NuxtLink to="/" class="back-link">
+        <AuthHomeLink explicit class="back-link">
           <AppIcon name="arrow-left" :size="16" />
           {{ i18n.t({ uz: 'Bosh sahifaga', kr: 'Бош саҳифага' }) }}
-        </NuxtLink>
+        </AuthHomeLink>
 
         <section class="auth-card">
           <h1 class="auth-title">
@@ -68,10 +75,13 @@ async function submit() {
 
           <!-- Sessiya tugagan bo'lsa sababini aytamiz — foydalanuvchi sezmasdan
                mehmonga aylanib qolmasin. -->
+          <!-- Ikkinchi gap SHART: "Bosh sahifaga" tugmasi bu holatda mehmon
+               sessiyasini boshlaydi. Nima bo'lishini oldindan aytmasak,
+               foydalanuvchi natijalari yo'qolgan deb o'ylaydi. -->
           <div v-if="sessionExpired" class="note note-warn" role="status">
             {{ i18n.t({
-              uz: 'Sessiyangiz tugadi. Natijalaringiz saqlangan — davom etish uchun qayta kiring.',
-              kr: 'Сессиянгиз тугади. Натижаларингиз сақланган — давом этиш учун қайта киринг.',
+              uz: 'Sessiyangiz tugadi. Natijalaringiz saqlangan — davom etish uchun qayta kiring. «Bosh sahifaga» tugmasi mehmon sifatida davom ettiradi: yangi natijalar alohida yoziladi.',
+              kr: 'Сессиянгиз тугади. Натижаларингиз сақланган — давом этиш учун қайта киринг. «Бош саҳифага» тугмаси меҳмон сифатида давом эттиради: янги натижалар алоҳида ёзилади.',
             }) }}
           </div>
 

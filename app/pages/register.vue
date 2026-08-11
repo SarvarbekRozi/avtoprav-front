@@ -32,6 +32,20 @@ const isUpgrade = computed(() => {
   return !!auth.token && acct.value === 'guest'
 })
 
+/**
+ * Bu qurilmada ro'yxatdan o'tgan hisob bor edi, lekin sessiyasi yo'qolgan.
+ * login.vue dagi "Ro'yxatdan o'tish" havolasi query'ni saqlab o'tadi
+ * (`?expired=1`), lekin holatning o'zini `lostRegisteredSession` bo'yicha ham
+ * tekshiramiz — foydalanuvchi bu sahifaga to'g'ridan-to'g'ri ham kelishi mumkin.
+ *
+ * Bu holatda ogohlantirish MAJBURIY: `isUpgrade` false (token yo'q), ya'ni
+ * forma YANGI hisob yaratadi. Ogohlantirishsiz odam ikkinchi hisob ochib,
+ * eski hisobdagi XP, seriya, natijalar va TO'LANGAN Premium'ini yetim
+ * qoldiradi — buni sezmaydi ham.
+ */
+const lostSession = computed(() =>
+  !isUpgrade.value && (route.query.expired === '1' || auth.lostRegisteredSession))
+
 const SHOWN_FIELDS = ['login', 'full_name', 'phone', 'password', 'password_confirmation']
 
 async function submit() {
@@ -102,17 +116,18 @@ watch(errors, (next) => {
       }) : ''" />
 
     <div class="auth-side flex flex-col justify-center px-5 py-10 sm:px-8 xl:px-10">
-      <NuxtLink to="/" class="xl:hidden inline-flex items-center gap-2.5 self-center mb-8">
+      <AuthHomeLink class="xl:hidden inline-flex items-center gap-2.5 self-center mb-8">
         <img src="/logo-mark.svg" alt="" aria-hidden="true" width="36" height="36" class="w-9 h-9 rounded-[10px]" />
         <span class="wordmark">Avtoprav</span>
-      </NuxtLink>
+      </AuthHomeLink>
 
       <div class="w-full max-w-[430px] mx-auto">
-        <!-- Bosh sahifaga qaytish — login.vue dagi bilan bir xil (sabab u yerda). -->
-        <NuxtLink to="/" class="back-link">
+        <!-- Bosh sahifaga qaytish — login.vue dagi bilan bir xil (sabab u yerda).
+             `AuthHomeLink`: sessiya yo'qolgan holatda oddiy havola ko'r yo'l. -->
+        <AuthHomeLink explicit class="back-link">
           <AppIcon name="arrow-left" :size="16" />
           {{ i18n.t({ uz: 'Bosh sahifaga', kr: 'Бош саҳифага' }) }}
-        </NuxtLink>
+        </AuthHomeLink>
 
         <section class="auth-card">
           <h1 class="auth-title">
@@ -131,6 +146,21 @@ watch(errors, (next) => {
                 kr: 'Бепул ҳисоб яратинг ва тестларни бошланг',
               }) }}
           </p>
+
+          <!-- Sessiyasi yo'qolgan odam bu sahifaga login'dagi "Ro'yxatdan
+               o'tish" havolasi orqali keladi. Bu forma YANGI hisob yaratadi —
+               ogohlantirmasak, u eski hisobidagi hammasini tashlab ketadi. -->
+          <div v-if="lostSession" class="note note-warn" role="status">
+            <span>
+              {{ i18n.t({
+                uz: 'Bu qurilmada allaqachon hisobingiz bor edi. Yangi hisob yaratsangiz, eski natijalaringiz va Premium o\'sha hisobda qoladi.',
+                kr: 'Бу қурилмада аллақачон ҳисобингиз бор эди. Янги ҳисоб яратсангиз, эски натижаларингиз ва Премиум ўша ҳисобда қолади.',
+              }) }}
+              <NuxtLink to="/login" class="note-link">
+                {{ i18n.t({ uz: 'Avval kirishni sinab ko\'ring', kr: 'Аввал киришни синаб кўринг' }) }}
+              </NuxtLink>
+            </span>
+          </div>
 
           <div v-if="error" class="note note-error" role="alert">
             <AppIcon name="info" :size="16" class="shrink-0 mt-px" />
@@ -447,6 +477,19 @@ watch(errors, (next) => {
    chiqib ketardi. */
 .note-error { background: var(--danger-soft); color: var(--danger-ink); }
 .note-warn  { background: var(--warn-soft);   color: var(--warn-ink); }
+
+/* Ogohlantirish ichidagi havola. `currentColor` + tagi chizilgan: sariq fonda
+   ko'k havola rangi kontrastdan o'tmaydi, matn rangining o'zi esa allaqachon
+   tekshirilgan (--warn-ink). Havola ekani chiziq bilan ko'rsatiladi. */
+.note-link {
+  font-weight: 600;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+.note-link:hover { text-decoration-thickness: 2px; }
+.note-link:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; border-radius: 3px; }
 
 .auth-link {
   font-weight: 600;
