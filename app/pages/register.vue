@@ -138,10 +138,13 @@ watch(errors, (next) => {
               <label for="login" class="field-label">
                 {{ i18n.t({ uz: 'Login', kr: 'Логин' }) }} <span class="req">*</span>
               </label>
-              <input id="login" v-model="form.login" required autofocus autocomplete="username"
-                     :aria-describedby="errors.login ? 'login-err' : undefined"
-                     placeholder="ali2024" class="field"
-                     :aria-invalid="!!errors.login" />
+              <div class="relative">
+                <AppIcon name="user" :size="17" class="field-icon" aria-hidden="true" />
+                <input id="login" v-model="form.login" required autofocus autocomplete="username"
+                       :aria-describedby="errors.login ? 'login-err' : undefined"
+                       placeholder="ali2024" class="field field-user"
+                       :aria-invalid="!!errors.login" />
+              </div>
               <p v-if="errors.login" id="login-err" class="field-err" role="alert">{{ errors.login[0] }}</p>
             </div>
 
@@ -218,6 +221,7 @@ watch(errors, (next) => {
               <span>{{ isUpgrade
                 ? i18n.t({ uz: 'Hisobni saqlash', kr: 'Ҳисобни сақлаш' })
                 : i18n.t({ uz: 'Hisob yaratish', kr: 'Ҳисоб яратиш' }) }}</span>
+              <AppIcon v-if="!auth.loading" name="arrow" :size="17" class="submit-arrow" />
             </button>
 
             <p class="text-xs text-center leading-relaxed" style="color: var(--text-3);">
@@ -333,6 +337,16 @@ watch(errors, (next) => {
 /* --text-muted EMAS: yorug'da oq fonda 1.98:1 — AA (4.5:1) dan juda past. */
 .field::placeholder { color: var(--text-3); opacity: 1; }
 .field-pw { padding-right: 2.75rem; }
+/* Login maydonidagi odam ikonkasi uchun joy (maketdagidek) */
+.field-user { padding-left: 2.5rem; }
+.field-icon {
+  position: absolute;
+  top: 50%;
+  left: 0.875rem;
+  transform: translateY(-50%);
+  color: var(--text-4);
+  pointer-events: none;
+}
 .field:focus {
   outline: none;
   border-color: var(--primary);
@@ -367,7 +381,10 @@ watch(errors, (next) => {
 .reveal-icon:hover { color: var(--text-1); background: var(--surface-inset); }
 .reveal-icon:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--primary-ring); }
 
+/* Maketdagi ko'k GRADIENT tugma (login.vue bilan bir xil). Oq matn #3563e8 ustida 5.12:1,
+   #5b4ff0 ustida 5.5:1 — ikkalasi ham AA (4.5:1) dan otadi. */
 .submit-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -377,13 +394,27 @@ watch(errors, (next) => {
   border-radius: 14px;
   font-size: 15px;
   font-weight: 600;
-  background: var(--text-1);
-  color: var(--surface);
-  box-shadow: var(--shadow-soft);
-  transition: background .15s, transform .15s, opacity .15s;
+  color: #fff;
+  background: linear-gradient(96deg, #3563e8 0%, #5b4ff0 100%);
+  box-shadow: 0 10px 26px -12px rgba(53, 99, 232, 0.75);
+  transition: filter .15s, transform .15s, box-shadow .15s, opacity .15s;
 }
-.submit-btn:hover:not(:disabled) { background: var(--text-2); }
-.submit-btn:active:not(:disabled) { transform: translateY(1px); }
+.submit-btn:hover:not([aria-disabled='true']) {
+  filter: brightness(1.07);
+  box-shadow: 0 14px 30px -12px rgba(53, 99, 232, 0.85);
+}
+.submit-btn:active:not([aria-disabled='true']) { transform: translateY(1px); }
+
+/* Strelka ong chetda, matn MARKAZDA qoladi — flex ichida qoldirilsa matnni
+   chapga surib yuborardi. */
+.submit-arrow {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: transform .18s;
+}
+.submit-btn:hover .submit-arrow { transform: translateY(-50%) translateX(3px); }
 .submit-btn[aria-disabled='true'] { opacity: .6; cursor: progress; }
 .submit-btn[aria-disabled='true']:hover { background: var(--text-1); }
 .submit-btn:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--primary-ring); }

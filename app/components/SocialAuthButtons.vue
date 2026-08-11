@@ -191,7 +191,9 @@ onBeforeUnmount(() => {
             :disabled="!!busy"
             @click="onTelegramClick"
           >
-            <span v-if="busy === 'telegram'" class="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <!-- Spinner rangi tugma matniga bog'langan: tugma endi to'yingan
+                 ko'k emas, yorug' sirt — oq spinner ko'rinmay qolardi. -->
+            <span v-if="busy === 'telegram'" class="tg-spinner" aria-hidden="true" />
             <svg v-else class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M9.42 15.18l-.4 5.58c.57 0 .82-.24 1.11-.53l2.66-2.55 5.52 4.04c1.01.56 1.73.27 2-.93L23.93 3.82c.32-1.5-.54-2.08-1.53-1.71L1.11 10.26c-1.45.56-1.43 1.37-.25 1.74l5.44 1.69L18.95 5.65c.6-.39 1.14-.18.69.22z" />
             </svg>
@@ -270,9 +272,11 @@ onBeforeUnmount(() => {
   50%      { opacity: .55 }
 }
 
-/* Telegram tugmasi — brend rangi. Balandlik 40px: Google tugmasi bilan TENG
-   bo'lishi kerak, uning balandligi esa Google tomonidan qat'iy (size: 'large'),
-   o'zgartirib bo'lmaydi. Radius ham Google'ning `rectangular` shakliga yaqin. */
+/* Telegram tugmasi — maketdagidek NEYTRAL qator: sirt foni + yupqa chegara,
+   ikonka Telegram ko'kida. Ilgari butun tugma to'yingan ko'k edi va yonidagi
+   Google tugmasi bilan bir tizimda ko'rinmasdi.
+   Balandlik 40px — Google tugmasi bilan TENG bo'lishi kerak, uning balandligi
+   esa Google tomonidan qat'iy (`size: 'large'`), o'zgartirib bo'lmaydi. */
 .tg-btn {
   display: inline-flex;
   align-items: center;
@@ -281,16 +285,27 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 40px;
   padding: 0 1rem;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #fff;
-  background: #2aabee;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
-  transition: background .15s, filter .15s, box-shadow .15s;
+  color: var(--text-1);
+  background: var(--surface);
+  border: 1px solid var(--border-1);
+  transition: background .15s, border-color .15s, box-shadow .15s;
 }
-.tg-btn:hover:not(:disabled) { background: #229ed9; }
-.tg-btn:active:not(:disabled) { background: #1e91c7; }
+.tg-btn svg { color: #2aabee; }
+.tg-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  border: 2px solid var(--border-1);
+  border-top-color: var(--text-1);
+  animation: tg-spin .7s linear infinite;
+}
+@keyframes tg-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .tg-spinner { animation-duration: 2s; } }
+.tg-btn:hover:not(:disabled) { background: var(--surface-inset); border-color: var(--text-muted); }
+.tg-btn:active:not(:disabled) { background: var(--surface-inset); }
 .tg-btn:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(42, 171, 238, 0.28); }
 .tg-btn:disabled { opacity: .5; cursor: not-allowed; }
 </style>

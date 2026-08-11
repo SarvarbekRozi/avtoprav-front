@@ -17,11 +17,28 @@
  */
 const i18n = useI18n()
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   /** Sarlavha almashtirilsa (register'da mehmon progressini saqlash konteksti) */
   title?: string
   subtitle?: string
 }>(), { title: '', subtitle: '' })
+
+/**
+ * Sarlavhaning OXIRGI SO'ZI aksent rangda chiqadi (maketdagidek).
+ *
+ * Qattiq yozilgan HTML emas, ohirgi bo'sh joy bo'yicha ajratiladi — shunda
+ * lotin ham, kirill ham, register'dagi boshqa sarlavha ham to'g'ri ishlaydi
+ * va tarjima matnini HTML bilan bulg'ash kerak bo'lmaydi.
+ */
+const titleParts = computed(() => {
+  const full = props.title || i18n.t({
+    uz: 'Haydovchilik imtihoniga ishonch bilan tayyorlaning',
+    kr: 'Ҳайдовчилик имтиҳонига ишонч билан тайёрланинг',
+  })
+  const i = full.trimEnd().lastIndexOf(' ')
+  if (i < 0) return { head: '', tail: full }
+  return { head: full.slice(0, i), tail: full.slice(i + 1) }
+})
 
 const features = computed(() => [
   {
@@ -91,10 +108,8 @@ const features = computed(() => [
              `lg` dan pastda butunlay yashiriladi; agar u h1 bo'lsa, desktopda
              ikkita h1 bo'lardi, mobilda esa h1 umuman qolmasdi. -->
         <p class="showcase-title">
-          {{ title || i18n.t({
-            uz: 'Haydovchilik imtihoniga ishonch bilan tayyorlaning',
-            kr: 'Ҳайдовчилик имтиҳонига ишонч билан тайёрланинг',
-          }) }}
+          {{ titleParts.head }}<template v-if="titleParts.head"> </template
+          ><span class="title-accent">{{ titleParts.tail }}</span>
         </p>
 
         <p class="mt-4 text-[15px] leading-[1.65]" style="color: var(--text-3);">
@@ -186,6 +201,20 @@ const features = computed(() => [
 @media (min-width: 1024px) { .showcase-title { font-size: 37px; } }
 @media (min-width: 1280px) { .showcase-title { font-size: 43px; } }
 
+/* Oxirgi so'z — brend ko'kida gradient. `background-clip: text` qo'llanmasa
+   (juda eski brauzer) `color` zaxira sifatida ishlaydi, matn ko'rinmay
+   qolmaydi. */
+.title-accent {
+  color: var(--primary);
+  background: linear-gradient(96deg, #4f8cff 0%, #6a5ae0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+@supports not ((-webkit-background-clip: text) or (background-clip: text)) {
+  .title-accent { -webkit-text-fill-color: currentColor; background: none; }
+}
+
 /* Rasmning yuqori qirrasi fonga silliq o'tadi — rasm foni sahifa fonidan
    bir oz to'qroq, mask bo'lmasa gorizontal chok ko'rinardi. Chap/o'ng
    chetlari ham yumshatiladi. */
@@ -208,7 +237,7 @@ const features = computed(() => [
   /* `aspect-ratio` — element `<div>` bo'lgani uchun tabiiy o'lchami yo'q.
      Balandlik kenglikdan hisoblanadi, ya'ni CLS bo'lmaydi. */
   aspect-ratio: 1400 / 538;
-  max-height: min(380px, 38vh);
+  max-height: min(440px, 46vh);
 
   -webkit-mask-image:
     linear-gradient(to bottom, transparent 0%, #000 22%),
@@ -238,7 +267,7 @@ const features = computed(() => [
   .showcase-pad ul { gap: 0.625rem; margin-top: 1.125rem; }
   .showcase-pad ul p { margin-top: 0.125rem; }
   .showcase-pad > div { margin-top: 1.25rem; }
-  .road { max-height: 21vh; }
+  .road { max-height: 30vh; }
 }
 
 </style>
