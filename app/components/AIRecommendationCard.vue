@@ -9,7 +9,7 @@
  * So'rov `useTopicStats()` orqali — TopicStrengthCard bilan bitta kalitni va
  * bitta handler havolasini bo'lishadi, shuning uchun so'rov faqat bir marta ketadi.
  *
- * Robot — `avtoprav-robot-v6.webm` (VP9 + alfa kanal, 320x320, 20 kadr/s). Animatsiya
+ * Robot — `avtoprav-robot-v7.webm` (VP9 + alfa kanal, 384x384, 24 kadr/s). Animatsiya
  * FAYLNING O'ZIDA: qo'l silkitish, bosh burilishi, ko'z yumib-ochish, ko'krak
  * chirog'i pulsi. Shuning uchun CSS'da robotga HECH QANDAY harakat berilmaydi —
  * na `translate`, na `float`, na `bounce`. Ilgari bu yerda qo'lda chizilgan
@@ -87,9 +87,9 @@ const primary = computed(() => rec.value
           preload="auto"
           disablepictureinpicture
           tabindex="-1"
-          poster="/assets/avtoprav-robot-v6-poster.png"
+          poster="/assets/avtoprav-robot-v7-poster.png"
         >
-          <source src="/assets/avtoprav-robot-v6.webm" type="video/webm">
+          <source src="/assets/avtoprav-robot-v7.webm" type="video/webm">
         </video>
       </div>
 
