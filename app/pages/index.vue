@@ -192,8 +192,14 @@ const tiles = computed<{ icon: string, tone: Tone, title: string, sub: string, t
         :icon="t.icon" :tone="t.tone" :title="t.title" :subtitle="t.sub" :to="t.to" :badge="t.badge" />
     </nav>
 
-    <!-- ── 4-qator: AI tavsiya + mavzular + faollik (teng uchdan bir) ── -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 mt-4 sm:mt-6">
+    <!-- ── 4-qator: AI tavsiya + mavzular + faollik ──
+         AI karta 1.5fr, qolganlari 1fr. Teng uchdan bir bo'lganda (412px)
+         robot va tavsiya matni bir qatorga sig'masdi: robotdan keyin matnga
+         174px qolib, `line-clamp-3` uni so'z o'rtasidan kesardi. Endi AI
+         kartada ~536px, matnga ~285px. Qo'shni ikki kartada esa 5 tadan
+         element chiqadi — balandliklar shu bilan tenglashadi. -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6
+                xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)]">
       <div class="min-w-0">
         <AIRecommendationCard />
       </div>

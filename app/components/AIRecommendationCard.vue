@@ -158,16 +158,16 @@ const primary = computed(() => rec.value
 /* Robot maydoni. KVADRAT: video 512x512 (1:1), portret qutida `contain`
    bilan chetlarida bo'sh joy qolardi. `aspect-ratio` balandlikni o'zi
    hisoblaydi — nisbat hech qachon buzilmaydi va layout siljimaydi (CLS yo'q).
-   O'lchamlar: mobil 128px, planshet 155px, desktop 180px — berilgan
-   diapazonlarning (115–140 / 150–175 / 180–210) QUYI chetiga yaqin. Sabab:
-   dashboard to'rida bu karta ~425px keladi, robot 195px bo'lganda tavsiya
-   matniga 178px qolib, u `line-clamp-3` bilan so'z o'rtasidan kesilardi. */
+   O'lchamlar berilgan diapazonlar bo'yicha: mobil 128px (115–140), planshet
+   165px (150–175), desktop 195px (180–210). Desktopda bu o'lcham dashboard
+   to'ri AI kartaga 1.5fr bergani uchun sig'adi (~536px): robotdan keyin
+   tavsiya matniga ~285px qoladi. */
 .robot-slot {
   width: 128px;
   aspect-ratio: 1 / 1;
 }
-@media (min-width: 640px)  { .robot-slot { width: 155px; } }
-@media (min-width: 1024px) { .robot-slot { width: 180px; } }
+@media (min-width: 640px)  { .robot-slot { width: 165px; } }
+@media (min-width: 1024px) { .robot-slot { width: 195px; } }
 
 /* Robotga HARAKAT ANIMATSIYASI BERILMAYDI — u faylning ichida.
    `object-fit: contain` nisbatni saqlaydi, fon shaffof qoladi (VP9 alfa). */

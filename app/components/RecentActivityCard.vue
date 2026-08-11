@@ -58,7 +58,7 @@ function when(iso: string) {
 
 // 4 ta — yonidagi "Mavzular bo'yicha ustaligingiz" va AI kartasi bilan bir
 // sathda tursin (uchalasi bitta gridda, balandligi eng balandiga tenglashadi).
-const rows = computed(() => (props.recent ?? []).slice(0, 4))
+const rows = computed(() => (props.recent ?? []).slice(0, 5))
 </script>
 
 <template>

@@ -15,7 +15,7 @@ const i18n = useI18n()
 const { data } = await useTopicStats()
 
 // 4 ta — yonidagi "So'nggi faollik" va AI kartasi bilan bir sathda tursin.
-const rows = computed(() => (data.value?.topics ?? []).slice(0, 4))
+const rows = computed(() => (data.value?.topics ?? []).slice(0, 5))
 
 /** Progress bar rangi — o'zlashtirish darajasiga qarab */
 const BAR: Record<string, string> = {
@@ -54,7 +54,10 @@ function iconFor(name: string, index: number) {
 <template>
   <section class="card h-full flex flex-col">
     <div class="px-5 sm:px-6 pt-5 pb-4 flex items-center justify-between gap-3">
-      <h2 class="text-[17px] font-semibold truncate" style="color: var(--text-1);">
+      <!-- `truncate` EMAS: AI karta to'rda 1.5fr olgach bu karta ~358px ga
+           tushdi va sarlavha "Mavzular bo'yicha ustaligin…" bo'lib qirqilardi.
+           Endi kerak bo'lsa ikki qatorga o'raladi. -->
+      <h2 class="text-[17px] font-semibold leading-tight" style="color: var(--text-1);">
         {{ i18n.t({ uz: 'Mavzular bo\'yicha ustaligingiz', kr: 'Мавзулар бўйича усталигингиз' }) }}
       </h2>
       <NuxtLink to="/topics" class="link-all text-[13px] font-medium shrink-0">
