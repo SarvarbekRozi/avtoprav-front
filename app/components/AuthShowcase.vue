@@ -159,12 +159,24 @@ const features = computed(() => [
   /* Gorizontal padding YO'Q — u `.showcase-pad` da. Rasm chetdan chetga
      cho'zilishi uchun shunday. */
   padding: 32px 0 0;
+
+  /* EKRAN BALANDLIGIGA QOTIRILGAN — o'ng ustunga CHO'ZILMAYDI.
+     Nega: register kartasi baland (5 maydon), grid qatori 1140px bo'lib
+     ketardi va chap ustun ham shuncha cho'zilardi. `margin-top: auto` tufayli
+     rasm eng pastga tushib, matn bilan orasida 246px BO'SH BAND qolardi
+     (brauzerda o'lchandi) — rasm esa ekrandan pastda, faqat scroll bilan
+     ko'rinardi.
+     `sticky` — uzun formani aylantirganda brend bloki joyida turadi. */
+  align-self: start;
+  position: sticky;
+  top: 0;
+  height: 100vh;
 }
 /* Yuqori padding ATAYLAB kichik: rasm yo'l tagigacha kesilgani uchun
    balandroq (2.349 nisbat), va 1660x940 da ustun 16px oshib scroll berardi.
    Rasmni qirqish o'rniga logotip ustidagi bo'shliq kamaytirildi. */
-@media (min-width: 1024px) { .showcase { padding: 30px 0 0; } }
-@media (min-width: 1280px) { .showcase { padding: 30px 0 0; } }
+@media (min-width: 1024px) { .showcase { padding: 24px 0 0; } }
+@media (min-width: 1280px) { .showcase { padding: 24px 0 0; } }
 
 .showcase-pad { padding: 0 24px; }
 @media (min-width: 1024px) { .showcase-pad { padding: 0 40px; } }
@@ -246,14 +258,14 @@ const features = computed(() => [
   aspect-ratio: 1400 / 596;
   max-height: min(560px, 56vh);
 
-  -webkit-mask-image:
-    linear-gradient(to bottom, transparent 0%, #000 22%),
-    linear-gradient(to right, transparent 0%, #000 6%, #000 94%, transparent 100%);
-  -webkit-mask-composite: source-in;
-  mask-image:
-    linear-gradient(to bottom, transparent 0%, #000 22%),
-    linear-gradient(to right, transparent 0%, #000 6%, #000 94%, transparent 100%);
-  mask-composite: intersect;
+  /* FAQAT yuqori qirra so'nadi (rasm foni sahifa fonidan to'qroq — usiz
+     gorizontal chok ko'rinardi).
+     GORIZONTAL so'nish OLIB TASHLANDI: u chap va o'ng chetdagi 6% ni shaffof
+     qilib, rasm ustun chetiga yetmagandek — pastda BO'SH TO'RTBURCHAK bo'lib
+     ko'rinardi. Element aslida chetga tegib turadi (o'lchandi: 741 = 741),
+     ko'rinmasligining sababi aynan shu mask edi. */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 22%);
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 22%);
 }
 
 /* KECHKI rasm — qorong'i rejim uchun alohida chizilgan (yoqilgan chiroqlar,
@@ -271,7 +283,7 @@ const features = computed(() => [
   .showcase { padding-top: 14px; }
   .showcase-title { font-size: 30px; margin-top: 0.625rem; }
   .trust-chip { height: 27px; font-size: 12.5px; }
-  .showcase-pad ul { gap: 0.625rem; margin-top: 1.125rem; }
+  .showcase-pad ul { gap: 0.5rem; margin-top: 1rem; }
   .showcase-pad ul p { margin-top: 0.125rem; }
   .showcase-pad > div { margin-top: 0.875rem; }
   .road { max-height: 44vh; }   /* qirqmaslik uchun tabiiy balandlikdan yuqori */
