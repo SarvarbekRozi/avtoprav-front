@@ -9,11 +9,31 @@
  * So'rov `useTopicStats()` orqali — TopicStrengthCard bilan bitta kalitni va
  * bitta handler havolasini bo'lishadi, shuning uchun so'rov faqat bir marta ketadi.
  *
- * Robot — `AiRobotArt` (SVG, maketga mos). WebGL versiyasi olib tashlandi:
- * GPU'ga qarab har xil (ko'pincha qorong'i) chiqardi.
+ * Robot — `avtoprav-robot-v2.webm` (VP9 + alfa kanal, 512x512). Animatsiya
+ * FAYLNING O'ZIDA: qo'l silkitish, bosh burilishi, ko'z yumib-ochish, ko'krak
+ * chirog'i pulsi. Shuning uchun CSS'da robotga HECH QANDAY harakat berilmaydi —
+ * na `translate`, na `float`, na `bounce`. Ilgari bu yerda qo'lda chizilgan
+ * SVG turgan edi.
  */
 const i18n = useI18n()
 const { data } = await useTopicStats()
+
+const videoEl = ref<HTMLVideoElement | null>(null)
+
+/**
+ * WCAG 2.2.2: 5 soniyadan uzun, o'zi boshlanadigan takrorlanuvchi animatsiya
+ * to'xtatilishi kerak. Foydalanuvchi tizimida "harakatni kamaytirish"
+ * yoqilgan bo'lsa videoni birinchi kadrda to'xtatamiz — qolganlar uchun
+ * hech narsa o'zgarmaydi. CSS bilan videoni to'xtatib bo'lmaydi, shuning
+ * uchun JS. `autoplay` atributi shablonda QOLADI: JS ishlamasa ham robot
+ * jonli bo'lib turadi.
+ */
+onMounted(() => {
+  const v = videoEl.value
+  if (!v || !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+  v.pause()
+  v.currentTime = 0
+})
 
 // "Keyinroq eslatish" — tavsiyani BUGUNGA yashiradi (localStorage). Ertaga
 // yana chiqadi: tavsiya eslatma, jarima emas.
@@ -30,18 +50,6 @@ function snooze() {
 }
 
 const rec = computed(() => snoozed.value ? null : (data.value?.recommendation ?? null))
-
-/**
- * Robot holati kontekstga bog'liq:
- *   studying — tavsiya bor, ya'ni "mavzuni o'rganish kerak"
- *   thinking — hali tavsiya yo'q (yetarli ma'lumot to'planmagan)
- *   happy    — karta ustida sichqoncha
- */
-const hovered = ref(false)
-const robotState = computed(() => {
-  if (hovered.value) return 'happy' as const
-  return rec.value ? ('studying' as const) : ('thinking' as const)
-})
 
 const message = computed(() => rec.value?.message ?? i18n.t({
   uz: 'Bir nechta test yeching — AI sizga eng mos mavzuni o\'zi tanlab beradi.',
@@ -60,16 +68,29 @@ const primary = computed(() => rec.value
 </script>
 
 <template>
-  <section class="ai-recommend relative overflow-hidden rounded-[22px] p-5 h-full flex flex-col"
-           @pointerenter="hovered = true" @pointerleave="hovered = false">
+  <section class="ai-recommend relative overflow-hidden rounded-[22px] p-5 h-full flex flex-col">
     <div aria-hidden="true"
          class="ai-glow absolute -top-24 -right-16 w-56 h-56 rounded-full blur-3xl pointer-events-none"
          style="background: radial-gradient(circle, rgba(139,92,246,0.34), transparent 70%);"></div>
 
     <div class="relative flex items-start gap-3 sm:gap-4">
-      <!-- Robot — oddiy SVG, SSR'da ham chiziladi (ClientOnly kerak emas). -->
-      <div class="robot-slot shrink-0 -mt-1 -ml-3" aria-hidden="true">
-        <AiRobotArt :state="robotState" />
+      <!-- Robot. Dekorativ: `aria-hidden` + `pointer-events: none` — ekran
+           o'quvchi uchun ma'no tashimaydi, bosilmaydi ham. -->
+      <div class="robot-slot shrink-0" aria-hidden="true">
+        <video
+          ref="videoEl"
+          class="robot-video"
+          autoplay
+          muted
+          loop
+          playsinline
+          preload="auto"
+          disablepictureinpicture
+          tabindex="-1"
+          poster="/assets/avtoprav-robot-v2-poster.png"
+        >
+          <source src="/assets/avtoprav-robot-v2.webm" type="video/webm">
+        </video>
       </div>
 
       <div class="min-w-0 flex-1">
@@ -134,16 +155,31 @@ const primary = computed(() => rec.value
 }
 .ai-alt:hover { background: var(--surface-inset); }
 
-/* Robot uchun maydon — SVG pastga tayanib (xMidYMax) shu qutini to'ldiradi. */
+/* Robot maydoni. KVADRAT: video 512x512 (1:1), portret qutida `contain`
+   bilan chetlarida bo'sh joy qolardi. `aspect-ratio` balandlikni o'zi
+   hisoblaydi — nisbat hech qachon buzilmaydi va layout siljimaydi (CLS yo'q).
+   O'lchamlar: mobil 128px, planshet 155px, desktop 180px — berilgan
+   diapazonlarning (115–140 / 150–175 / 180–210) QUYI chetiga yaqin. Sabab:
+   dashboard to'rida bu karta ~425px keladi, robot 195px bo'lganda tavsiya
+   matniga 178px qolib, u `line-clamp-3` bilan so'z o'rtasidan kesilardi. */
 .robot-slot {
   width: 128px;
-  height: 168px;
+  aspect-ratio: 1 / 1;
 }
-@media (min-width: 640px) {
-  .robot-slot { width: 142px; height: 180px; }
-}
-@media (min-width: 1024px) {
-  .robot-slot { width: 150px; height: 188px; }
+@media (min-width: 640px)  { .robot-slot { width: 155px; } }
+@media (min-width: 1024px) { .robot-slot { width: 180px; } }
+
+/* Robotga HARAKAT ANIMATSIYASI BERILMAYDI — u faylning ichida.
+   `object-fit: contain` nisbatni saqlaydi, fon shaffof qoladi (VP9 alfa). */
+.robot-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: transparent;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .ai-glow { animation: ai-pulse 4s ease-in-out infinite; }
