@@ -124,23 +124,17 @@ const qolgan = computed(() => Math.max(0, topilgan.value.length - CHEK))
 <template>
   <!-- Konteyner dashboard, tariflar va mavzular bilan AYNAN bir xil -->
   <div class="tickets mx-auto w-full max-w-[1800px] px-4 sm:px-6 lg:px-8 xl:px-10 pt-6 lg:pt-8 pb-16 md:pb-12">
+    <!-- XP chip maketda shu yerda edi, lekin u yon menyuda ham bor —
+         takrorlanmasin uchun olib tashlandi. -->
     <header class="head">
-      <div class="min-w-0">
-        <div class="eyebrow eyebrow-blue">{{ i18n.t({ uz: 'Biletlar', kr: 'Билетлар' }) }}</div>
-        <h1 class="page-title">{{ i18n.t({ uz: 'Rasmiy biletlar', kr: 'Расмий билетлар' }) }}</h1>
-        <p class="page-sub">
-          {{ i18n.t({
-            uz: 'Har bir bilet 20 ta savoldan iborat. Imtihondan o\'tish uchun 18 ta to\'g\'ri javob kerak.',
-            kr: 'Ҳар бир билет 20 та саволдан иборат. Имтиҳондан ўтиш учун 18 та тўғри жавоб керак.'
-          }) }}
-        </p>
-      </div>
-
-      <!-- XP — maketda shu yerda. Sidebar'dagi bilan bir manba (auth.user.points) -->
-      <div class="xp-chip" :title="i18n.t({ uz: 'Yig\'ilgan ball', kr: 'Йиғилган балл' })">
-        <AppIcon name="trophy" :size="15" />
-        <span class="tabular-nums">{{ (auth.user?.points ?? 0).toLocaleString() }} XP</span>
-      </div>
+      <div class="eyebrow eyebrow-blue">{{ i18n.t({ uz: 'Biletlar', kr: 'Билетлар' }) }}</div>
+      <h1 class="page-title">{{ i18n.t({ uz: 'Rasmiy biletlar', kr: 'Расмий билетлар' }) }}</h1>
+      <p class="page-sub">
+        {{ i18n.t({
+          uz: 'Har bir bilet 20 ta savoldan iborat. Imtihondan o\'tish uchun 18 ta to\'g\'ri javob kerak.',
+          kr: 'Ҳар бир билет 20 та саволдан иборат. Имтиҳондан ўтиш учун 18 та тўғри жавоб керак.'
+        }) }}
+      </p>
     </header>
 
     <!-- ── Filtrlar + qidiruv + ko'rinish ── -->
@@ -276,7 +270,9 @@ const qolgan = computed(() => Math.max(0, topilgan.value.length - CHEK))
 
 <style scoped>
 /* ── Sarlavha ── */
-.head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.5rem; }
+/* Ilgari bu yerda `display: flex` bor edi — u faqat XP chipni sarlavhaning
+   o'ng tomoniga surish uchun kerak edi. Chip olib tashlangach, oddiy blok. */
+.head { min-width: 0; }
 
 /* Maketda eyebrow KO'K (kulrang emas) */
 .eyebrow-blue { color: var(--primary-ink); }
@@ -288,15 +284,6 @@ const qolgan = computed(() => Math.max(0, topilgan.value.length - CHEK))
 }
 @media (min-width: 640px) { .page-title { font-size: 2.0625rem; } }
 .page-sub { margin-top: 0.5rem; font-size: 0.9375rem; line-height: 1.6; color: var(--text-3); }
-
-.xp-chip {
-  flex-shrink: 0;
-  display: inline-flex; align-items: center; gap: 0.4rem;
-  height: 2.25rem; padding: 0 0.9rem;
-  border-radius: 9999px;
-  font-size: 0.875rem; font-weight: 600;
-  color: var(--warn-ink); background: var(--warn-soft);
-}
 
 /* ── Filtr paneli ── */
 .panel {
@@ -524,7 +511,6 @@ const qolgan = computed(() => Math.max(0, topilgan.value.length - CHEK))
    qolmasin. Aynan shu tuzatish /topics da ham bor. */
 @media (max-width: 767px) {
   .tickets { padding-top: 3.75rem; }
-  .head { flex-direction: column; gap: 0.75rem; }
   .panel { gap: 0.6rem; }
   .tools { width: 100%; }
   .search { flex: 1 1 auto; }
