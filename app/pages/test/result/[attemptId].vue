@@ -563,9 +563,6 @@ onMounted(() => {
             >
           </div>
 
-          <!-- Javob + AI izoh bitta ustunda: o'qishga qulay kenglikda qoladi,
-               butun kartaga cho'zilib ketmaydi. Rasm bo'lsa — yonida. -->
-          <div class="qmain">
           <div class="qans">
             <div class="ans-lbl">{{ i18n.t({ uz: 'Sizning javobingiz', kr: 'Сизнинг жавобингиз' }) }}</div>
             <div class="ans" :class="`a-${holat(x)}`">
@@ -589,7 +586,7 @@ onMounted(() => {
               @click="aiKorsat(x.question)"
             >
               <AppIcon name="ai" :size="15" />
-              {{ i18n.t({ uz: 'AI izoh', kr: 'AI изоҳ' }) }}
+              {{ i18n.t({ uz: 'AI tushuntirish', kr: 'AI тушунтириш' }) }}
             </button>
 
             <!-- Bosilgan holat: AI javob berayotgandek yozib chiqadigan panel -->
@@ -612,7 +609,6 @@ onMounted(() => {
                 }) }}
               </p>
             </div>
-          </div>
           </div>
         </div>
       </section>
@@ -860,18 +856,11 @@ onMounted(() => {
 
 .qtext { margin-top: 1rem; font-size: 1rem; font-weight: 600; line-height: 1.5; color: var(--text-1); }
 
-/* Tahlil — javob + AI izoh `qmain` ichida, o'qishga qulay kenglikda
-   CHEGARALANGAN: karta ~1500px keng, lekin qisqa javob pillasi butun
-   kartaga cho'zilib ketmasin (aynan shu "xunuk" edi). Chapga tekislangan,
-   o'ng tomonda bo'sh joy qoladi — bu cho'zilgan pilladan ko'ra tozaroq. */
-.qbody { display: flex; flex-direction: column; gap: 1.25rem; margin-top: 1rem; }
-.qmain { display: flex; flex-direction: column; gap: 1rem; min-width: 0; max-width: 42rem; }
-
-@container (min-width: 52rem) {
-  /* Rasm bo'lsa: rasm chapda, javob+izoh o'ngda yonma-yon */
-  .qcard:not(.no-img) .qbody { flex-direction: row; align-items: flex-start; gap: 1.5rem; }
-  .qcard:not(.no-img) .qimg-wrap { flex: 0 0 21rem; max-width: 21rem; }
-  .qcard:not(.no-img) .qmain { flex: 1 1 auto; }
+/* Asl (maketdagi) 3 ustun: rasm | javoblar | AI izoh. */
+.qbody { display: grid; gap: 1.25rem; margin-top: 1rem; grid-template-columns: minmax(0, 1fr); }
+@container (min-width: 56rem) {
+  .qbody { grid-template-columns: minmax(0, 0.95fr) minmax(0, 0.85fr) minmax(0, 1.3fr); }
+  .no-img .qbody { grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); }
 }
 
 .qimg-wrap { min-width: 0; }
@@ -912,7 +901,8 @@ onMounted(() => {
 .ai-btn {
   display: inline-flex; align-items: center; gap: 0.45rem;
   padding: 0.6rem 0.9rem;
-  border-radius: 0.625rem; border: 1px solid var(--ai-border); background: var(--ai-bg);
+  /* `sal qirraliroq` — burchaklari o'tkirroq (0.625rem emas, 0.375rem) */
+  border-radius: 0.375rem; border: 1px solid var(--ai-border); background: var(--ai-bg);
   font-size: 0.8438rem; font-weight: 600; color: var(--ai-accent);
   transition: background 0.15s, border-color 0.15s;
 }
