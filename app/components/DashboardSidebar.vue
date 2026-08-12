@@ -88,8 +88,13 @@ const points = computed(() => auth.user?.points ?? 0)
 
 <template>
   <!-- ── Desktop sidebar ── -->
+  <!-- `z-40` SHART: `sticky` o'z stacking konteksti yaratadi, shuning uchun
+       ichidagi ochiladigan panelning (bildirishnomalar, til, profil) `z-50`
+       si faqat SHU kontekst ichida ishlaydi. Aside'ning o'zida z-index
+       bo'lmasa, DOM'da keyin turgan kontent (imtihon banneri, kartalar)
+       uning ustidan chiziladi va panel kontent ORTIDA qolib ketardi. -->
   <aside
-    class="hidden md:flex flex-col shrink-0 sticky top-0 h-screen relative border-r transition-[width] duration-200 ease-out"
+    class="hidden md:flex flex-col shrink-0 sticky top-0 z-40 h-screen relative border-r transition-[width] duration-200 ease-out"
     :class="collapsed ? 'w-[72px]' : 'w-[280px]'"
     style="background: var(--surface); border-color: var(--border-soft);"
   >

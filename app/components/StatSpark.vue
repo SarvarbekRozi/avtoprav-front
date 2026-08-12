@@ -20,11 +20,21 @@ const bor = computed(() => props.values
   .map((v, i) => ({ v, i }))
   .filter(p => p.v !== null) as { v: number, i: number }[])
 
+/**
+ * Chegara ma'lumotning O'Z oralig'idan olinadi.
+ *
+ * Ilgari `Math.min(...vs, 0)` / `Math.max(...vs, 1)` edi — ya'ni pol majburan
+ * 0 ga tortilardi. Urinishlar seriyasi ([0,0,…,5,10] kabi) da bu chiziqni
+ * kartaning eng ostiga yopishtirib qo'yardi va sparkline "ishlamayotgandek"
+ * ko'rinardi. Sparkline vazifasi — SHAKL, shuning uchun o'z oralig'i to'g'ri.
+ */
 const chegara = computed(() => {
   const vs = bor.value.map(p => p.v)
-  const min = Math.min(...vs, 0)
-  const max = Math.max(...vs, 1)
-  return { min, max: max === min ? min + 1 : max }
+  const min = Math.min(...vs)
+  const max = Math.max(...vs)
+  // Butun seriya bir xil bo'lsa (masalan hammasi 0) — o'rtada tekis chiziq,
+  // aks holda chiziq chetga yopishib ko'rinmay qoladi.
+  return max === min ? { min: min - 1, max: max + 1 } : { min, max }
 })
 
 const n = computed(() => Math.max(1, props.values.length - 1))
