@@ -196,6 +196,48 @@ function izohBor(q: any) {
   return !!izoh(q)
 }
 
+/* AI izoh — SUKUT BO'YICHA tugma. Bosilganda AI javob berayotgandek matn
+   yozilib chiqadi. Izohlar natija bilan birga ALLAQACHON kelgan, ya'ni bu
+   shunchaki lokal animatsiya — hech qanday so'rov yo'q (eski /explain
+   endpoint'i o'lik edi: hech nima generatsiya qilmay 404 qaytarardi). */
+const aiOchildi = ref<Record<number, boolean>>({})   // tugma bosildi
+const aiFikr = ref<Record<number, boolean>>({})      // "o'ylanmoqda" fazasi
+const aiYozilmoqda = ref<Record<number, boolean>>({}) // matn yozilyapti
+const aiMatn = ref<Record<number, string>>({})       // hozir ko'rinayotgan qism
+const aiTaymer: Record<number, ReturnType<typeof setTimeout>> = {}
+
+function aiKorsat(q: any) {
+  const id = q.id
+  if (aiOchildi.value[id]) return
+  aiOchildi.value[id] = true
+
+  const toliq = izoh(q)
+  if (!toliq) return   // izoh yo'q → panel "tayyor emas" ni ko'rsatadi
+
+  const kamaytir = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  if (kamaytir) { aiMatn.value[id] = toliq; return }   // animatsiyasiz
+
+  // Qisqa "o'ylanmoqda" fazasi — AI ishlayotgandek tuyulsin
+  aiFikr.value[id] = true
+  aiTaymer[id] = setTimeout(() => {
+    aiFikr.value[id] = false
+    aiYozilmoqda.value[id] = true
+    aiMatn.value[id] = ''
+    let i = 0
+    const qadam = () => {
+      i = Math.min(toliq.length, i + 3)
+      aiMatn.value[id] = toliq.slice(0, i)
+      if (i < toliq.length) aiTaymer[id] = setTimeout(qadam, 24)
+      else aiYozilmoqda.value[id] = false
+    }
+    qadam()
+  }, 550)
+}
+
+// Sahifadan chiqilganda ishlab turgan taymerlar setTimeout'ni bo'sh
+// komponentga chaqirmasin.
+onUnmounted(() => { for (const k in aiTaymer) clearTimeout(aiTaymer[k]) })
+
 /* ── Ekran o'quvchi uchun e'lonlar ─────────────────────────────────────────
    Bitta DOIMIY live region. Matni bilan BIRGA paydo bo'ladigan
    `role="status"` bloki e'lon qilinmaydi — brauzer region'ni allaqachon
@@ -538,12 +580,28 @@ onMounted(() => {
           </div>
 
           <div class="qai">
-            <div class="ai">
+            <!-- Bosilmagan holat: "AI izoh" tugmasi -->
+            <button
+              v-if="!aiOchildi[x.question.id]" type="button" class="ai-btn"
+              @click="aiKorsat(x.question)"
+            >
+              <AppIcon name="ai" :size="15" />
+              {{ i18n.t({ uz: 'AI izoh', kr: 'AI изоҳ' }) }}
+            </button>
+
+            <!-- Bosilgan holat: AI javob berayotgandek yozib chiqadigan panel -->
+            <div v-else class="ai">
               <div class="ai-head">
-                <AppIcon name="ai" :size="14" />
-                {{ i18n.t({ uz: 'AI izoh', kr: 'AI изоҳ' }) }}
+                <AppIcon name="ai" :size="14" class="ai-ic" />
+                <span class="ai-title">{{ i18n.t({ uz: 'AI izoh', kr: 'AI изоҳ' }) }}</span>
               </div>
-              <p v-if="izohBor(x.question)" class="ai-text">{{ izoh(x.question) }}</p>
+              <div v-if="aiFikr[x.question.id]" class="ai-fikr" role="status">
+                <span class="ai-dots"><i /><i /><i /></span>
+                {{ i18n.t({ uz: 'AI o\'ylanmoqda…', kr: 'AI ўйланмоқда…' }) }}
+              </div>
+              <p v-else-if="izohBor(x.question)" class="ai-text">{{
+                aiYozilmoqda[x.question.id] ? aiMatn[x.question.id] : izoh(x.question)
+              }}<span v-if="aiYozilmoqda[x.question.id]" class="ai-caret" /></p>
               <p v-else class="ai-none">
                 {{ i18n.t({
                   uz: 'Bu savol uchun izoh hozircha tayyor emas.',
@@ -835,12 +893,45 @@ onMounted(() => {
 .ans-t { flex: 1 1 auto; min-width: 0; }
 .ans-ic { flex-shrink: 0; }
 
-/* ── AI izoh ─────────────────────────────────────────────────────────── */
+/* ── AI izoh ──────────────────────────────────────────────────────────────
+   Boshida "AI izoh" tugmasi; bosilganda AI javob berayotgandek yozib chiqadi. */
 .qai { min-width: 0; }
-.ai { padding: 0.875rem 1rem; border-radius: 0.75rem; background: var(--ai-bg); border: 1px solid var(--ai-border); height: 100%; }
+
+.ai-btn {
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 0.625rem; border: 1px solid var(--ai-border); background: var(--ai-bg);
+  font-size: 0.8438rem; font-weight: 600; color: var(--ai-accent);
+  transition: background 0.15s, border-color 0.15s;
+}
+.ai-btn:hover { background: var(--ai-bg); border-color: var(--ai-accent); }
+
+.ai { padding: 0.875rem 1rem; border-radius: 0.75rem; background: var(--ai-bg); border: 1px solid var(--ai-border); }
 .ai-head { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8125rem; font-weight: 600; color: var(--ai-accent); margin-bottom: 0.5rem; }
+.ai-ic { flex-shrink: 0; }
+.ai-title { flex: 1 1 auto; }
 .ai-text { font-size: 0.8438rem; line-height: 1.7; color: var(--ai-ink); white-space: pre-line; }
 .ai-none { font-size: 0.8438rem; line-height: 1.6; color: var(--text-3); }
+
+/* Yozilyapti — miltillovchi kursor */
+.ai-caret {
+  display: inline-block; width: 2px; height: 0.9em; margin-left: 2px;
+  background: var(--ai-accent); vertical-align: middle;
+  animation: aiYonish 1s steps(2) infinite;
+}
+@keyframes aiYonish { 0%, 100% { opacity: 1 } 50% { opacity: 0 } }
+
+/* "O'ylanmoqda" — sakrab turadigan uch nuqta */
+.ai-fikr { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8438rem; color: var(--ai-accent); }
+.ai-dots { display: inline-flex; gap: 0.2rem; }
+.ai-dots i { width: 0.35rem; height: 0.35rem; border-radius: 9999px; background: var(--ai-accent); animation: aiSakra 0.9s infinite; }
+.ai-dots i:nth-child(2) { animation-delay: 0.15s; }
+.ai-dots i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes aiSakra { 0%, 60%, 100% { transform: translateY(0) } 30% { transform: translateY(-0.25rem) } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-caret, .ai-dots i { animation: none; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   /* Chiziq kengligining animatsiyasi ham harakat — o'chiriladi */

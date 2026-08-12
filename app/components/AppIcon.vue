@@ -64,7 +64,9 @@ const NAME_MAP: Record<string, string> = {
   flag:           'lucide:flag',
   percent:        'lucide:percent',
   circle:         'lucide:circle',
-  ai:             'lucide:message-square-text',
+  // AI izoh sarlavhasi — `sparkles` (✨) hamma joyda "sun'iy intellekt" belgisi,
+  // ya'ni panelning AI'ligi bir qarashda bilinadi (ilgari oddiy chat ikonkasi edi).
+  ai:             'lucide:sparkles',
 
   // outlined status circles (activity feed)
   'check-circle': 'lucide:circle-check-big',
