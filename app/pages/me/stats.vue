@@ -512,17 +512,19 @@ function delta(v: number | null | undefined) {
 /*  EMAS: main.css da AYNI SHU NOMDA global qoida bor
    (gradient fon + siyohrang ramka + soya) va u qatorlar ortida keraksiz
    panel chizib qo'yardi. Shuning uchun nom ajratilgan. */
-.ai-list { display: grid; gap: 0.25rem; margin-top: 0.875rem; }
-/* Ramka ham, fon ham YO'Q — qatorlar to'g'ridan-to'g'ri karta ustida turadi.
-   Bosiladiganligi hover paytida yengil to'ldirish bilan bildiriladi (aks
-   holda havola ekanini bilish qiyin). */
+.ai-list { display: grid; gap: 0.5rem; margin-top: 1rem; }
+/* HAR QATORNING o'z paneli bor (ramka + oq sirt). Olib tashlangan narsa —
+   uchtasini O'RAB turgan tashqi ramka: u `.ai-topics` nomining main.css
+   dagi global qoida bilan to'qnashuvidan kelib chiqqan edi (`.ai-list` ga
+   ajratildi). */
 .ai-topic {
   display: flex; align-items: center; gap: 0.625rem;
-  padding: 0.5rem 0.375rem; border-radius: 0.5rem;
-  background: transparent; border: none; box-shadow: none;
-  transition: background 0.15s;
+  padding: 0.625rem 0.75rem; border-radius: 0.625rem;
+  background: var(--surface); border: 1px solid var(--border-1);
+  box-shadow: var(--shadow-soft);
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-.ai-topic:hover { background: var(--ai-soft); }
+.ai-topic:hover { border-color: var(--ai-ink2); box-shadow: var(--shadow-card); }
 .ai-topic:focus-visible { outline: 2px solid var(--ai-ink2); outline-offset: 1px; }
 
 /* Ikonkalar RANGLI — har mavzu o'z ohangida (bir xil kulrang emas) */
