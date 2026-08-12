@@ -563,6 +563,9 @@ onMounted(() => {
             >
           </div>
 
+          <!-- Javob + AI izoh bitta ustunda: o'qishga qulay kenglikda qoladi,
+               butun kartaga cho'zilib ketmaydi. Rasm bo'lsa — yonida. -->
+          <div class="qmain">
           <div class="qans">
             <div class="ans-lbl">{{ i18n.t({ uz: 'Sizning javobingiz', kr: 'Сизнинг жавобингиз' }) }}</div>
             <div class="ans" :class="`a-${holat(x)}`">
@@ -609,6 +612,7 @@ onMounted(() => {
                 }) }}
               </p>
             </div>
+          </div>
           </div>
         </div>
       </section>
@@ -856,14 +860,18 @@ onMounted(() => {
 
 .qtext { margin-top: 1rem; font-size: 1rem; font-weight: 600; line-height: 1.5; color: var(--text-1); }
 
-.qbody { display: grid; gap: 1.25rem; margin-top: 1rem; grid-template-columns: minmax(0, 1fr); }
-@container (min-width: 56rem) {
-  /* Rasm | javoblar (2 ustun); AI izoh esa PASTDA, to'liq kenglikda.
-     Ilgari AI alohida 3-ustun edi — yig'ilgan tugmaga aylangach u yerda
-     yolg'iz turib katta bo'sh joy qoldirardi (xunuk ko'rinardi). */
-  .qbody { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); }
-  .no-img .qbody { grid-template-columns: minmax(0, 1fr); }
-  .qai { grid-column: 1 / -1; }
+/* Tahlil — javob + AI izoh `qmain` ichida, o'qishga qulay kenglikda
+   CHEGARALANGAN: karta ~1500px keng, lekin qisqa javob pillasi butun
+   kartaga cho'zilib ketmasin (aynan shu "xunuk" edi). Chapga tekislangan,
+   o'ng tomonda bo'sh joy qoladi — bu cho'zilgan pilladan ko'ra tozaroq. */
+.qbody { display: flex; flex-direction: column; gap: 1.25rem; margin-top: 1rem; }
+.qmain { display: flex; flex-direction: column; gap: 1rem; min-width: 0; max-width: 42rem; }
+
+@container (min-width: 52rem) {
+  /* Rasm bo'lsa: rasm chapda, javob+izoh o'ngda yonma-yon */
+  .qcard:not(.no-img) .qbody { flex-direction: row; align-items: flex-start; gap: 1.5rem; }
+  .qcard:not(.no-img) .qimg-wrap { flex: 0 0 21rem; max-width: 21rem; }
+  .qcard:not(.no-img) .qmain { flex: 1 1 auto; }
 }
 
 .qimg-wrap { min-width: 0; }
