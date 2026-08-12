@@ -858,8 +858,12 @@ onMounted(() => {
 
 .qbody { display: grid; gap: 1.25rem; margin-top: 1rem; grid-template-columns: minmax(0, 1fr); }
 @container (min-width: 56rem) {
-  .qbody { grid-template-columns: minmax(0, 0.95fr) minmax(0, 0.85fr) minmax(0, 1.3fr); }
-  .no-img .qbody { grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); }
+  /* Rasm | javoblar (2 ustun); AI izoh esa PASTDA, to'liq kenglikda.
+     Ilgari AI alohida 3-ustun edi — yig'ilgan tugmaga aylangach u yerda
+     yolg'iz turib katta bo'sh joy qoldirardi (xunuk ko'rinardi). */
+  .qbody { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); }
+  .no-img .qbody { grid-template-columns: minmax(0, 1fr); }
+  .qai { grid-column: 1 / -1; }
 }
 
 .qimg-wrap { min-width: 0; }
