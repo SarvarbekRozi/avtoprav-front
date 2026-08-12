@@ -523,95 +523,102 @@ onMounted(() => {
       <h2 v-if="korinadigan.length" class="sr-only">
         {{ i18n.t({ uz: 'Savollar tahlili', kr: 'Саволлар таҳлили' }) }}
       </h2>
-      <!-- `tabindex="-1"` — plitka bosilganda fokus shu kartaga ko'chadi,
-           aks holda keyingi Tab xaritaga qaytarib yuborardi. -->
-      <section
+      <!-- Har savol = IKKI ALOHIDA karta yonma-yon: chapda savol tahlili,
+           o'ngda AI tushuntirish. `tabindex="-1"` — plitka bosilganda fokus
+           shu qatorga ko'chadi. -->
+      <div
         v-for="x in korinadigan" :id="`savol-${x.position}`" :key="x.position" tabindex="-1"
-        class="panel-card qcard" :class="{ 'no-img': !x.question.image }"
+        class="qrow" :class="{ 'no-img': !x.question.image }"
         :aria-label="`${i18n.t({ uz: 'Savol', kr: 'Савол' })} ${x.position} — ${i18n.t(HOLAT[holat(x)].soz)}`"
       >
-        <div class="qhead">
-          <span class="qnum" :class="`n-${holat(x)}`">{{ x.position }}</span>
-          <span class="qstat" :class="`t-${holat(x)}`">{{ i18n.t(HOLAT[holat(x)].soz) }}</span>
-          <button
-            type="button" class="qflag"
-            :aria-label="`${i18n.t({ uz: 'Shikoyat qilish', kr: 'Шикоят қилиш' })} — ${i18n.t({ uz: 'savol', kr: 'савол' })} ${x.position}`"
-            @click="shikoyatBos(x)"
-          >
-            <AppIcon name="flag" :size="14" />
-            {{ i18n.t({ uz: 'Shikoyat qilish', kr: 'Шикоят қилиш' }) }}
-          </button>
-        </div>
-
-        <p v-if="shikoyat[x.question.id]" class="qflag-note">
-          {{ i18n.t({
-            uz: 'Shikoyat yuborish funksiyasi hali ishga tushmagan — tez orada qo\'shiladi.',
-            kr: 'Шикоят юбориш функцияси ҳали ишга тушмаган — тез орада қўшилади.'
-          }) }}
-        </p>
-
-        <h3 class="qtext">{{ x.question.text }}</h3>
-
-        <div class="qbody">
-          <!-- `alt=""` EMAS: yo'l harakati savolining butun vaziyati rasmda,
-               ya'ni u dekorativ emas. O'yin sahifasi ham shu nomni beradi. -->
-          <div v-if="x.question.image" class="qimg-wrap">
-            <img
-              :src="x.question.image" class="qimg"
-              :alt="i18n.t({ uz: 'Savol rasmi', kr: 'Савол расми' })"
-              @error="onQuestionImageError"
-            >
-          </div>
-
-          <div class="qans">
-            <div class="ans-lbl">{{ i18n.t({ uz: 'Sizning javobingiz', kr: 'Сизнинг жавобингиз' }) }}</div>
-            <div class="ans" :class="`a-${holat(x)}`">
-              <span v-if="tanlanganHarf(x)" class="ans-h">{{ tanlanganHarf(x) }}</span>
-              <span class="ans-t">{{ tanlanganMatn(x) }}</span>
-              <AppIcon :name="HOLAT[holat(x)].icon" :size="15" class="ans-ic" />
-            </div>
-
-            <div class="ans-lbl lbl-ok">{{ i18n.t({ uz: 'To\'g\'ri javob', kr: 'Тўғри жавоб' }) }}</div>
-            <div class="ans a-togri">
-              <span class="ans-h">{{ togriHarf(x) }}</span>
-              <span class="ans-t">{{ togriMatn(x) }}</span>
-              <AppIcon name="check" :size="15" class="ans-ic" />
-            </div>
-          </div>
-
-          <div class="qai">
-            <!-- Bosilmagan holat: "AI izoh" tugmasi -->
+        <section class="panel-card qcard">
+          <div class="qhead">
+            <span class="qnum" :class="`n-${holat(x)}`">{{ x.position }}</span>
+            <span class="qstat" :class="`t-${holat(x)}`">{{ i18n.t(HOLAT[holat(x)].soz) }}</span>
             <button
-              v-if="!aiOchildi[x.question.id]" type="button" class="ai-btn"
-              @click="aiKorsat(x.question)"
+              type="button" class="qflag"
+              :aria-label="`${i18n.t({ uz: 'Shikoyat qilish', kr: 'Шикоят қилиш' })} — ${i18n.t({ uz: 'savol', kr: 'савол' })} ${x.position}`"
+              @click="shikoyatBos(x)"
             >
-              <AppIcon name="ai" :size="15" />
-              {{ i18n.t({ uz: 'AI tushuntirish', kr: 'AI тушунтириш' }) }}
+              <AppIcon name="flag" :size="14" />
+              {{ i18n.t({ uz: 'Shikoyat qilish', kr: 'Шикоят қилиш' }) }}
             </button>
+          </div>
 
-            <!-- Bosilgan holat: AI javob berayotgandek yozib chiqadigan panel -->
-            <div v-else class="ai">
-              <div class="ai-head">
-                <AppIcon name="ai" :size="14" class="ai-ic" />
-                <span class="ai-title">{{ i18n.t({ uz: 'AI izoh', kr: 'AI изоҳ' }) }}</span>
+          <p v-if="shikoyat[x.question.id]" class="qflag-note">
+            {{ i18n.t({
+              uz: 'Shikoyat yuborish funksiyasi hali ishga tushmagan — tez orada qo\'shiladi.',
+              kr: 'Шикоят юбориш функцияси ҳали ишга тушмаган — тез орада қўшилади.'
+            }) }}
+          </p>
+
+          <h3 class="qtext">{{ x.question.text }}</h3>
+
+          <div class="qbody">
+            <!-- `alt=""` EMAS: yo'l harakati savolining butun vaziyati rasmda,
+                 ya'ni u dekorativ emas. O'yin sahifasi ham shu nomni beradi. -->
+            <div v-if="x.question.image" class="qimg-wrap">
+              <img
+                :src="x.question.image" class="qimg"
+                :alt="i18n.t({ uz: 'Savol rasmi', kr: 'Савол расми' })"
+                @error="onQuestionImageError"
+              >
+            </div>
+
+            <div class="qans">
+              <div class="ans-lbl">{{ i18n.t({ uz: 'Sizning javobingiz', kr: 'Сизнинг жавобингиз' }) }}</div>
+              <div class="ans" :class="`a-${holat(x)}`">
+                <span v-if="tanlanganHarf(x)" class="ans-h">{{ tanlanganHarf(x) }}</span>
+                <span class="ans-t">{{ tanlanganMatn(x) }}</span>
+                <AppIcon :name="HOLAT[holat(x)].icon" :size="15" class="ans-ic" />
               </div>
-              <div v-if="aiFikr[x.question.id]" class="ai-fikr" role="status">
-                <span class="ai-dots"><i /><i /><i /></span>
-                {{ i18n.t({ uz: 'AI o\'ylanmoqda…', kr: 'AI ўйланмоқда…' }) }}
+
+              <div class="ans-lbl lbl-ok">{{ i18n.t({ uz: 'To\'g\'ri javob', kr: 'Тўғри жавоб' }) }}</div>
+              <div class="ans a-togri">
+                <span class="ans-h">{{ togriHarf(x) }}</span>
+                <span class="ans-t">{{ togriMatn(x) }}</span>
+                <AppIcon name="check" :size="15" class="ans-ic" />
               </div>
-              <p v-else-if="izohBor(x.question)" class="ai-text">{{
-                aiYozilmoqda[x.question.id] ? aiMatn[x.question.id] : izoh(x.question)
-              }}<span v-if="aiYozilmoqda[x.question.id]" class="ai-caret" /></p>
-              <p v-else class="ai-none">
-                {{ i18n.t({
-                  uz: 'Bu savol uchun izoh hozircha tayyor emas.',
-                  kr: 'Бу савол учун изоҳ ҳозирча тайёр эмас.'
-                }) }}
-              </p>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+
+        <!-- ── Alohida AI tushuntirish kartasi ── -->
+        <aside class="panel-card ai-card">
+          <div class="ai-head">
+            <AppIcon name="ai" :size="16" class="ai-ic" />
+            <span class="ai-title">{{ i18n.t({ uz: 'AI tushuntirish', kr: 'AI тушунтириш' }) }}</span>
+          </div>
+
+          <!-- Izohi yo'q savol -->
+          <p v-if="!izohBor(x.question)" class="ai-none">
+            {{ i18n.t({
+              uz: 'Bu savol uchun izoh hozircha tayyor emas.',
+              kr: 'Бу савол учун изоҳ ҳозирча тайёр эмас.'
+            }) }}
+          </p>
+
+          <!-- Hali bosilmagan: tushuntirishni chiqarish tugmasi -->
+          <button
+            v-else-if="!aiOchildi[x.question.id]" type="button" class="ai-btn"
+            @click="aiKorsat(x.question)"
+          >
+            <AppIcon name="ai" :size="15" />
+            {{ i18n.t({ uz: 'Tushuntirib berish', kr: 'Тушунтириб бериш' }) }}
+          </button>
+
+          <!-- Bosilgan: AI javob berayotgandek yozib chiqadi -->
+          <template v-else>
+            <div v-if="aiFikr[x.question.id]" class="ai-fikr" role="status">
+              <span class="ai-dots"><i /><i /><i /></span>
+              {{ i18n.t({ uz: 'AI o\'ylanmoqda…', kr: 'AI ўйланмоқда…' }) }}
+            </div>
+            <p v-else class="ai-text">{{
+              aiYozilmoqda[x.question.id] ? aiMatn[x.question.id] : izoh(x.question)
+            }}<span v-if="aiYozilmoqda[x.question.id]" class="ai-caret" /></p>
+          </template>
+        </aside>
+      </div>
     </template>
   </div>
 </template>
@@ -824,12 +831,26 @@ onMounted(() => {
 .q-javobsiz { background: var(--surface);     border-color: var(--border-1); color: var(--text-3); }
 .qgrid-empty { font-size: 0.875rem; color: var(--text-3); }
 
-/* ── Savol kartasi ───────────────────────────────────────────────────── */
-.qcard { padding: 1.5rem; margin-bottom: 1rem; container-type: inline-size; scroll-margin-top: 1rem; }
+/* ── Savol qatori: savol kartasi | AI kartasi ──────────────────────────────
+   `.result` konteyner qilinadi (@container derazani emas, KONTENT kengligini
+   o'lchaydi — yon menyu kengligi ahamiyatsiz). */
+.result { container-type: inline-size; }
+.qrow {
+  display: grid; gap: 1rem; margin-bottom: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start; scroll-margin-top: 1rem;
+}
+@container (min-width: 60rem) {
+  /* Chapda savol (kengroq), o'ngda AI tushuntirish kartasi */
+  .qrow { grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); }
+}
 /* `tabindex="-1"` tufayli sichqoncha bilan bosilganda ham fokus keladi —
    halqa faqat klaviatura bilan kelganda ko'rinsin. */
-.qcard:focus { outline: none; }
-.qcard:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.qrow:focus { outline: none; }
+.qrow:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border-radius: 1.25rem; }
+
+/* ── Savol kartasi ───────────────────────────────────────────────────── */
+.qcard { padding: 1.5rem; container-type: inline-size; }
 .qhead { display: flex; align-items: center; gap: 0.625rem; }
 .qnum {
   flex-shrink: 0; display: grid; place-items: center;
@@ -856,11 +877,13 @@ onMounted(() => {
 
 .qtext { margin-top: 1rem; font-size: 1rem; font-weight: 600; line-height: 1.5; color: var(--text-1); }
 
-/* Asl (maketdagi) 3 ustun: rasm | javoblar | AI izoh. */
+/* Savol kartasi ichida: rasm | javoblar. AI endi ALOHIDA kartada.
+   Ostona past (30rem) — savol kartasi qatorda torroq bo'lgani uchun ham
+   rasm va javoblar yonma-yon qolsin. */
 .qbody { display: grid; gap: 1.25rem; margin-top: 1rem; grid-template-columns: minmax(0, 1fr); }
-@container (min-width: 56rem) {
-  .qbody { grid-template-columns: minmax(0, 0.95fr) minmax(0, 0.85fr) minmax(0, 1.3fr); }
-  .no-img .qbody { grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); }
+@container (min-width: 30rem) {
+  .qbody { grid-template-columns: minmax(0, 0.95fr) minmax(0, 1fr); }
+  .no-img .qbody { grid-template-columns: minmax(0, 1fr); }
 }
 
 .qimg-wrap { min-width: 0; }
@@ -894,26 +917,29 @@ onMounted(() => {
 .ans-t { flex: 1 1 auto; min-width: 0; }
 .ans-ic { flex-shrink: 0; }
 
-/* ── AI izoh ──────────────────────────────────────────────────────────────
-   Boshida "AI izoh" tugmasi; bosilganda AI javob berayotgandek yozib chiqadi. */
-.qai { min-width: 0; }
+/* ── AI tushuntirish kartasi (alohida) ─────────────────────────────────────
+   Savol kartasining o'ng yonida turadigan mustaqil karta. Yengil lavanda
+   fonli — AI'ligi bir qarashda bilinadi. Bosilganda matn yozilib chiqadi. */
+.ai-card {
+  padding: 1.25rem 1.5rem;
+  background: var(--ai-bg); border-color: var(--ai-border);
+}
+.ai-head { display: flex; align-items: center; gap: 0.45rem; font-size: 0.9375rem; font-weight: 600; color: var(--ai-accent); margin-bottom: 0.75rem; }
+.ai-ic { flex-shrink: 0; }
+.ai-title { flex: 1 1 auto; }
 
 .ai-btn {
   display: inline-flex; align-items: center; gap: 0.45rem;
   padding: 0.6rem 0.9rem;
-  /* `sal qirraliroq` — burchaklari o'tkirroq (0.625rem emas, 0.375rem) */
-  border-radius: 0.375rem; border: 1px solid var(--ai-border); background: var(--ai-bg);
+  /* `sal qirraliroq` — burchaklari o'tkirroq (0.375rem) */
+  border-radius: 0.375rem; border: 1px solid var(--ai-border); background: var(--surface);
   font-size: 0.8438rem; font-weight: 600; color: var(--ai-accent);
   transition: background 0.15s, border-color 0.15s;
 }
-.ai-btn:hover { background: var(--ai-bg); border-color: var(--ai-accent); }
+.ai-btn:hover { border-color: var(--ai-accent); }
 
-.ai { padding: 0.875rem 1rem; border-radius: 0.75rem; background: var(--ai-bg); border: 1px solid var(--ai-border); }
-.ai-head { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8125rem; font-weight: 600; color: var(--ai-accent); margin-bottom: 0.5rem; }
-.ai-ic { flex-shrink: 0; }
-.ai-title { flex: 1 1 auto; }
-.ai-text { font-size: 0.8438rem; line-height: 1.7; color: var(--ai-ink); white-space: pre-line; }
-.ai-none { font-size: 0.8438rem; line-height: 1.6; color: var(--text-3); }
+.ai-text { font-size: 0.875rem; line-height: 1.75; color: var(--ai-ink); white-space: pre-line; }
+.ai-none { font-size: 0.875rem; line-height: 1.6; color: var(--text-3); }
 
 /* Yozilyapti — miltillovchi kursor */
 .ai-caret {
@@ -946,11 +972,11 @@ onMounted(() => {
    uning ostida qolmasin. Xuddi shu tuzatish /tickets va /topics da ham bor. */
 @media (max-width: 767px) {
   .result { padding-top: 3.75rem; }
-  .hero, .nav-card, .qcard { padding: 1.125rem; }
-  /* Suzuvchi menyu tugmasi (40px + 12px chetdan) savol kartasining
-     sarlavhasini bosib qolmasin — plitka bosilganda karta shundan pastda
+  .hero, .nav-card, .qcard, .ai-card { padding: 1.125rem; }
+  /* Suzuvchi menyu tugmasi (40px + 12px chetdan) savol qatorining
+     sarlavhasini bosib qolmasin — plitka bosilganda qator shundan pastda
      to'xtaydi. */
-  .qcard { scroll-margin-top: 4rem; }
+  .qrow { scroll-margin-top: 4rem; }
   .score-n { font-size: 2.75rem; }
   .score-d { font-size: 2.125rem; }
   .hero-acts .act { flex: 1 1 100%; }
