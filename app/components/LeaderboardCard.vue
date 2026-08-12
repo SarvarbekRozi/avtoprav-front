@@ -1,171 +1,186 @@
 <script setup lang="ts">
-type Period = 'all' | 'week' | 'month'
-
-const props = withDefaults(defineProps<{
-  defaultPeriod?: Period
-  showFooter?: boolean
-}>(), {
-  defaultPeriod: 'all',
-  showFooter: true,
-})
-
+/**
+ * Umumiy XP reytingi — maketdagi ko'rinish: sarlavha + davr tablari
+ * (Hafta / Oy / Hammasi) va qatorlar: o'rin nishoni, avatar, ism,
+ * "🔥 N kunlik seriya", javob berilgan savol soni va XP chipi.
+ */
 const i18n = useI18n()
-const auth = useAuthStore()
-const period = ref<Period>(props.defaultPeriod)
 
-const { data, refresh, pending } = await useAsyncData<any>(
-  () => `leaderboard-${period.value}`,
-  () => apiFetch<any>(`/leaderboard?period=${period.value}&limit=10`),
-  { server: false, watch: [period], default: () => null },
+const davr = ref<'week' | 'month' | 'all'>('all')
+
+const { data, status } = await useAsyncData(
+  'xp-leaderboard',
+  () => apiFetch<any>(`/leaderboard?period=${davr.value}&limit=10`),
+  { server: false, default: () => null, watch: [davr] },
 )
+/** Davr almashganda skelet miltillamasin — oldingi ro'yxat shaffofroq turadi. */
+const yangilanmoqda = computed(() => status.value === 'pending' && !!data.value)
 
-const top = computed(() => data.value?.top ?? [])
+const top = computed<any[]>(() => data.value?.top ?? [])
 const me = computed(() => data.value?.me ?? null)
-const meInTop = computed(() => top.value.some((u: any) => u.is_me))
+const meInTop = computed(() => top.value.some(u => u.is_me))
+
+const DAVRLAR = [
+  { id: 'week' as const, soz: { uz: 'Hafta', kr: 'Ҳафта' } },
+  { id: 'month' as const, soz: { uz: 'Oy', kr: 'Ой' } },
+  { id: 'all' as const, soz: { uz: 'Hammasi', kr: 'Ҳаммаси' } },
+]
 
 function initials(name: string | null, login: string) {
   const src = name || login || ''
   return src.split(/\s+/).filter(Boolean).slice(0, 2).map(s => s[0]?.toUpperCase()).join('') || '·'
 }
-
-function medalColor(rank: number) {
-  if (rank === 1) return '#f59e0b'
-  if (rank === 2) return '#94a3b8'
-  if (rank === 3) return '#b45309'
-  return null
+function medal(rank: number) {
+  return rank === 1 ? 'g' : rank === 2 ? 's' : rank === 3 ? 'b' : ''
 }
 </script>
 
 <template>
-  <div class="card">
-    <div class="px-5 py-4 flex items-center justify-between" style="border-bottom: 1px solid var(--divider);">
-      <div>
-        <div class="text-sm font-semibold flex items-center gap-2" style="color: var(--text-1);">
-          <AppIcon name="trophy" :size="16" class="text-amber-500" />
-          {{ i18n.t({ uz: 'Reyting', kr: 'Рейтинг' }) }}
-        </div>
-        <div class="text-2xs mt-0.5" style="color: var(--text-3);">
-          {{ data?.totals?.participants ?? '—' }} {{ i18n.t({ uz: 'ishtirokchi', kr: 'иштирокчи' }) }}
-        </div>
+  <section class="xlb">
+    <div class="xlb-head">
+      <span class="xlb-tile"><AppIcon name="trophy" :size="19" /></span>
+      <div class="xlb-ttl">
+        <h2 class="xlb-title">{{ i18n.t({ uz: 'Reyting', kr: 'Рейтинг' }) }}</h2>
+        <p class="xlb-sub">{{ i18n.t({ uz: 'Umumiy XP bo\'yicha eng yaxshi foydalanuvchilar', kr: 'Умумий XP бўйича энг яхши фойдаланувчилар' }) }}</p>
       </div>
-      <div class="flex items-center gap-0.5 p-0.5 rounded-md text-2xs font-medium" style="background: var(--surface-inset);">
-        <button v-for="p in (['week','month','all'] as const)" :key="p" @click="period = p"
-          class="px-2.5 h-7 inline-flex items-center rounded transition-all"
-          :style="period === p
-            ? { background: 'var(--surface)', color: 'var(--text-1)', boxShadow: 'var(--shadow-soft)' }
-            : { color: 'var(--text-3)' }">
-          {{ p === 'week' ? i18n.t({ uz: 'Hafta', kr: 'Ҳафта' })
-             : p === 'month' ? i18n.t({ uz: 'Oy', kr: 'Ой' })
-             : i18n.t({ uz: 'Hammasi', kr: 'Ҳаммаси' }) }}
-        </button>
+      <div class="segs" role="group" :aria-label="i18n.t({ uz: 'Davr', kr: 'Давр' })">
+        <button
+          v-for="d in DAVRLAR" :key="d.id" type="button" class="seg"
+          :class="{ on: davr === d.id }" :aria-pressed="davr === d.id"
+          @click="davr = d.id"
+        >{{ i18n.t(d.soz) }}</button>
       </div>
     </div>
 
-    <!-- Loading skeleton -->
-    <div v-if="pending && !top.length" class="p-5 space-y-2">
-      <div v-for="i in 5" :key="i" class="h-10 rounded-lg animate-pulse" style="background: var(--surface-inset);"></div>
+    <div v-if="status === 'pending' && !data" class="xlb-skel">
+      <div v-for="i in 5" :key="i" class="sk" />
     </div>
 
-    <!-- Empty -->
-    <div v-else-if="!top.length" class="p-8 text-center text-sm" style="color: var(--text-3);">
-      {{ i18n.t({ uz: 'Hozircha ishtirokchi yo\'q. Birinchi bo\'ling!', kr: 'Ҳозирча иштирокчи йўқ. Биринчи бўлинг!' }) }}
-    </div>
+    <p v-else-if="!top.length" class="xlb-empty">
+      {{ i18n.t({ uz: 'Bu davr uchun ma\'lumot yo\'q.', kr: 'Бу давр учун маълумот йўқ.' }) }}
+    </p>
 
-    <!-- List -->
-    <div v-else class="divide-y" style="border-color: var(--divider);">
-      <div v-for="u in top" :key="u.id"
-           class="flex items-center gap-3 px-5 py-3 transition-colors"
-           :style="u.is_me ? { background: 'var(--accent-soft)' } : {}">
-        <div class="w-7 h-7 rounded-full grid place-items-center text-xs font-semibold tabular-nums flex-shrink-0 text-white"
-             :style="{ background: medalColor(u.rank) || 'var(--surface-inset)', color: medalColor(u.rank) ? '#fff' : 'var(--text-3)' }">
-          {{ u.rank }}
-        </div>
-        <div class="w-8 h-8 rounded-full grid place-items-center text-xs font-semibold flex-shrink-0"
-             style="background: var(--text-1); color: var(--surface);">
-          {{ initials(u.full_name, u.login) }}
-        </div>
-        <div class="flex-1 min-w-0">
-          <div class="text-sm font-medium truncate" style="color: var(--text-1);">
+    <ol v-else class="xrows" :class="{ stale: yangilanmoqda }">
+      <li v-for="u in top" :key="u.id" class="xrow" :class="{ me: u.is_me }">
+        <span class="xrk" :class="medal(u.rank)">{{ u.rank }}</span>
+        <span class="xav">{{ initials(u.full_name, u.login) }}</span>
+
+        <span class="xnom">
+          <span class="xnom-t">
             {{ u.full_name || u.login }}
-            <span v-if="u.is_me" class="text-2xs ml-1" style="color: var(--text-3);">
-              ({{ i18n.t({ uz: 'siz', kr: 'сиз' }) }})
-            </span>
-          </div>
-          <div v-if="u.streak" class="text-2xs tabular-nums" style="color: var(--text-4);">
-            <AppIcon name="flame" :size="9" class="inline-block text-amber-500 align-baseline mr-0.5" />
-            {{ u.streak }} {{ i18n.t({ uz: 'kun', kr: 'кун' }) }}
-          </div>
-        </div>
-        <div class="text-sm font-semibold tabular-nums flex items-baseline gap-1" style="color: var(--text-1);">
-          {{ u.points.toLocaleString() }}
-          <span class="text-2xs font-medium" style="color: var(--text-4);">XP</span>
-        </div>
-      </div>
+            <span v-if="u.is_me" class="xsiz">({{ i18n.t({ uz: 'siz', kr: 'сиз' }) }})</span>
+          </span>
+          <span v-if="u.streak" class="xstreak">
+            <AppIcon name="flame" :size="12" />
+            <span class="tabular-nums">{{ u.streak }}</span>
+            {{ i18n.t({ uz: 'kunlik seriya', kr: 'кунлик серия' }) }}
+          </span>
+        </span>
 
-      <!-- Guest: rating needs an account -->
-      <NuxtLink v-if="me?.is_guest" to="/register" class="flex items-center gap-3 px-5 py-3 transition-opacity hover:opacity-80"
-           style="background: var(--accent-soft); border-top: 1px solid var(--divider);">
-        <div class="w-8 h-8 rounded-full grid place-items-center text-xs font-semibold flex-shrink-0"
-             style="background: var(--text-1); color: var(--surface);">·</div>
-        <div class="flex-1 min-w-0 text-sm font-medium" style="color: var(--accent);">
-          {{ i18n.t({ uz: 'Reytingda qatnashish uchun ro\'yxatdan o\'ting →', kr: 'Рейтингда қатнашиш учун рўйхатдан ўтинг →' }) }}
-        </div>
-        <div class="text-sm font-semibold tabular-nums flex items-baseline gap-1" style="color: var(--text-1);">
-          {{ (me.points ?? 0).toLocaleString() }}
-          <span class="text-2xs font-medium" style="color: var(--text-4);">XP</span>
-        </div>
-      </NuxtLink>
+        <span class="xnum">
+          <span class="xnum-v tabular-nums">{{ (u.questions ?? 0).toLocaleString() }}</span>
+          <span class="xnum-l">{{ i18n.t({ uz: 'Savol', kr: 'Савол' }) }}</span>
+        </span>
 
-      <!-- "You" row if not in top -->
-      <div v-else-if="me && !meInTop" class="flex items-center gap-3 px-5 py-3"
-           style="background: var(--accent-soft); border-top: 1px solid var(--divider);">
-        <div class="w-7 h-7 rounded-full grid place-items-center text-2xs font-semibold tabular-nums flex-shrink-0"
-             style="background: var(--surface-inset); color: var(--text-3);">
-          {{ me.rank }}
-        </div>
-        <div class="w-8 h-8 rounded-full grid place-items-center text-xs font-semibold flex-shrink-0"
-             style="background: var(--text-1); color: var(--surface);">
-          {{ initials(me.full_name, me.login) }}
-        </div>
-        <div class="flex-1 min-w-0">
-          <div class="text-sm font-medium truncate" style="color: var(--text-1);">
+        <span class="xxp">
+          <AppIcon name="trophy" :size="13" />
+          <span class="tabular-nums">{{ (u.points ?? 0).toLocaleString() }}</span> XP
+        </span>
+      </li>
+
+      <!-- Siz TOP'da bo'lmasangiz -->
+      <li v-if="me && !meInTop && !me.is_guest" class="xrow me own">
+        <span class="xrk">{{ me.rank ?? '—' }}</span>
+        <span class="xav">{{ initials(me.full_name, me.login) }}</span>
+        <span class="xnom">
+          <span class="xnom-t">
             {{ me.full_name || me.login }}
-            <span class="text-2xs ml-1" style="color: var(--text-3);">({{ i18n.t({ uz: 'siz', kr: 'сиз' }) }})</span>
-          </div>
-        </div>
-        <div class="text-sm font-semibold tabular-nums flex items-baseline gap-1" style="color: var(--text-1);">
-          {{ me.points.toLocaleString() }}
-          <span class="text-2xs font-medium" style="color: var(--text-4);">XP</span>
-        </div>
-      </div>
-    </div>
+            <span class="xsiz">({{ i18n.t({ uz: 'siz', kr: 'сиз' }) }})</span>
+          </span>
+        </span>
+        <span class="xxp">
+          <AppIcon name="trophy" :size="13" />
+          <span class="tabular-nums">{{ (me.points ?? 0).toLocaleString() }}</span> XP
+        </span>
+      </li>
 
-    <!-- Footer: how XP is earned (and lost) -->
-    <div v-if="showFooter" class="px-5 py-4" style="border-top: 1px solid var(--divider); background: var(--surface-soft);">
-      <div class="text-2xs font-semibold mb-2.5" style="color: var(--text-2);">
-        {{ i18n.t({ uz: 'XP qanday yig\'iladi:', kr: 'XP қандай йиғилади:' }) }}
-      </div>
-      <div class="grid grid-cols-1 gap-y-1.5 text-2xs">
-        <div class="flex items-center justify-between gap-2">
-          <span style="color: var(--text-3);">{{ i18n.t({ uz: 'Yangi savolni o\'zlashtirish', kr: 'Янги саволни ўзлаштириш' }) }}</span>
-          <span class="font-semibold text-emerald-600 tabular-nums">+3</span>
-        </div>
-        <div class="flex items-center justify-between gap-2">
-          <span style="color: var(--text-3);">{{ i18n.t({ uz: 'Imtihondan o\'tish (20/20 → +50)', kr: 'Имтиҳондан ўтиш (20/20 → +50)' }) }}</span>
-          <span class="font-semibold text-emerald-600 tabular-nums">+30</span>
-        </div>
-        <div class="flex items-center justify-between gap-2">
-          <span style="color: var(--text-3);">{{ i18n.t({ uz: 'Kunlik challenge · Blits rekord', kr: 'Кунлик челлендж · Блиц рекорд' }) }}</span>
-          <span class="font-semibold text-emerald-600 tabular-nums">+10</span>
-        </div>
-        <div class="flex items-center justify-between gap-2">
-          <span style="color: var(--text-3);">{{ i18n.t({ uz: 'Imtihondan yiqilish', kr: 'Имтиҳондан йиқилиш' }) }}</span>
-          <span class="font-semibold text-rose-600 tabular-nums">−5</span>
-        </div>
-      </div>
-      <div class="text-2xs mt-2.5 pt-2.5" style="color: var(--text-4); border-top: 1px dashed var(--divider);">
-        {{ i18n.t({ uz: 'Takroriy yechishga XP berilmaydi — faqat yangi bilim sanaladi.', kr: 'Такрорий ечишга XP берилмайди — фақат янги билим саналади.' }) }}
-      </div>
-    </div>
-  </div>
+      <li v-else-if="me?.is_guest" class="xrow">
+        <NuxtLink to="/register" class="xcta">
+          {{ i18n.t({ uz: 'Reytingda qatnashish uchun ro\'yxatdan o\'ting', kr: 'Рейтингда қатнашиш учун рўйхатдан ўтинг' }) }}
+          <AppIcon name="arrow" :size="14" />
+        </NuxtLink>
+      </li>
+    </ol>
+  </section>
 </template>
+
+<style scoped>
+.xlb {
+  margin-top: 1rem; padding: 1.25rem 1.5rem 1.25rem;
+  background: var(--surface); border: 1px solid var(--border-1);
+  border-radius: 1rem; box-shadow: var(--shadow-card);
+}
+.xlb-head { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.xlb-tile { flex-shrink: 0; display: grid; place-items: center; width: 2.375rem; height: 2.375rem; border-radius: 0.625rem; background: var(--warn-soft); color: var(--warn-ink); }
+.xlb-ttl { flex: 1 1 auto; min-width: 0; }
+.xlb-title { font-size: 1rem; font-weight: 600; color: var(--text-1); }
+.xlb-sub { margin-top: 0.1rem; font-size: 0.8125rem; color: var(--text-3); }
+
+.segs { display: inline-flex; gap: 0.125rem; padding: 0.1875rem; border-radius: 0.5rem; background: var(--surface-inset); }
+.seg { height: 1.875rem; padding: 0 0.75rem; border-radius: 0.375rem; font-size: 0.8125rem; font-weight: 500; color: var(--text-3); transition: background 0.15s, color 0.15s; }
+.seg:hover { color: var(--text-1); }
+.seg.on { background: var(--surface); color: var(--text-1); box-shadow: var(--shadow-soft); font-weight: 600; }
+
+.xlb-skel { display: grid; gap: 0.5rem; margin-top: 1.25rem; }
+.sk { height: 3rem; border-radius: 0.625rem; background: var(--surface-inset); animation: x-p 1.4s ease-in-out infinite; }
+@keyframes x-p { 0%, 100% { opacity: 1 } 50% { opacity: 0.55 } }
+.xlb-empty { margin: 2rem 0; text-align: center; font-size: 0.875rem; color: var(--text-3); }
+
+.xrows { margin-top: 1rem; }
+.stale { opacity: 0.6; transition: opacity 0.2s; }
+.xrow {
+  display: flex; align-items: center; gap: 0.875rem;
+  padding: 0.75rem 0.25rem; border-bottom: 1px solid var(--divider);
+}
+.xrows > .xrow:last-child { border-bottom: none; }
+.xrow.me { background: var(--primary-soft); border-radius: 0.625rem; padding-left: 0.625rem; padding-right: 0.625rem; }
+.xrow.own { margin-top: 0.5rem; border-bottom: none; }
+
+.xrk {
+  flex-shrink: 0; display: grid; place-items: center;
+  width: 1.625rem; height: 1.625rem; border-radius: 9999px;
+  background: var(--surface-inset); color: var(--text-3);
+  font-size: 0.75rem; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.xrk.g { background: #f59e0b; color: #fff; }
+.xrk.s { background: #94a3b8; color: #fff; }
+.xrk.b { background: #d97706; color: #fff; }
+
+.xav { flex-shrink: 0; display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border-radius: 9999px; background: var(--text-1); color: var(--surface); font-size: 0.75rem; font-weight: 700; }
+
+.xnom { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 0.1rem; }
+.xnom-t { font-size: 0.875rem; font-weight: 600; color: var(--text-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.xsiz { font-size: 0.6875rem; font-weight: 500; color: var(--text-3); }
+.xstreak { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; color: var(--warn-ink); }
+
+.xnum { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; min-width: 4rem; }
+.xnum-v { font-size: 0.875rem; font-weight: 600; color: var(--text-1); }
+.xnum-l { font-size: 0.6875rem; color: var(--text-3); }
+
+.xxp {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 0.3rem;
+  height: 2rem; padding: 0 0.7rem; border-radius: 0.5rem;
+  background: var(--warn-soft); color: var(--warn-ink);
+  font-size: 0.8125rem; font-weight: 700;
+}
+
+.xcta { display: flex; align-items: center; justify-content: center; gap: 0.4rem; width: 100%; height: 2.5rem; border-radius: 0.5rem; background: var(--primary-soft); color: var(--primary-ink); font-size: 0.8125rem; font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) { .sk { animation: none; } .stale { transition: none; } }
+@media (max-width: 767px) {
+  .xlb { padding: 1.125rem; }
+  .xnum { display: none; }
+  .segs { width: 100%; }
+  .seg { flex: 1 1 auto; }
+}
+</style>
