@@ -53,7 +53,19 @@ const zaifMavzular = computed(() => {
     .slice(0, 3)
 })
 
-const MAVZU_IK = ['alert', 'car', 'light-signal']
+/** Tavsiya qilingan mavzular haqida ANIQ sonlar (sarlavha yonida). */
+const zaifSavol = computed(() => zaifMavzular.value.reduce((a, b) => a + (b.total ?? 0), 0))
+const zaifOrtacha = computed(() => {
+  const v = zaifMavzular.value.map(m => m.accuracy ?? 0)
+  return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : 0
+})
+
+/** Har mavzuga o'z ikonkasi va RANGI — maketdagidek (bir xil kulrang emas). */
+const MAVZU_IK = [
+  { icon: 'alert', tone: 'bad' },
+  { icon: 'car', tone: 'ok' },
+  { icon: 'light-signal', tone: 'warn' },
+]
 
 // ── Xato mavzular jadvali ─────────────────────────────────────────────────
 const xatoMavzular = computed<any[]>(() => stats.value?.topic_mistakes ?? [])
@@ -222,11 +234,20 @@ function delta(v: number | null | undefined) {
       <!-- ── AI tavsiya + xato mavzular ────────────────────────────────── -->
       <div class="row-3">
         <section class="panel-card ai-card">
+          <!-- Ilgari bu yerda uchta belgi turgan edi (siyohrang plita + "AI
+               tavsiya" chipi + "AI" chipi) — uchtasi ham bir narsani aytardi.
+               Endi bitta belgi va ANIQ son: nechta mavzu, nechta savol. -->
           <div class="ai-head">
             <span class="ai-tile"><AppIcon name="spark" :size="20" /></span>
-            <div class="ai-chips">
-              <span class="ai-chip"><AppIcon name="spark" :size="12" />{{ i18n.t({ uz: 'AI tavsiya', kr: 'AI тавсия' }) }}</span>
-              <span class="ai-chip ai-chip-solid"><AppIcon name="star" :size="12" />AI</span>
+            <div class="ai-htxt">
+              <span class="ai-kicker">{{ i18n.t({ uz: 'AI tavsiya', kr: 'AI тавсия' }) }}</span>
+              <span v-if="zaifMavzular.length" class="ai-fact tabular-nums">
+                {{ zaifMavzular.length }} {{ i18n.t({ uz: 'mavzu', kr: 'мавзу' }) }}
+                <span class="ai-dot">·</span>
+                {{ zaifSavol }} {{ i18n.t({ uz: 'ta savol', kr: 'та савол' }) }}
+                <span class="ai-dot">·</span>
+                {{ i18n.t({ uz: 'aniqlik', kr: 'аниқлик' }) }} {{ zaifOrtacha }}%
+              </span>
             </div>
           </div>
           <h2 class="ai-title">{{ i18n.t({ uz: 'Siz uchun tavsiya qilingan', kr: 'Сиз учун тавсия қилинган' }) }}</h2>
@@ -242,7 +263,9 @@ function delta(v: number | null | undefined) {
               v-for="(m, k) in zaifMavzular" :key="m.topic_id"
               :to="`/test/start/topic?topic_id=${m.topic_id}`" class="ai-topic"
             >
-              <span class="ai-topic-ic"><AppIcon :name="MAVZU_IK[k] || 'sign'" :size="17" /></span>
+              <span class="ai-topic-ic" :class="`ic-${MAVZU_IK[k]?.tone || 'bad'}`">
+                <AppIcon :name="MAVZU_IK[k]?.icon || 'sign'" :size="17" />
+              </span>
               <span class="ai-topic-txt">
                 <span class="ai-topic-nom">{{ m.name }}</span>
                 <span class="ai-topic-meta tabular-nums">
@@ -472,26 +495,38 @@ function delta(v: number | null | undefined) {
   width: 2.75rem; height: 2.75rem; border-radius: 0.75rem;
   background: linear-gradient(135deg, #6a5cf0, #8b5cf6); color: #fff;
 }
-.ai-chips { display: flex; flex-wrap: wrap; gap: 0.375rem; }
-.ai-chip {
-  display: inline-flex; align-items: center; gap: 0.25rem;
-  height: 1.5rem; padding: 0 0.5rem; border-radius: 9999px;
-  background: var(--surface); border: 1px solid var(--ai-border2);
-  font-size: 0.6875rem; font-weight: 600; color: var(--ai-ink2);
+.ai-htxt { min-width: 0; display: flex; flex-direction: column; gap: 0.15rem; }
+/* `--ai-ink2` (#6a5cf0) lavanda fonda 4.34:1 beradi — 11px matn uchun AA
+   4.5:1 dan past. Yorliq uchun to'qroq pog'ona (plita va tugma esa katta
+   yuza, ular o'sha rangda qoladi). */
+.ai-kicker {
+  font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: #4c3fd0;
 }
-.ai-chip-solid { background: var(--ai-ink2); border-color: var(--ai-ink2); color: #fff; }
+.dark .ai-kicker { color: var(--ai-ink2); }
+.ai-fact { font-size: 0.8125rem; color: var(--text-3); }
+.ai-dot { color: var(--text-muted); margin: 0 0.15rem; }
 .ai-title { margin-top: 0.875rem; font-size: 1.0625rem; font-weight: 600; color: var(--text-1); }
 .ai-sub { margin-top: 0.25rem; font-size: 0.8125rem; line-height: 1.55; color: var(--text-3); }
 
 .ai-topics { display: grid; gap: 0.5rem; margin-top: 1rem; }
+/* Qator foni TO'LIQ bir xil: ilgali ramka siyohrang shaffof (`--ai-border2`)
+   edi va kartaning lavanda foni ostidan ko'rinib, qatorning o'ng tomoni
+   boshqacha tuyulardi. Endi neytral ramka + qat'iy oq sirt. */
 .ai-topic {
   display: flex; align-items: center; gap: 0.625rem;
   padding: 0.625rem 0.75rem; border-radius: 0.625rem;
-  background: var(--surface); border: 1px solid var(--ai-border2);
-  transition: border-color 0.15s;
+  background: var(--surface); border: 1px solid var(--border-1);
+  box-shadow: var(--shadow-soft);
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-.ai-topic:hover { border-color: var(--ai-ink2); }
-.ai-topic-ic { flex-shrink: 0; display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 0.5rem; background: var(--ai-soft); color: var(--ai-ink2); }
+.ai-topic:hover { border-color: var(--ai-ink2); box-shadow: var(--shadow-card); }
+
+/* Ikonkalar RANGLI — har mavzu o'z ohangida (bir xil kulrang emas) */
+.ai-topic-ic { flex-shrink: 0; display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 0.5rem; }
+.ai-topic-ic.ic-bad  { background: var(--danger-soft); color: var(--danger-ink); }
+.ai-topic-ic.ic-ok   { background: var(--ok-soft2);    color: var(--ok-ink); }
+.ai-topic-ic.ic-warn { background: var(--warn-soft);   color: var(--warn-ink); }
 .ai-topic-txt { flex: 1 1 auto; min-width: 0; }
 .ai-topic-nom { display: block; font-size: 0.8125rem; font-weight: 600; color: var(--text-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ai-topic-meta { display: block; margin-top: 0.1rem; font-size: 0.6875rem; color: var(--text-3); }
