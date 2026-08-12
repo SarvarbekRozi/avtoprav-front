@@ -15,7 +15,12 @@ const themeLabel = computed(() => theme.isDark.value
 </script>
 
 <template>
-  <div v-if="auth.user" class="min-h-screen flex" style="background: var(--canvas);">
+  <!-- `key` SHART: ikkala shox ham `<div>`, kalitsiz Vue elementni QAYTA
+       ISHLATADI va statik `class` ni yangilamaydi. Natijada auth middleware'i
+       yo'q ochiq sahifada (masalan /belgilar) foydalanuvchi yuklangach mehmon
+       shoxidan `flex-col` qolib ketardi va `main` sidebar OSTIGA tushib,
+       sahifa bo'sh ko'rinardi (kontent bir ekran pastda qolardi). -->
+  <div v-if="auth.user" key="app" class="min-h-screen flex" style="background: var(--canvas);">
     <!-- DIQQAT: shablon ILDIZI bitta tugun bo'lishi SHART (v-if / v-else juftligi).
          Ildizga qo'shimcha element yoki izoh qo'yilsa, ildiz ko'p tugunli (fragment)
          bo'lib qoladi va SSR/klient hidratsiyasi mos kelmay sahifa oq qoladi.
@@ -36,7 +41,7 @@ const themeLabel = computed(() => theme.isDark.value
     </main>
   </div>
 
-  <div v-else class="min-h-screen flex flex-col" style="background: var(--canvas);">
+  <div v-else key="guest" class="min-h-screen flex flex-col" style="background: var(--canvas);">
     <!-- Mehmon (login/register): toza markazlashgan sahifa. `flex flex-col`
          login.vue va register.vue markazlashuvi uchun kerak. -->
     <div class="absolute top-3 right-3 z-30 flex items-center gap-2">
