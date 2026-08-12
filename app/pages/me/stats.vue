@@ -258,7 +258,7 @@ function delta(v: number | null | undefined) {
             }) }}
           </p>
 
-          <div v-if="zaifMavzular.length" class="ai-topics">
+          <div v-if="zaifMavzular.length" class="ai-list">
             <NuxtLink
               v-for="(m, k) in zaifMavzular" :key="m.topic_id"
               :to="`/test/start/topic?topic_id=${m.topic_id}`" class="ai-topic"
@@ -509,18 +509,21 @@ function delta(v: number | null | undefined) {
 .ai-title { margin-top: 0.875rem; font-size: 1.0625rem; font-weight: 600; color: var(--text-1); }
 .ai-sub { margin-top: 0.25rem; font-size: 0.8125rem; line-height: 1.55; color: var(--text-3); }
 
-.ai-topics { display: grid; gap: 0.5rem; margin-top: 1rem; }
-/* Qator foni TO'LIQ bir xil: ilgali ramka siyohrang shaffof (`--ai-border2`)
-   edi va kartaning lavanda foni ostidan ko'rinib, qatorning o'ng tomoni
-   boshqacha tuyulardi. Endi neytral ramka + qat'iy oq sirt. */
+/*  EMAS: main.css da AYNI SHU NOMDA global qoida bor
+   (gradient fon + siyohrang ramka + soya) va u qatorlar ortida keraksiz
+   panel chizib qo'yardi. Shuning uchun nom ajratilgan. */
+.ai-list { display: grid; gap: 0.25rem; margin-top: 0.875rem; }
+/* Ramka ham, fon ham YO'Q — qatorlar to'g'ridan-to'g'ri karta ustida turadi.
+   Bosiladiganligi hover paytida yengil to'ldirish bilan bildiriladi (aks
+   holda havola ekanini bilish qiyin). */
 .ai-topic {
   display: flex; align-items: center; gap: 0.625rem;
-  padding: 0.625rem 0.75rem; border-radius: 0.625rem;
-  background: var(--surface); border: 1px solid var(--border-1);
-  box-shadow: var(--shadow-soft);
-  transition: border-color 0.15s, box-shadow 0.15s;
+  padding: 0.5rem 0.375rem; border-radius: 0.5rem;
+  background: transparent; border: none; box-shadow: none;
+  transition: background 0.15s;
 }
-.ai-topic:hover { border-color: var(--ai-ink2); box-shadow: var(--shadow-card); }
+.ai-topic:hover { background: var(--ai-soft); }
+.ai-topic:focus-visible { outline: 2px solid var(--ai-ink2); outline-offset: 1px; }
 
 /* Ikonkalar RANGLI — har mavzu o'z ohangida (bir xil kulrang emas) */
 .ai-topic-ic { flex-shrink: 0; display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 0.5rem; }
