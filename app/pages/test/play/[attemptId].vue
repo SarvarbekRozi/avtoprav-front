@@ -25,16 +25,19 @@ interface AnswerInfo {
 interface QuestionItem {
   position: number
   is_bookmarked?: boolean
-  // DIQQAT: `question` ichida to'g'ri javob va izoh YO'Q — server ularni
-  // faqat javob berilgandan keyin, `answer` ichida yuboradi (xavfsizlik:
-  // aks holda bitta so'rov butun bazani berardi va imtihonda javoblar
-  // oldindan ko'rinardi).
+  // To'g'ri javob va izoh SAVOL BILAN BIRGA keladi: `GET /test/{id}` bitta
+  // so'rovda hammasini beradi va javob shu asosda BRAUZERDA tekshiriladi.
+  // Shuning uchun har savol uchun alohida `POST /answer` yuborilmaydi
+  // (o'lchandi: har so'rov ~300 ms, 20 savolda ~6 s kutish).
   question: {
     id: number
     text: string
     image: string | null
     topic: string | null
     options: Array<{ id: number, text: string }>
+    correct_option_id: number | null
+    explanation_uz: string | null
+    explanation_kr: string | null
   }
   answer: AnswerInfo | null
 }
@@ -165,6 +168,74 @@ async function toggleBookmark(id: number) {
   bookmarked.value = new Set(bookmarked.value)
 }
 
+/**
+ * Javob buferi `localStorage`da.
+ *
+ * SHART: javoblar endi tarmoqqa faqat urinish oxirida yuboriladi, ya'ni oraliq
+ * holatning yagona nusxasi shu bufer. Usiz sahifani yangilash (yoki tasodifan
+ * yopib qaytish) barcha javoblarni yo'q qilardi — ilgari buni har javobdagi
+ * `POST /answer` ta'minlab turgan edi.
+ */
+const BUFER_KALIT = `testBuffer:${attemptId}`
+
+function saveBuffer() {
+  try { localStorage.setItem(BUFER_KALIT, JSON.stringify(localAnswers.value)) } catch {}
+}
+function loadBuffer() {
+  try {
+    const raw = localStorage.getItem(BUFER_KALIT)
+    if (raw) localAnswers.value = JSON.parse(raw) || {}
+  } catch { localAnswers.value = {} }
+}
+function clearBuffer() {
+  try { localStorage.removeItem(BUFER_KALIT) } catch {}
+}
+
+/**
+ * Buferdagi javoblarni savol/progress ro'yxatiga qo'llaydi — sahifa
+ * yangilangandan keyin belgilangan javoblar joyida turishi uchun.
+ * Server javobi (`item.answer`) ustun: u allaqachon yozilgan holat.
+ */
+function applyBuffer() {
+  const bufer = localAnswers.value
+  if (!Object.keys(bufer).length) return
+
+  questions.value = (questions.value as QuestionItem[]).map((q) => {
+    if (q.answer?.is_answered) return q
+    const b = bufer[q.question.id]
+    if (!b || b.option_id === null) return q
+    const correctId = q.question.correct_option_id
+    const isCorrect = correctId !== null && b.option_id === correctId
+    return {
+      ...q,
+      answer: {
+        is_answered: true,
+        is_correct: isCorrect,
+        is_skipped: false,
+        selected_option_id: b.option_id,
+        correct_option_id: correctId,
+        explanation_uz: q.question.explanation_uz,
+        explanation_kr: q.question.explanation_kr,
+      },
+    }
+  })
+
+  progress.value = progress.value.map((p) => {
+    if (p.status !== 'unseen') return p
+    const q = (questions.value as QuestionItem[]).find(x => x.position === p.position)
+    if (!q?.answer?.is_answered) return p
+    return { position: p.position, status: q.answer.is_correct ? 'correct' : 'wrong' }
+  })
+
+  // Seriya buferdan qayta hisoblanadi: oxirgi uzluksiz to'g'ri javoblar zanjiri
+  let seriya = 0
+  for (const p of progress.value) {
+    if (p.status === 'correct') seriya++
+    else if (p.status === 'wrong' || p.status === 'skipped') seriya = 0
+  }
+  correctStreak.value = seriya
+}
+
 function hydrateFromAnswer(item: QuestionItem) {
   if (item.answer?.is_answered) {
     selectedOptionId.value = item.answer.selected_option_id
@@ -196,7 +267,13 @@ async function load() {
       (questions.value as QuestionItem[]).filter(q => q.is_bookmarked).map(q => q.question.id),
     )
     progress.value = res.progress ?? []
-    currentPosition.value = res.current?.position ?? 1
+    // Yuborilmagan javoblar buferi — sahifa yangilangan bo'lsa tiklanadi
+    loadBuffer()
+    applyBuffer()
+    // Birinchi javobsiz savolga o'tamiz: buferdagi javoblardan keyin server
+    // bergan `position` allaqachon javob berilgan savolni ko'rsatishi mumkin.
+    const birinchiJavobsiz = progress.value.find(p => p.status === 'unseen')
+    currentPosition.value = birinchiJavobsiz?.position ?? res.current?.position ?? 1
     remainingSec.value = attemptInfo.value?.remaining_sec ?? null
     // Server bergan qolgan vaqtdan qat'iy tugash momentini belgilaymiz
     deadlineAt = remainingSec.value !== null ? Date.now() + remainingSec.value * 1000 : null
@@ -251,18 +328,22 @@ function onOptionClick(optionId: number) {
 }
 
 /**
- * Javobni SERVER tekshiradi.
+ * Javob BRAUZERDA tekshiriladi — tarmoqqa chiqmaydi, ya'ni hech qanday kutish
+ * yo'q. To'g'ri javob va izoh `GET /test/{id}` bilan savol qatorida keladi.
  *
- * Ilgari to'g'ri javob va AI izohi test boshlanishida barcha savollar uchun
- * oldindan yuklanardi va tekshiruv shu yerda, brauzerda bo'lardi. Bu ikki
- * muammo tug'dirardi: imtihon vaqtida barcha javoblarni ko'rish mumkin edi va
- * bitta so'rov butun savollar bazasini (javob + izoh bilan) berardi.
+ * Nega: har javobda `POST /answer` yuborilardi va u ~300 ms olardi (o'lchandi;
+ * narx backend mantiqida emas, so'rovning o'zida — `GET /me` ham 235 ms).
+ * 20 savolli imtihonda bu ~6 sekund sof kutish edi.
  *
- * Endi javob berilgandan keyin faqat O'SHA savolning natijasi keladi.
+ * Javoblar `localAnswers` buferida yig'iladi va urinish oxirida BITTA
+ * `POST /submit-all` bilan yoziladi (`finalizeAndExit` / `finishAttempt`).
+ * Bufer `localStorage`ga ham yoziladi — sahifa yangilansa yoki foydalanuvchi
+ * qaytib kelsa javoblar yo'qolmaydi (ilgari buni har javobdagi so'rov
+ * ta'minlardi).
  */
-async function submitAnswer() {
+function submitAnswer() {
   const item = currentItem.value
-  if (!item || submitting.value) return
+  if (!item) return
 
   const elapsed = Math.floor((Date.now() - questionStartedAt.value) / 1000)
   const chosenId = selectedOptionId.value
@@ -273,40 +354,21 @@ async function submitAnswer() {
     option_id: chosenId,
     time_spent_sec: elapsed,
   }
-
-  let verdict: { is_correct: boolean, correct_option_id: number | null, explanation_uz: string | null, explanation_kr: string | null }
-  submitting.value = true
-  try {
-    const res = await apiFetch<any>(`/test/${attemptId}/answer`, {
-      method: 'POST',
-      body: { question_id: item.question.id, option_id: chosenId, time_spent_sec: elapsed },
-    })
-    verdict = res.answer
-    if (typeof res.user_points === 'number' && auth.user) auth.user.points = res.user_points
-    if (res.newly_unlocked?.length) {
-      try { sessionStorage.setItem('testRewards:' + attemptId, JSON.stringify(res.newly_unlocked)) } catch {}
-    }
-  } catch (e: any) {
-    // Javob yozilmadi — tanlovni ochib qo'yamiz, foydalanuvchi qayta uradi.
-    selectedOptionId.value = null
-    delete localAnswers.value[item.question.id]
-    error.value = e?.data?.message || i18n.t({ uz: 'Javobni yuborib bo\'lmadi. Qayta urinib ko\'ring.', kr: 'Жавобни юбориб бўлмади. Қайта уриниб кўринг.' })
-    submitting.value = false
-    return
-  }
-  submitting.value = false
+  saveBuffer()
   error.value = ''
 
-  const correctId = verdict.correct_option_id
-  const isCorrect = verdict.is_correct
+  const correctId = item.question.correct_option_id
+  // `correctId === null` bo'lsa (ma'lumot to'liq emas) javobni TO'G'RI deb
+  // hisoblamaymiz — server oxirida haqiqiy natijani o'zi qayta hisoblaydi.
+  const isCorrect = correctId !== null && chosenId === correctId
 
   correctStreak.value = isCorrect ? correctStreak.value + 1 : 0
 
   lastAnswer.value = {
     is_correct: isCorrect,
     correct_option_id: correctId,
-    explanation_uz: verdict.explanation_uz,
-    explanation_kr: verdict.explanation_kr,
+    explanation_uz: item.question.explanation_uz,
+    explanation_kr: item.question.explanation_kr,
   }
 
   const pIdx = progress.value.findIndex(p => p.position === currentPosition.value)
@@ -329,8 +391,8 @@ async function submitAnswer() {
         is_skipped: false,
         selected_option_id: chosenId,
         correct_option_id: correctId,
-        explanation_uz: verdict.explanation_uz,
-        explanation_kr: verdict.explanation_kr,
+        explanation_uz: item.question.explanation_uz,
+        explanation_kr: item.question.explanation_kr,
       },
     }
   }
@@ -384,6 +446,9 @@ async function finalizeAndExit() {
         sessionStorage.setItem('testRewards:' + attemptId, JSON.stringify(res.newly_unlocked))
       }
     } catch {}
+    // Javoblar serverda — bufer endi kerak emas (aks holda urinish qayta
+    // ochilsa eski javoblar yana qo'llanib ketardi)
+    clearBuffer()
     finished.value = true
     await navigateTo(`/test/result/${attemptId}`, { replace: true })
   } catch (e: any) {
@@ -424,7 +489,11 @@ async function finishAttempt() {
     } else {
       await apiFetch(`/test/${attemptId}/finish`, { method: 'POST' })
     }
-  } catch {}
+    clearBuffer()
+  } catch {
+    // Yuborilmadi — bufer QOLADI: foydalanuvchi qaytib kelsa javoblari
+    // tiklanadi va qayta yuborishga urinish mumkin bo'ladi.
+  }
   await navigateTo(`/test/result/${attemptId}`, { replace: true })
 }
 
