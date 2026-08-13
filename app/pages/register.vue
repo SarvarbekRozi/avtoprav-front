@@ -317,7 +317,8 @@ watch(errors, (next) => {
   align-items: center;
   gap: 0.375rem;
   margin-bottom: 0.875rem;
-  padding: 0.375rem 0.625rem 0.375rem 0.5rem;
+  /* 0.375rem bilan balandlik 32px edi — mobil bosish nishoni uchun 36px */
+  padding: 0.5rem 0.625rem 0.5rem 0.5rem;
   margin-left: -0.5rem;      /* matn karta chetiga tekis tursin */
   border-radius: 10px;
   font-size: 13.5px;
@@ -391,11 +392,15 @@ watch(errors, (next) => {
 .field-hint { font-size: 12px; margin-top: 0.375rem; color: var(--text-3); }
 
 .reveal-text {
+  position: relative;
   font-size: 13px;
   color: var(--text-3);
   transition: color .15s;
 }
 .reveal-text:hover { color: var(--text-1); }
+/* Matn 20px balandlikda — bosish zonasini 36px gacha kengaytiradi.
+   Pseudo-element joy egallamaydi, maket buzilmaydi. */
+.reveal-text::after { content: ''; position: absolute; inset: -8px 0; }
 
 .reveal-icon {
   position: absolute;
@@ -404,8 +409,9 @@ watch(errors, (next) => {
   transform: translateY(-50%);
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  /* 34px chegaradan past edi — barmoq uchun 36px */
+  width: 36px;
+  height: 36px;
   border-radius: 9px;
   color: var(--text-4);
   transition: color .15s, background .15s;

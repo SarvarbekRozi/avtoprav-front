@@ -83,8 +83,11 @@ const metrics = computed(() => [
       </NuxtLink>
     </div>
 
-    <!-- Doira + ko'rsatkichlar -->
-    <div class="mt-4 flex items-center gap-5 sm:gap-6 lg:gap-7">
+    <!-- Doira + ko'rsatkichlar.
+         MOBILDA USTMA-UST: 375px da doira ~110px olib, qolgan ~215px ikki
+         ustunga bo'linardi va "10% qamrovga yetish" ikki qatorga sinib,
+         siqilib qolardi. Ustma-ust bo'lganda har ko'rsatkichga ~160px tegadi. -->
+    <div class="mt-4 flex flex-col items-center gap-4 sm:flex-row sm:items-center sm:gap-6 lg:gap-7">
       <div class="relative shrink-0" :style="{ width: `${SIZE}px`, height: `${SIZE}px` }">
         <svg :width="SIZE" :height="SIZE" :viewBox="`0 0 ${SIZE} ${SIZE}`" role="img"
              :aria-label="i18n.t({ uz: `Tayyorgarlik ${pct} foiz`, kr: `Тайёргарлик ${pct} фоиз` })">

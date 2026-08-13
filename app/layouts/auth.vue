@@ -42,23 +42,25 @@ const themeLabel = computed(() => theme.isDark.value
       <!-- `aria-pressed` — tanlangan alifboni faqat RANG bildirsa, ekran
            o'quvchi ikki bir xil tugmani o'qib, qaysi biri faol ekanini
            aytmaydi. `role="group"` ikkisini bitta boshqaruv sifatida bog'laydi. -->
+      <!-- `py-1.5` / `h-9`: mobilda tugmalar 24px va 32px edi — barmoq bilan
+           bosish uchun kamida 36px kerak. -->
       <div class="flex items-center rounded-md p-0.5 text-xs font-medium"
            role="group" :aria-label="i18n.t({ uz: 'Alifbo', kr: 'Алифбо' })"
            style="background: var(--surface-inset);">
-        <button type="button" class="px-2 py-1 rounded transition-colors"
+        <button type="button" class="px-2.5 py-1.5 rounded transition-colors"
                 :aria-pressed="i18n.locale.value === 'uz_latn'"
                 :style="i18n.locale.value === 'uz_latn'
                   ? { background: 'var(--surface)', boxShadow: 'var(--shadow-soft)', color: 'var(--text-1)' }
                   : { color: 'var(--text-3)' }"
                 @click="changeLocale('uz_latn')">Lotin</button>
-        <button type="button" class="px-2 py-1 rounded transition-colors"
+        <button type="button" class="px-2.5 py-1.5 rounded transition-colors"
                 :aria-pressed="i18n.locale.value === 'uz_cyrl'"
                 :style="i18n.locale.value === 'uz_cyrl'
                   ? { background: 'var(--surface)', boxShadow: 'var(--shadow-soft)', color: 'var(--text-1)' }
                   : { color: 'var(--text-3)' }"
                 @click="changeLocale('uz_cyrl')">Кирилл</button>
       </div>
-      <button type="button" class="h-8 w-8 rounded-md grid place-items-center transition-colors"
+      <button type="button" class="h-9 w-9 rounded-md grid place-items-center transition-colors"
               style="color: var(--text-3); background: var(--surface-inset);"
               :title="themeLabel" :aria-label="themeLabel" @click="theme.toggle()">
         <AppIcon :name="theme.isDark.value ? 'sun' : 'moon'" :size="17" />

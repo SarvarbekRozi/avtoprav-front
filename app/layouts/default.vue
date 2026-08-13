@@ -48,18 +48,18 @@ const themeLabel = computed(() => theme.isDark.value
       <div class="hidden sm:flex items-center rounded-md p-0.5 text-xs font-medium"
            style="background: var(--surface-inset);">
         <button type="button" @click="changeLocale('uz_latn')"
-          class="px-2 py-1 rounded transition-colors"
+          class="px-2.5 py-1.5 rounded transition-colors"
           :style="i18n.locale.value === 'uz_latn'
             ? { background: 'var(--surface)', boxShadow: 'var(--shadow-soft)', color: 'var(--text-1)' }
             : { color: 'var(--text-3)' }">Lotin</button>
         <button type="button" @click="changeLocale('uz_cyrl')"
-          class="px-2 py-1 rounded transition-colors"
+          class="px-2.5 py-1.5 rounded transition-colors"
           :style="i18n.locale.value === 'uz_cyrl'
             ? { background: 'var(--surface)', boxShadow: 'var(--shadow-soft)', color: 'var(--text-1)' }
             : { color: 'var(--text-3)' }">Кирилл</button>
       </div>
       <button type="button" @click="theme.toggle()"
-              class="h-8 w-8 rounded-md grid place-items-center transition-colors"
+              class="h-9 w-9 rounded-md grid place-items-center transition-colors"
               style="color: var(--text-3); background: var(--surface-inset);"
               :title="themeLabel" :aria-label="themeLabel">
         <AppIcon :name="theme.isDark.value ? 'sun' : 'moon'" :size="17" />

@@ -539,6 +539,9 @@ useSeoMeta({
   color: var(--text-4);
   transition: background 0.15s, color 0.15s;
 }
+/* Ko'rinishi 30px qoladi (karta burchagida ixcham turishi kerak), lekin barmoq
+   bilan bosish uchun 36px zona kerak — pseudo-element joy egallamaydi. */
+.sbm::after { content: ''; position: absolute; inset: -3px; border-radius: 0.625rem; }
 .sbm:hover { background: var(--surface-inset); color: var(--text-2); }
 .sbm[aria-pressed="true"] { color: var(--warn-ink); }
 .dark .sbm[aria-pressed="true"] { color: var(--warn); }

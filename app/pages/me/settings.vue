@@ -76,7 +76,9 @@ async function logout() {
           <div class="text-base font-semibold text-ink-900">{{ i18n.t({ uz: 'Bildirishnomalar', kr: 'Билдиришномалар' }) }}</div>
         </div>
         <div class="space-y-3">
-          <label class="flex items-center justify-between cursor-pointer">
+          <!-- `py-1.5`: qatorning o'zi bosish nishoni (label `button`ni o'rab
+               turadi), 24px lik tugmani 36px lik qatorga aylantiradi. -->
+          <label class="flex items-center justify-between cursor-pointer py-1.5">
             <span class="text-sm text-ink-700">{{ i18n.t({ uz: 'Kunlik mashq eslatmasi', kr: 'Кунлик машқ эслатмаси' }) }}</span>
             <button type="button" @click="toggle(notifyDaily)"
               class="w-11 h-6 rounded-full transition-colors relative flex-shrink-0"
@@ -84,7 +86,9 @@ async function logout() {
               <span class="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all" :style="{ left: notifyDaily === '1' ? '22px' : '2px' }"></span>
             </button>
           </label>
-          <label class="flex items-center justify-between cursor-pointer">
+          <!-- `py-1.5`: qatorning o'zi bosish nishoni (label `button`ni o'rab
+               turadi), 24px lik tugmani 36px lik qatorga aylantiradi. -->
+          <label class="flex items-center justify-between cursor-pointer py-1.5">
             <span class="text-sm text-ink-700">{{ i18n.t({ uz: 'Yutuq bildirishnomalari', kr: 'Ютуқ билдиришномалари' }) }}</span>
             <button type="button" @click="toggle(notifyAch)"
               class="w-11 h-6 rounded-full transition-colors relative flex-shrink-0"

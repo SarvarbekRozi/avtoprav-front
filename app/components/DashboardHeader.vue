@@ -66,13 +66,18 @@ const subtitle = computed(() => {
     <!-- Bo'sh bo'lsa ham balandlik saqlansin — mount'dan keyin sahifa sakramaydi -->
     <div class="text-sm font-medium h-[20px]" style="color: var(--text-4);">{{ dateLabel }}</div>
 
-    <h1 class="mt-2 font-bold tracking-tightish leading-[1.1] text-[28px] sm:text-[34px] lg:text-[38px]"
+    <!-- Mobilda 28px juda katta edi: uzun ism bilan ("Xayrli kun, Sarvarbek")
+         sarlavha butun ekranni egallab ketardi. Endi 22px dan boshlanadi va
+         bosqichma-bosqich o'sadi. -->
+    <h1 class="mt-2 font-bold tracking-tightish leading-[1.15] text-[22px] sm:text-[28px] md:text-[34px] lg:text-[38px]"
         style="color: var(--text-1);">
-      {{ greeting }}<template v-if="firstName">, {{ firstName }}</template>
-      <span class="wave inline-block ml-2" aria-hidden="true">👋</span>
+      {{ greeting }}<template v-if="firstName">, {{ firstName }}</template
+      ><!-- Emoji ALOHIDA span'da `ml-2` bilan edi va matn ekranga sig'maganda
+            o'z qatoriga tushib qolardi. `&nbsp;` uni oxirgi so'zga bog'laydi. -->
+      &nbsp;<span class="wave inline-block" aria-hidden="true">👋</span>
     </h1>
 
-    <p class="mt-3 text-[15px] leading-relaxed" style="color: var(--text-3);">
+    <p class="mt-2.5 text-[14px] sm:text-[15px] leading-relaxed" style="color: var(--text-3);">
       {{ subtitle }}
     </p>
   </div>

@@ -141,7 +141,7 @@ const tiles = computed<{ icon: string, tone: Tone, title: string, sub: string, t
               {{ i18n.t({ uz: `Bugun ${freeTestsLeft} ta bepul test`, kr: `Бугун ${freeTestsLeft} та бепул тест` }) }}
             </span>
             <NuxtLink v-else to="/pricing"
-                      class="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium text-amber-700"
+                      class="inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-xs font-medium text-amber-700"
                       style="background: rgba(251,191,36,0.16);">
               <AppIcon name="spark" :size="12" />
               {{ i18n.t({ uz: 'Limit tugadi — Premium: cheksiz', kr: 'Лимит тугади — Премиум: чексиз' }) }}
@@ -155,7 +155,7 @@ const tiles = computed<{ icon: string, tone: Tone, title: string, sub: string, t
           <!-- Tugallanmagan urinish — namunada alohida karta YO'Q, shuning uchun
                u shu yerda ixcham chip ko'rinishida (funksiya saqlanadi, tartib buzilmaydi). -->
           <NuxtLink v-if="current" :to="`/test/play/${current.id}`"
-                    class="inline-flex items-center gap-2 h-8 pl-2.5 pr-3 rounded-full text-xs font-semibold text-white transition-transform hover:-translate-y-0.5"
+                    class="inline-flex items-center gap-2 h-9 pl-2.5 pr-3 rounded-full text-xs font-semibold text-white transition-transform hover:-translate-y-0.5"
                     style="background: linear-gradient(118deg, var(--ok-surface), var(--ok-surface-2)); box-shadow: 0 6px 16px -8px rgba(16,185,129,0.8);">
             <span class="w-4 h-4 rounded-full grid place-items-center shrink-0" style="background: rgba(255,255,255,0.25);">
               <svg width="8" height="8" viewBox="0 0 20 20" fill="currentColor"><path d="M6 4l11 6-11 6z" /></svg>
@@ -234,9 +234,12 @@ const tiles = computed<{ icon: string, tone: Tone, title: string, sub: string, t
 
     <!-- Taklif va murojaat -->
     <div class="mt-6 mb-1 text-center">
+      <!-- Ilgari `text-2xs` + `opacity-70` + `--text-4` edi: bosish zonasi 16px
+           (barmoq uchun juda kichik) va kontrast ~2.4:1 gacha tushib o'qilmasdi.
+           Endi 12px matn, to'liq kontrast va 36px balandlikdagi bosish zonasi. -->
       <a href="https://t.me/avtoprav_admin" target="_blank" rel="noopener"
-         class="inline-flex items-center gap-1 text-2xs opacity-70 hover:opacity-100 transition-opacity"
-         style="color: var(--text-4);">
+         class="inline-flex items-center gap-1 text-xs px-2 py-2.5 rounded-lg hover:underline"
+         style="color: var(--text-3);">
         {{ i18n.t({ uz: 'Taklif va murojaatlar uchun', kr: 'Таклиф ва мурожаатлар учун' }) }} — @avtoprav_admin
       </a>
     </div>

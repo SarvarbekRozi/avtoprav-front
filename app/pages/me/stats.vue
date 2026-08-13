@@ -627,7 +627,12 @@ function delta(v: number | null | undefined) {
   .kpi-spark { display: none; }
   .chart-card, .donut-card, .miss-card, .ai-card { padding: 1.125rem; }
   .segs { width: 100%; }
-  .seg { flex: 1 1 auto; }
+  /* Mobilda barmoq bilan bosiladi: 30px balandlik juda kichik edi → 36px */
+  .seg { flex: 1 1 auto; height: 2.25rem; }
+  /* Matnli havolalar ~20px balandlikda edi; pseudo-element joy egallamasdan
+     bosish zonasini kengaytiradi. */
+  .head-link { position: relative; }
+  .head-link::after { content: ''; position: absolute; inset: -8px 0; }
   .mc-b { display: none; }
   .m-nom { max-width: 10rem; }
   .ai-acts > * { flex: 1 1 100%; justify-content: center; }

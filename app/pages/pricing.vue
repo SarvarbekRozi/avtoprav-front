@@ -451,12 +451,15 @@ onMounted(async () => {
 
 .hero-title {
   margin-top: 1.25rem;
-  font-size: 2rem;
+  /* 375px ekranda 2rem da "Imtihonga ishonch bilan" qatorga sig'masdi va
+     sarlavha uch qatorga cho'zilib ketardi. 400px dan boshlab 2rem qaytadi. */
+  font-size: 1.75rem;
   font-weight: 800;
   line-height: 1.1;
   letter-spacing: -0.03em;
   color: var(--text-1);
 }
+@media (min-width: 400px)  { .hero-title { font-size: 2rem; } }
 @media (min-width: 640px)  { .hero-title { font-size: 2.75rem; } }
 @media (min-width: 1024px) { .hero-title { font-size: 3.25rem; } }
 

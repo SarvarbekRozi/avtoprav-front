@@ -1088,6 +1088,10 @@ onBeforeUnmount(() => {
   color: var(--text-4);
   transition: background 0.15s, color 0.15s;
 }
+/* Ko.rinishi 30px qoladi (savol sarlavhasi yonida ixcham), lekin barmoq bilan
+   bosish uchun 36px zona kerak — pseudo-element joy egallamaydi. */
+.q-bookmark { position: relative; }
+.q-bookmark::after { content: ''; position: absolute; inset: -3px; }
 .q-bookmark:hover { background: var(--surface-inset); color: var(--text-2); }
 .q-bookmark[aria-pressed="true"] { color: var(--primary-ink); }
 

@@ -790,7 +790,8 @@ onMounted(() => {
 .chips { display: flex; flex-wrap: wrap; gap: 0.375rem; }
 .chip {
   display: inline-flex; align-items: center; gap: 0.4rem;
-  height: 2.125rem; padding: 0 0.75rem;
+  /* 2.125rem (34px) mobil bosish nishoni chegarasidan past edi → 36px */
+  height: 2.25rem; padding: 0 0.75rem;
   border-radius: 0.5rem; border: 1px solid transparent;
   font-size: 0.8125rem; font-weight: 600; color: var(--text-3);
   transition: background 0.15s, border-color 0.15s, color 0.15s;
@@ -810,7 +811,8 @@ onMounted(() => {
 .range { position: relative; }
 .range-sel {
   appearance: none; -webkit-appearance: none;
-  height: 2.125rem; padding: 0 2rem 0 0.75rem;
+  /* `.chip` bilan bir xil balandlik (36px) — bir qatorda turadi */
+  height: 2.25rem; padding: 0 2rem 0 0.75rem;
   border-radius: 0.5rem; border: 1px solid var(--border-1); background: var(--surface);
   font-size: 0.8125rem; font-weight: 600; color: var(--text-2); cursor: pointer;
 }
@@ -867,7 +869,8 @@ onMounted(() => {
 .qflag {
   margin-left: auto; flex-shrink: 0;
   display: inline-flex; align-items: center; gap: 0.4rem;
-  height: 2.125rem; padding: 0 0.75rem;
+  /* 2.125rem (34px) mobil bosish nishoni chegarasidan past edi → 36px */
+  height: 2.25rem; padding: 0 0.75rem;
   border-radius: 0.5rem; border: 1px solid var(--border-1); background: var(--surface);
   font-size: 0.8125rem; font-weight: 500; color: var(--text-3);
   transition: border-color 0.15s, color 0.15s;

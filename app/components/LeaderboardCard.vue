@@ -181,6 +181,7 @@ function medal(rank: number) {
   .xlb { padding: 1.125rem; }
   .xnum { display: none; }
   .segs { width: 100%; }
-  .seg { flex: 1 1 auto; }
+  /* Mobilda barmoq bilan bosiladi: 30px juda kichik edi → 36px */
+  .seg { flex: 1 1 auto; height: 2.25rem; }
 }
 </style>

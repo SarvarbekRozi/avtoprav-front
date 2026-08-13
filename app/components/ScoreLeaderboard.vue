@@ -136,7 +136,8 @@ function fmtScore(s: number | null) {
 .lb-sub { margin-top: 0.1rem; font-size: 0.8125rem; color: var(--text-3); }
 .lb-more {
   flex-shrink: 0; display: inline-flex; align-items: center; gap: 0.35rem;
-  height: 2.125rem; padding: 0 0.75rem; border-radius: 0.5rem;
+  /* 2.125rem (34px) mobil bosish zonasi uchun chegaradan past edi — 36px */
+  height: 2.25rem; padding: 0 0.75rem; border-radius: 0.5rem;
   background: var(--lb-soft); color: var(--lb-ink);
   font-size: 0.8125rem; font-weight: 600;
 }

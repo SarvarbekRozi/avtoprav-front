@@ -106,6 +106,13 @@ const rows = computed(() => (props.recent ?? []).slice(0, 4))
 </template>
 
 <style scoped>
-.link-all { color: var(--primary); }
+/* `--primary` oq fonda 4.36:1 — 13px matn uchun 4.5:1 talab bajarilmaydi. */
+.link-all { position: relative; color: var(--primary-strong); }
 .link-all:hover { text-decoration: underline; text-underline-offset: 4px; }
+/* Bosish zonasi: matn o'zi ~20px balandlikda, barmoq uchun kamida 36px kerak.
+   Pseudo-element joy egallamaydi — ko'rinish o'zgarmaydi, faqat bosiladigan
+   maydon kengayadi. Faqat VERTIKAL: gorizontal chiqsa `scrollWidth` oshib,
+   ota konteynerda keraksiz gorizontal siljish paydo bo'lishi mumkin (kengligi
+   allaqachon 54px, ya'ni yetarli). */
+.link-all::after { content: ''; position: absolute; inset: -8px 0; }
 </style>

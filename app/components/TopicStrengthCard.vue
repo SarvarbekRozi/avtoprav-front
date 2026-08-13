@@ -97,6 +97,10 @@ function iconFor(name: string, index: number) {
 </template>
 
 <style scoped>
-.link-all { color: var(--primary); }
+/* `--primary` oq fonda 4.36:1 — 13px matn uchun 4.5:1 talab bajarilmaydi. */
+.link-all { position: relative; color: var(--primary-strong); }
 .link-all:hover { text-decoration: underline; text-underline-offset: 4px; }
+/* Bosish zonasi kamida 36px bo'lsin — pseudo-element joy egallamaydi.
+   Faqat vertikal: gorizontal chiqsa `scrollWidth` keraksiz oshadi. */
+.link-all::after { content: ''; position: absolute; inset: -8px 0; }
 </style>
