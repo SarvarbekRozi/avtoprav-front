@@ -337,20 +337,24 @@ onMounted(() => {
       <!-- ── Xulosa kartasi ────────────────────────────────────────────── -->
       <section class="panel-card hero">
         <div class="hero-left">
-          <div class="badges">
-            <span class="verdict" :class="otdi ? 'v-ok' : 'v-fail'">
-              <AppIcon :name="otdi ? 'check' : 'x'" :size="12" />
-              {{ otdi ? i18n.t({ uz: 'O\'tildi', kr: 'Ўтилди' }) : i18n.t({ uz: 'O\'tilmadi', kr: 'Ўтилмади' }) }}
-            </span>
-            <span v-if="a.points_earned" class="pts" :class="a.points_earned > 0 ? 'p-plus' : 'p-minus'">
-              <AppIcon :name="a.points_earned > 0 ? 'spark' : 'x'" :size="12" />
-              {{ a.points_earned > 0 ? '+' : '' }}{{ a.points_earned }} XP
-            </span>
-          </div>
+          <!-- `hero-top` — MOBILDA ball va chiplar bitta qatorda turadi
+               (ish stolida ular hozirgidek ustma-ust qoladi). -->
+          <div class="hero-top">
+            <div class="badges">
+              <span class="verdict" :class="otdi ? 'v-ok' : 'v-fail'">
+                <AppIcon :name="otdi ? 'check' : 'x'" :size="12" />
+                {{ otdi ? i18n.t({ uz: 'O\'tildi', kr: 'Ўтилди' }) : i18n.t({ uz: 'O\'tilmadi', kr: 'Ўтилмади' }) }}
+              </span>
+              <span v-if="a.points_earned" class="pts" :class="a.points_earned > 0 ? 'p-plus' : 'p-minus'">
+                <AppIcon :name="a.points_earned > 0 ? 'spark' : 'x'" :size="12" />
+                {{ a.points_earned > 0 ? '+' : '' }}{{ a.points_earned }} XP
+              </span>
+            </div>
 
-          <div class="score tabular-nums">
-            <span class="score-n" :class="otdi ? 's-ok' : 's-fail'">{{ a.correct_count }}</span>
-            <span class="score-d">/ {{ a.total_questions }}</span>
+            <div class="score tabular-nums">
+              <span class="score-n" :class="otdi ? 's-ok' : 's-fail'">{{ a.correct_count }}</span>
+              <span class="score-d">/ {{ a.total_questions }}</span>
+            </div>
           </div>
 
           <!-- Mobilda ikkisi BITTA qatorga qo'shiladi: `hero-date` inline
@@ -544,8 +548,15 @@ onMounted(() => {
       >
         <section class="panel-card qcard">
           <div class="qhead">
-            <span class="qnum" :class="`n-${holat(x)}`">{{ x.position }}</span>
-            <span class="qstat" :class="`t-${holat(x)}`">{{ i18n.t(HOLAT[holat(x)].soz) }}</span>
+            <!-- Mobilda maketdagidek: chipda HOLAT IKONKASI, matnda esa
+                 "Savol 1 · Xato javob". Ish stolida chipda raqam qoladi. -->
+            <span class="qnum" :class="`n-${holat(x)}`">
+              <span class="qnum-n">{{ x.position }}</span>
+              <AppIcon :name="HOLAT[holat(x)].icon" :size="15" class="qnum-ic" />
+            </span>
+            <span class="qstat" :class="`t-${holat(x)}`">
+              <span class="qstat-pre">{{ i18n.t({ uz: 'Savol', kr: 'Савол' }) }} {{ x.position }} · </span>{{ i18n.t(HOLAT[holat(x)].soz) }}
+            </span>
             <button
               type="button" class="qflag"
               :aria-label="`${i18n.t({ uz: 'Shikoyat qilish', kr: 'Шикоят қилиш' })} — ${i18n.t({ uz: 'savol', kr: 'савол' })} ${x.position}`"
@@ -894,6 +905,10 @@ onMounted(() => {
 .n-togri    { background: var(--ok-soft);     color: var(--ok-ink); }
 .n-xato     { background: var(--danger-soft); color: var(--danger-ink); }
 .n-javobsiz { background: var(--surface-inset); color: var(--text-3); }
+/* Ikonka va "Savol N ·" faqat mobilda (pastdagi media blokida yoqiladi).
+   `!important` — AppIcon `display` ni inline style bilan beradi. */
+.qnum-ic { display: none !important; }
+.qstat-pre { display: none; }
 .qstat { font-size: 0.9375rem; font-weight: 600; }
 .t-togri    { color: var(--ok-ink); }
 .t-xato     { color: var(--danger-ink); }
@@ -1024,6 +1039,16 @@ onMounted(() => {
      bo'sh joy ketardi. O'ngdan ham joy: bildirishnoma qo'ng'irog'i bor. */
   .result { padding-top: 0.875rem; }
   .topbar { padding-left: 3.25rem; padding-right: 3rem; }
+  /* Tugma emas, HAVOLA ko'rinishi: ramka va fon yo'q */
+  .back-btn {
+    height: auto; padding: 0.5rem 0; border: 0; background: none;
+    box-shadow: none; font-weight: 500;
+  }
+
+  /* "O'TILMADI · -5 XP" va "3 / 20" BITTA QATORDA */
+  .hero-top { display: flex; align-items: center; gap: 0.625rem; flex-wrap: wrap; }
+  .hero-top .badges { order: 2; gap: 0.375rem; }
+  .hero-top .score { order: 1; margin: 0; }
 
   .hero, .nav-card, .qcard, .ai-card { padding: 1.125rem; }
   /* Suzuvchi menyu tugmasi savol qatorining sarlavhasini bosib qolmasin —
@@ -1054,7 +1079,8 @@ onMounted(() => {
   .stat { padding: 0.7rem; }
   .stat-ic { width: 1.75rem; height: 1.75rem; border-radius: 0.5rem; }
   .stat-lbl { font-size: 0.75rem; }
-  .stat-val { margin-top: 0.5rem; font-size: 1.125rem; }
+  /* Asosiy son — kartadagi eng muhim narsa, kattaroq bo'lsin */
+  .stat-val { margin-top: 0.5rem; font-size: 1.625rem; }
   .stat-inline { font-size: 0.75rem; }
   /* Foiz TAKRORI: `stat-sub` (to'g'ri/xato ulushi) va butun `stat-pct`
      kartasi olib tashlanadi — foiz natija chizig'ida allaqachon bor.
@@ -1112,8 +1138,22 @@ onMounted(() => {
     /* Maketdagidek oq fonda faqat tugma lavanda bo'lsin */
     background: var(--surface); border-color: var(--border-soft);
   }
+  /* Maketda AI bloki = BITTA lavanda tugma. Sarlavha ortiqcha (tugmaning
+     o'zida "AI tushuntirish" yozuvi bor) — u faqat izoh yo'q yoki matn
+     ochilgan holatda kerak, shuning uchun tugma ko'rinib turganda
+     yashiriladi. */
   .ai-head { font-size: 0.8125rem; margin-bottom: 0.5rem; }
+  .ai-card:has(.ai-btn) .ai-head { display: none; }
+  .ai-btn { background: var(--ai-bg); width: 100%; justify-content: center; padding: 0.7rem 0.9rem; }
   .ai-qnum { display: none; }
+
+  /* Javob bloklari: maketda ramkasiz, faqat yumshoq fon */
+  .ans { border-color: transparent; }
+
+  /* Savol sarlavhasi maketdagidek: chipda ikonka, matnda "Savol N · holat" */
+  .qnum-n { display: none; }
+  .qnum-ic { display: inline-block !important; }
+  .qstat-pre { display: inline; color: var(--text-1); }
 
   /* Legend TAKRORI: filtr chiplari ("Barchasi 20 · To'g'ri 3 · Xato 3")
      o'zi rangli va sonli, ya'ni bir xil ma'lumotni ikki marta bermaymiz. */
