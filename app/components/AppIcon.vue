@@ -69,6 +69,9 @@ const NAME_MAP: Record<string, string> = {
   'bookmark-on':  'lucide:bookmark-check',
   // test ekrani: rasmni kattalashtirish
   expand:         'lucide:maximize-2',
+  // Premium — `zap` (chaqmoq) juda umumiy edi; toj darhol "premium" deb
+  // o'qiladi va gradientsiz ham ma'nosini beradi.
+  crown:          'lucide:crown',
   // AI izoh sarlavhasi — `sparkles` (✨) hamma joyda "sun'iy intellekt" belgisi,
   // ya'ni panelning AI'ligi bir qarashda bilinadi (ilgari oddiy chat ikonkasi edi).
   ai:             'lucide:sparkles',

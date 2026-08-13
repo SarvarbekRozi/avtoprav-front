@@ -207,7 +207,7 @@ onMounted(async () => {
             {{ i18n.t({ uz: 'Premium imkoniyatlar ochilmagan.', kr: 'Премиум имкониятлар очилмаган.' }) }}
           </p>
           <button type="button" class="status-btn" @click="openSheet">
-            <AppIcon name="bolt" :size="15" />
+            <AppIcon name="crown" :size="15" />
             {{ i18n.t({ uz: 'Premium ga o\'tish', kr: 'Премиумга ўтиш' }) }}
           </button>
         </template>
@@ -332,7 +332,7 @@ onMounted(async () => {
             </fieldset>
 
             <button type="button" class="cta" @click="openSheet">
-              <AppIcon name="bolt" :size="19" />
+              <AppIcon name="crown" :size="18" />
               {{ i18n.t({ uz: 'Premium ga o\'tish', kr: 'Премиумга ўтиш' }) }}
             </button>
 
@@ -608,12 +608,17 @@ onMounted(async () => {
 /* ── Tariflar kartasi ── */
 .plans { overflow: hidden; display: flex; flex-direction: column; }
 
+/* "Eng ma'qul tanlov" — bu YORLIQ, harakat emas. Ilgari u ham `--grad-hero`
+   gradientida edi va katta tugma bilan birga kartaning yarmini gradientga
+   aylantirib qo'yardi. Endi jim, MONOXROM tasma: sahifada faqat BITTA
+   to'yingan element qoladi — asosiy tugma, ya'ni ko'z avval unga tushadi. */
 .plans-head {
-  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  display: flex; align-items: center; justify-content: center; gap: 0.45rem;
   height: 2.75rem;
-  font-size: 0.875rem; font-weight: 600;
-  color: #fff;
-  background: var(--grad-hero);
+  font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.02em;
+  color: var(--primary-ink);
+  background: var(--primary-soft);
+  border-bottom: 1px solid var(--primary-ring);
 }
 .plans-body { padding: 1.25rem; display: flex; flex-direction: column; flex: 1 1 auto; }
 
@@ -680,6 +685,10 @@ onMounted(async () => {
 .plan-cur { margin-left: 0.25rem; font-size: 0.8125rem; font-weight: 500; color: var(--text-3); }
 .plan-perday { display: block; margin-top: 0.1rem; font-size: 0.75rem; color: var(--text-3); }
 
+/* QAT'IY brend ko'ki, gradient EMAS. Ko'k→binafsha gradient ikkita elementda
+   takrorlanib arzon ko'rinardi; bir tekis to'q ko'k ishonchliroq o'qiladi va
+   oq matn ostida 5.72:1 beradi (gradient uchastkalarida 4.36:1 gacha
+   tushardi — AA 4.5:1 dan past). */
 .cta {
   width: 100%; margin-top: 1.15rem;
   height: 3.5rem;
@@ -687,11 +696,11 @@ onMounted(async () => {
   border-radius: 0.875rem;
   font-size: 1.0625rem; font-weight: 700;
   color: #fff;
-  background: var(--grad-hero);
-  box-shadow: 0 12px 26px -12px rgba(79, 110, 240, 0.75);
-  transition: filter .15s, transform .15s;
+  background: var(--primary-strong);
+  box-shadow: 0 10px 22px -12px rgba(63, 90, 216, 0.55);
+  transition: background .15s, transform .15s, box-shadow .15s;
 }
-.cta:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.cta:hover { background: var(--primary); transform: translateY(-1px); box-shadow: 0 14px 26px -12px rgba(63, 90, 216, 0.6); }
 .cta:active { transform: translateY(0); }
 .cta:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
 
