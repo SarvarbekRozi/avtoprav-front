@@ -353,9 +353,12 @@ onMounted(() => {
             <span class="score-d">/ {{ a.total_questions }}</span>
           </div>
 
+          <!-- Mobilda ikkisi BITTA qatorga qo'shiladi: `hero-date` inline
+               bo'ladi va "O'tkazilgan sana:" yorlig'i yashiriladi (sana o'zi
+               "Bugun, 17:06" ko'rinishida tushunarli). -->
           <p class="hero-mode">{{ rejim }} <span class="dot">•</span> {{ vaqtSoz(a.time_spent_sec) }}</p>
           <p class="hero-date">
-            {{ i18n.t({ uz: 'O\'tkazilgan sana:', kr: 'Ўтказилган сана:' }) }}
+            <span class="hero-date-lbl">{{ i18n.t({ uz: 'O\'tkazilgan sana:', kr: 'Ўтказилган сана:' }) }}</span>
             <span>{{ sana }}</span>
           </p>
 
@@ -390,7 +393,7 @@ onMounted(() => {
               <div class="stat-sub tabular-nums">{{ ulush(a.wrong_count) }}%</div>
             </div>
 
-            <div class="stat">
+            <div class="stat stat-time">
               <div class="stat-top">
                 <span class="stat-ic si-time"><AppIcon name="clock" :size="17" /></span>
                 <span class="stat-lbl">{{ i18n.t({ uz: 'Vaqt', kr: 'Вақт' }) }}</span>
@@ -401,7 +404,11 @@ onMounted(() => {
               </div>
             </div>
 
-            <div class="stat">
+            <!-- `stat-pct` — MOBILDA CHIQMAYDI: bu foiz sahifada uch joyda
+                 takrorlanardi (to'g'ri javoblar kartasining ostida, shu yerda
+                 va natija chizig'ida "Sizning natijangiz"). Tor ekranda uchtasi
+                 ham ko'rinib turishi keraksiz. -->
+            <div class="stat stat-pct">
               <div class="stat-top">
                 <span class="stat-ic si-pct"><AppIcon name="percent" :size="17" /></span>
                 <span class="stat-lbl">{{ i18n.t({ uz: 'Foiz ko\'rsatkichi', kr: 'Фоиз кўрсаткичи' }) }}</span>
@@ -709,6 +716,10 @@ onMounted(() => {
 .hero-mode { margin-top: 0.6rem; font-size: 0.875rem; color: var(--text-3); }
 .dot { color: var(--text-muted); }
 .hero-date { margin-top: 0.2rem; font-size: 0.8125rem; color: var(--text-3); min-height: 1.2em; }
+/* Bo'shliq CSS bilan: Vue shablon kompilyatori ikki element orasidagi
+   yangi qatorli bo'shliqni olib tashlaydi va "sana:Bugun" bo'lib qolardi.
+   Mobilda yorliq `display: none` bo'lgani uchun margin ham yo'qoladi. */
+.hero-date-lbl { margin-right: 0.25em; }
 
 .hero-acts { display: flex; flex-wrap: wrap; gap: 0.625rem; margin-top: 1.25rem; }
 .act {
@@ -971,18 +982,60 @@ onMounted(() => {
 }
 
 /* ── Mobil ───────────────────────────────────────────────────────────────
-   Mobil menyu tugmasi `fixed top-3 left-3` (40px) — "Bosh sahifaga qaytish"
-   uning ostida qolmasin. Xuddi shu tuzatish /tickets va /topics da ham bor. */
+   Tor ekranda sahifa haddan tashqari baland edi: sarlavha 44px, statistika
+   kartalari 4 ta va baland, ustiga bir xil ma'lumot bir necha joyda
+   takrorlanardi. Bu blok ixchamlashtiradi va takrorlarni yashiradi. */
 @media (max-width: 767px) {
-  .result { padding-top: 3.75rem; }
+  /* "Bosh sahifaga qaytish" suzuvchi hamburger (40px + 12px chet) YONIDA
+     turadi, OSTIDA emas — ilgari `padding-top: 3.75rem` bilan 60px sof
+     bo'sh joy ketardi. O'ngdan ham joy: bildirishnoma qo'ng'irog'i bor. */
+  .result { padding-top: 0.875rem; }
+  .topbar { padding-left: 3.25rem; padding-right: 3rem; }
+
   .hero, .nav-card, .qcard, .ai-card { padding: 1.125rem; }
-  /* Suzuvchi menyu tugmasi (40px + 12px chetdan) savol qatorining
-     sarlavhasini bosib qolmasin — plitka bosilganda qator shundan pastda
-     to'xtaydi. */
+  /* Suzuvchi menyu tugmasi savol qatorining sarlavhasini bosib qolmasin —
+     plitka bosilganda qator shundan pastda to'xtaydi. */
   .qrow { scroll-margin-top: 4rem; }
-  .score-n { font-size: 2.75rem; }
-  .score-d { font-size: 2.125rem; }
-  .hero-acts .act { flex: 1 1 100%; }
+
+  /* Sarlavha: 44/34 juda katta edi */
+  .score-n { font-size: 2.125rem; }
+  .score-d { font-size: 1.5rem; }
+
+  /* Rejim va sana bitta qatorda — ikki qator o'rniga bitta */
+  .hero-mode, .hero-date { display: inline; font-size: 0.8125rem; }
+  .hero-date { min-height: 0; }
+  .hero-date-lbl { display: none; }
+  .hero-date::before { content: ' • '; color: var(--text-muted); }
+
+  /* Ikki tugma sig'sa BIR QATORDA (ilgari `flex: 1 1 100%` bilan har biri
+     alohida qator olardi). `flex-wrap: wrap` saqlangani uchun sig'masa
+     o'zi ikki qatorga tushadi — matn qirqilmaydi. */
+  .hero-acts { gap: 0.5rem; margin-top: 1rem; }
+  .hero-acts .act {
+    flex: 1 1 auto; height: 2.5rem; padding: 0 0.875rem;
+    font-size: 0.875rem; white-space: nowrap;
+  }
+
+  /* Statistika kartalari ixcham: ikonka 34→28, padding va shriftlar kichik */
+  .stats { gap: 0.5rem; }
+  .stat { padding: 0.7rem; }
+  .stat-ic { width: 1.75rem; height: 1.75rem; border-radius: 0.5rem; }
+  .stat-lbl { font-size: 0.75rem; }
+  .stat-val { margin-top: 0.5rem; font-size: 1.125rem; }
+  .stat-inline { font-size: 0.75rem; }
+  /* Foiz TAKRORI: `stat-sub` (to'g'ri/xato ulushi) va butun `stat-pct`
+     kartasi olib tashlanadi — foiz natija chizig'ida allaqachon bor.
+     Vaqt kartasi bo'shab qolgan ustunni to'ldiradi. */
+  .stat-sub { display: none; }
+  .stat-pct { display: none; }
+  .stat-time { grid-column: 1 / -1; }
+
+  .bar { margin-top: 1.125rem; padding-top: 2.25rem; }
+
+  /* Legend TAKRORI: filtr chiplari ("Barchasi 20 · To'g'ri 3 · Xato 3")
+     o'zi rangli va sonli, ya'ni bir xil ma'lumotni ikki marta bermaymiz. */
+  .legend { display: none; }
+
   .nav-tools { width: 100%; }
   .chips { flex: 1 1 auto; }
   .range, .range-sel { width: 100%; }
