@@ -1,5 +1,7 @@
 <script setup lang="ts">
-definePageMeta({ middleware: 'auth', layout: 'test' })
+// Test ekrani endi dashboard qobig'i ichida turadi (chap panel + o'ng axborot
+// ustuni). Ilgari yalang'och `test` layout ishlatilardi.
+definePageMeta({ middleware: 'auth', layout: 'default' })
 
 const route = useRoute()
 const i18n = useI18n()
@@ -293,6 +295,8 @@ async function submitAnswer() {
   const correctId = verdict.correct_option_id
   const isCorrect = verdict.is_correct
 
+  correctStreak.value = isCorrect ? correctStreak.value + 1 : 0
+
   lastAnswer.value = {
     is_correct: isCorrect,
     correct_option_id: correctId,
@@ -392,6 +396,20 @@ function goNext() {
   else if (cur < total) jumpTo(cur + 1)
 }
 
+/* Pastdagi "Oldingi / Keyingi savol" tugmalari — `goNext` dan farqli, bular
+   qat'iy qo'shni pozitsiyaga o'tadi (foydalanuvchi qayerda ekanini bilib
+   tursin). Oxirgi savolda "Keyingi" o'rniga yakunlash chiqadi. */
+const isFirstQuestion = computed(() => currentPosition.value <= 1)
+const isLastQuestion = computed(() => currentPosition.value >= (attemptInfo.value?.total ?? 0))
+
+function goPrevQuestion() {
+  if (!isFirstQuestion.value) jumpTo(currentPosition.value - 1)
+}
+function goNextQuestion() {
+  if (isLastQuestion.value) finalizeAndExit()
+  else jumpTo(currentPosition.value + 1)
+}
+
 async function finishAttempt() {
   finalizing.value = true
   const buffered = Object.values(localAnswers.value)
@@ -431,6 +449,82 @@ const progressPercent = computed(() => {
 
 const timerCritical = computed(() => remainingSec.value !== null && remainingSec.value < 60)
 
+/** Rejim uchun ajratilgan to'liq vaqt — "Taxminiy vaqt: 25:00" qatori uchun. */
+const totalTimeLabel = computed(() => {
+  const sec = attemptInfo.value?.time_limit_sec ?? 0
+  if (!sec) return ''
+  const m = Math.floor(sec / 60)
+  const s = sec % 60
+  return `${m}:${s.toString().padStart(2, '0')}`
+})
+
+/** O'tgan vaqt ulushi — taymer kartasidagi chiziq shuni ko'rsatadi. */
+const timeElapsedPercent = computed(() => {
+  const total = attemptInfo.value?.time_limit_sec ?? 0
+  if (!total || remainingSec.value === null) return 0
+  return Math.min(100, Math.max(0, Math.round(((total - remainingSec.value) / total) * 100)))
+})
+
+/* Ketma-ket to'g'ri javoblar. `progress` bo'yicha hisoblab bo'lmaydi —
+   foydalanuvchi savollar bo'ylab sakrab yuradi, ya'ni "pozitsiya tartibi"
+   javob berish tartibi emas. Shuning uchun javob berilgan paytda yuritamiz. */
+const correctStreak = ref(0)
+
+const currentTopic = computed(() => currentItem.value?.question.topic || '')
+
+/** Savol rasmi serverda yo'q bo'lsa (404) — o'rin egallovchi rasmga tushamiz. */
+function onQuestionImageError(e: Event) {
+  const img = e.target as HTMLImageElement | null
+  if (!img || img.src.endsWith('/default-pic.png')) return
+  img.src = '/default-pic.png'
+}
+
+/* ── Xatolik haqida xabar ────────────────────────────────────────────────
+   Faqat foydalanuvchiga BERILGAN savol uchun ishlaydi (server ham shuni
+   tekshiradi), shuning uchun tugma javob berilgandan keyin ham, oldin ham
+   ko'rinaveradi — savol allaqachon urinishga kirgan. */
+const reportModal = ref(false)
+const reportReason = ref<'wrong_answer' | 'bad_image' | 'typo' | 'other'>('wrong_answer')
+const reportComment = ref('')
+const reportSending = ref(false)
+const reportError = ref('')
+const reportedIds = ref<Set<number>>(new Set())
+
+const reportReasons = computed(() => [
+  { value: 'wrong_answer', label: i18n.t({ uz: 'Javob noto\'g\'ri', kr: 'Жавоб нотўғри' }) },
+  { value: 'bad_image', label: i18n.t({ uz: 'Rasm muammosi', kr: 'Расм муаммоси' }) },
+  { value: 'typo', label: i18n.t({ uz: 'Matnda xato', kr: 'Матнда хато' }) },
+  { value: 'other', label: i18n.t({ uz: 'Boshqa', kr: 'Бошқа' }) },
+] as const)
+
+function openReport() {
+  reportReason.value = 'wrong_answer'
+  reportComment.value = ''
+  reportError.value = ''
+  reportModal.value = true
+}
+
+async function sendReport() {
+  const item = currentItem.value
+  if (!item || reportSending.value) return
+  reportSending.value = true
+  reportError.value = ''
+  try {
+    await apiFetch(`/questions/${item.question.id}/report`, {
+      method: 'POST',
+      body: { reason: reportReason.value, comment: reportComment.value || null },
+    })
+    reportedIds.value.add(item.question.id)
+    reportedIds.value = new Set(reportedIds.value)
+    reportModal.value = false
+  } catch (e: any) {
+    reportError.value = e?.data?.message
+      || i18n.t({ uz: 'Yuborib bo\'lmadi. Qayta urinib ko\'ring.', kr: 'Юбориб бўлмади. Қайта уриниб кўринг.' })
+  } finally {
+    reportSending.value = false
+  }
+}
+
 function optionState(o: any) {
   if (!lastAnswer.value) return selectedOptionId.value === o.id ? 'selected' : 'idle'
   if (o.id === lastAnswer.value.correct_option_id) return 'correct'
@@ -439,10 +533,11 @@ function optionState(o: any) {
 }
 
 function tileStyleFor(p: ProgressEntry, isCurrent: boolean) {
+  // Maketda joriy savol TO'LDIRILGAN ko'k kvadrat (qora halqa emas)
   if (isCurrent) {
     return {
-      background: 'var(--text-1)', color: 'var(--surface)', borderColor: 'var(--text-1)',
-      ring: '0 0 0 2px var(--surface), 0 0 0 4px var(--text-1)',
+      background: 'var(--primary)', color: 'var(--primary-contrast)', borderColor: 'var(--primary)',
+      ring: 'none',
     }
   }
   switch (p.status) {
@@ -489,54 +584,46 @@ onBeforeUnmount(() => {
   </div>
 
   <!-- `play-ai` — AI tushuntirish tokenlari shu ildizda aniqlanadi -->
-  <div class="play-ai min-h-screen flex flex-col">
-    <!-- Sticky: top bar + progress + question strip (always visible, no scroll to navigate) -->
-    <div class="sticky top-0 z-10" style="background: var(--surface);">
-      <header class="border-b" style="border-color: var(--border-soft);">
-        <div class="max-w-3xl mx-auto px-3 sm:px-6 h-14 flex items-center gap-2">
-          <button @click="exitConfirm" :aria-label="i18n.t({ uz: 'Chiqish', kr: 'Чиқиш' })" class="btn-ghost btn-sm shrink-0 px-2">
-            <AppIcon name="chev-l" :size="18" />
-            <span class="hidden sm:inline">{{ i18n.t({ uz: 'Chiqish', kr: 'Чиқиш' }) }}</span>
-          </button>
-          <button v-if="currentItem" type="button" @click="toggleBookmark(currentItem.question.id)"
-                  :aria-label="i18n.t({ uz: 'Saqlash', kr: 'Сақлаш' })"
-                  :aria-pressed="isBookmarked(currentItem.question.id)"
-                  class="h-9 w-9 rounded-lg grid place-items-center shrink-0 transition-colors"
-                  :class="isBookmarked(currentItem.question.id) ? 'text-amber-500 bg-amber-50' : 'text-ink-400 hover:bg-ink-100'">
-            <AppIcon :name="isBookmarked(currentItem.question.id) ? 'bookmark-check' : 'bookmark'" :size="17" />
-          </button>
+  <div class="play-ai min-h-screen" style="background: var(--canvas);">
+    <div class="mx-auto w-full max-w-[1400px] px-3 sm:px-5 py-3 sm:py-5 flex flex-col gap-3 sm:gap-4">
 
-          <div v-if="attemptInfo" class="flex-1 text-center text-sm font-medium tabular-nums" style="color: var(--text-2);">
-            <span class="font-semibold" style="color: var(--text-1);">{{ currentPosition }}</span>
-            <span class="mx-0.5" style="color: var(--text-4);">/</span>{{ attemptInfo.total }}
-          </div>
-          <div v-else class="flex-1"></div>
+      <!-- Yuqori qator: chiqish · savol hisobi · XP -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <button @click="exitConfirm" class="play-chip play-chip-btn shrink-0">
+          <AppIcon name="chev-l" :size="18" />
+          <span class="hidden sm:inline">{{ i18n.t({ uz: 'Chiqish', kr: 'Чиқиш' }) }}</span>
+        </button>
 
-          <div v-if="auth.user" class="hidden sm:flex items-center gap-1.5 h-7 px-2 rounded-full text-xs shrink-0"
-               style="background: var(--surface-inset);">
-            <AppIcon name="trophy" :size="11" class="text-amber-500" />
-            <span class="font-semibold tabular-nums" style="color: var(--text-1);">{{ (auth.user.points ?? 0).toLocaleString() }}</span>
-          </div>
+        <!-- Xatcho'p maketda yuqori qatorda YO'Q — u savol kartasining o'ng
+             tepasiga ko'chirildi (funksiya saqlanadi, maket buzilmaydi). -->
 
-          <div v-if="remainingSec !== null"
-               class="font-mono text-sm tabular-nums h-8 px-2.5 rounded-lg flex items-center gap-1.5 shrink-0"
-               :class="timerCritical ? 'bg-rose-50 text-rose-700 border border-rose-200 animate-pulse' : 'bg-ink-100 text-ink-700'">
-            <AppIcon name="clock" :size="13" />
-            {{ timerLabel }}
-          </div>
+        <div v-if="attemptInfo" class="flex-1 text-center text-base font-semibold tabular-nums" style="color: var(--text-1);">
+          {{ currentPosition }}<span class="mx-1 font-normal" style="color: var(--text-4);">/</span><span style="color: var(--text-3);">{{ attemptInfo.total }}</span>
         </div>
-        <div class="h-1 bg-ink-100">
-          <div class="h-1 transition-all duration-300" :style="{ width: progressPercent + '%', background: 'var(--text-1)' }"></div>
-        </div>
-      </header>
+        <div v-else class="flex-1"></div>
 
-      <!-- Question number strip: single row, horizontal scroll, auto-centres current -->
-      <div v-if="attemptInfo && progress.length" ref="stripRef"
-           class="border-b overflow-x-auto scrollbar-thin" style="border-color: var(--border-soft);">
-        <div class="max-w-3xl mx-auto px-3 sm:px-6 py-2 flex gap-1.5 w-max min-w-full">
+        <!-- Taymer o'ng ustunda turadi; tor ekranda ustun pastga tushgani uchun
+             shu yerda ham ko'rsatamiz. -->
+        <div v-if="remainingSec !== null" class="play-chip play-chip-narrow shrink-0 tabular-nums"
+             :style="timerCritical ? { color: 'var(--danger-ink)', borderColor: 'var(--danger)' } : undefined">
+          <AppIcon name="clock" :size="15" />
+          {{ timerLabel }}
+        </div>
+
+        <div v-if="auth.user" class="play-chip shrink-0">
+          <AppIcon name="trophy" :size="14" class="text-amber-500" />
+          <span class="font-semibold tabular-nums" style="color: var(--text-1);">
+            {{ (auth.user.points ?? 0).toLocaleString() }} XP
+          </span>
+        </div>
+      </div>
+
+      <!-- Savol raqamlari lentasi — maketda OQ KARTA ichida turadi -->
+      <div v-if="attemptInfo && progress.length" ref="stripRef" class="card strip-card overflow-x-auto scrollbar-thin">
+        <div class="flex gap-2 w-max min-w-full">
           <button v-for="p in progress" :key="p.position" :data-pos="p.position"
             :disabled="!canNavigate" @click="jumpTo(p.position)"
-            class="shrink-0 w-9 h-9 rounded-lg text-sm font-semibold tabular-nums border flex items-center justify-center transition-all"
+            class="strip-tile shrink-0"
             :class="canNavigate ? 'cursor-pointer' : 'cursor-not-allowed'"
             :style="{
               background: tileStyleFor(p, p.position === currentPosition).background,
@@ -548,12 +635,10 @@ onBeforeUnmount(() => {
           </button>
         </div>
       </div>
-    </div>
 
-    <main class="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 py-4 sm:py-6">
-
-      <!-- Main content -->
-      <div class="min-w-0">
+      <!-- Ikki ustun: savol · axborot paneli -->
+      <div class="grid gap-3 sm:gap-4 items-start lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div class="min-w-0 flex flex-col gap-3 sm:gap-4">
           <!-- Loading -->
           <div v-if="loading" class="space-y-4">
             <div class="h-3 w-1/4 bg-ink-100 rounded animate-pulse"></div>
@@ -573,11 +658,22 @@ onBeforeUnmount(() => {
           </div>
 
           <!-- Question -->
-          <div v-else-if="currentItem" class="space-y-4 anim-in" :key="currentItem.question.id">
-            <div v-if="currentItem.question.topic" class="eyebrow">{{ currentItem.question.topic }}</div>
+          <div v-else-if="currentItem" class="card p-4 sm:p-6 space-y-4 anim-in" :key="currentItem.question.id">
+            <div class="flex items-start gap-3">
+              <div v-if="currentItem.question.topic" class="play-eyebrow flex-1 min-w-0">{{ currentItem.question.topic }}</div>
+              <div v-else class="flex-1"></div>
+              <!-- Xatcho'p: maketning yuqori qatorida yo'q, shuning uchun shu
+                   yerda — kartaning bo'sh o'ng tepasida. -->
+              <button type="button" class="q-bookmark -mt-1"
+                      :aria-label="i18n.t({ uz: 'Saqlash', kr: 'Сақлаш' })"
+                      :aria-pressed="isBookmarked(currentItem.question.id)"
+                      @click="toggleBookmark(currentItem.question.id)">
+                <AppIcon :name="isBookmarked(currentItem.question.id) ? 'bookmark-on' : 'bookmark'" :size="17" />
+              </button>
+            </div>
 
             <!-- Question text -->
-            <h1 class="text-base sm:text-lg font-semibold text-ink-900 leading-snug">{{ currentItem.question.text }}</h1>
+            <h1 class="text-lg sm:text-xl font-semibold leading-snug" style="color: var(--text-1);">{{ currentItem.question.text }}</h1>
 
             <!-- Rasm: haqiqiy rasm bo'lsa o'sha, bo'lmasa default o'rin egallovchi
                  rasm. @error — savol rasmi fayli serverda yo'q bo'lsa (404) ham
@@ -589,9 +685,10 @@ onBeforeUnmount(() => {
                    :alt="i18n.t({ uz: 'Savol rasmi', kr: 'Савол расми' })"
                    class="w-full rounded-xl border max-h-[40vh] sm:max-h-[340px] object-contain"
                    style="background: var(--surface-inset); border-color: var(--border-soft);">
-              <div class="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center"
-                   style="background: rgba(15,23,42,0.6); color: #fff;">
-                <AppIcon name="plus" :size="15" />
+              <!-- Maketda OQ doira + kattalashtirish ikonkasi (to'q doira +
+                   "plus" emas) -->
+              <div class="q-zoom">
+                <AppIcon name="expand" :size="15" />
               </div>
             </div>
 
@@ -600,29 +697,11 @@ onBeforeUnmount(() => {
               <button v-for="(o, i) in currentItem.question.options" :key="o.id"
                       :disabled="!!lastAnswer || submitting"
                       @click="onOptionClick(o.id)"
-                      class="w-full text-left px-3.5 py-3 rounded-xl border transition-all duration-150 flex items-center gap-3 disabled:cursor-not-allowed"
-                      :class="[
-                        optionState(o) === 'selected' ? 'border-ink-900' :
-                        optionState(o) === 'correct'  ? 'border-emerald-500' :
-                        optionState(o) === 'wrong'    ? 'border-rose-500' :
-                        'border-ink-200 hover:border-ink-400',
-                      ]"
-                      :style="{
-                        background:
-                          optionState(o) === 'selected' ? 'var(--surface-hover)' :
-                          optionState(o) === 'correct'  ? 'rgba(16,185,129,0.12)' :
-                          optionState(o) === 'wrong'    ? 'rgba(244,63,94,0.10)' :
-                          'var(--surface)',
-                      }">
-                <span class="w-7 h-7 rounded-lg flex items-center justify-center font-semibold text-sm flex-shrink-0"
-                      :style="{
-                        background:
-                          optionState(o) === 'selected' ? 'var(--text-1)' :
-                          optionState(o) === 'correct'  ? '#10b981' :
-                          optionState(o) === 'wrong'    ? '#f43f5e' :
-                          'var(--surface-inset)',
-                        color: optionState(o) === 'idle' ? 'var(--text-2)' : '#fff',
-                      }">{{ optionLetter(i) }}</span>
+                      class="q-opt disabled:cursor-not-allowed"
+                      :class="`q-opt-${optionState(o)}`">
+                <!-- Harf plitasi: maketda LAVANDA fon + siyohrang harf (kulrang
+                     emas) va kattaroq — 2rem. -->
+                <span class="q-letter" :class="`q-letter-${optionState(o)}`">{{ optionLetter(i) }}</span>
                 <span class="flex-1 text-sm sm:text-base leading-snug"
                       :class="optionState(o) === 'correct' ? 'text-emerald-900 font-medium' :
                               optionState(o) === 'wrong' ? 'text-rose-900' : 'text-ink-900'">
@@ -633,41 +712,148 @@ onBeforeUnmount(() => {
               </button>
             </div>
 
-            <!-- AI tushuntirish — avtomatik chiqadigan izoh o'rniga.
-                 Imtihon/blitsda `showExplanation` false, ya'ni ko'rinmaydi. -->
-            <template v-if="showExplanation && explanationText()">
-              <button
-                v-if="!aiOchildi[currentItem.question.id]"
-                type="button" class="ai-btn"
-                @click="aiKorsat(currentItem.question.id)"
-              >
-                <AppIcon name="ai" :size="16" />
-                {{ i18n.t({ uz: 'AI tushuntirish', kr: 'AI тушунтириш' }) }}
-              </button>
+          </div>
 
-              <div v-else class="ai-box">
-                <div class="ai-head">
-                  <AppIcon name="ai" :size="15" />
-                  {{ i18n.t({ uz: 'AI tushuntirish', kr: 'AI тушунтириш' }) }}
-                </div>
-                <div v-if="aiFikr[currentItem.question.id]" class="ai-fikr" role="status">
-                  <span class="ai-dots"><i /><i /><i /></span>
-                  {{ i18n.t({ uz: 'AI o\'ylanmoqda…', kr: 'AI ўйланмоқда…' }) }}
-                </div>
-                <p v-else class="ai-text">{{
-                  aiYozilmoqda[currentItem.question.id] ? aiMatn[currentItem.question.id] : explanationText()
-                }}<span v-if="aiYozilmoqda[currentItem.question.id]" class="ai-caret" /></p>
-              </div>
-            </template>
+          <!-- Pastki navigatsiya -->
+          <!-- Maketda tugmalar OQ KARTA ichida (yalang'och emas) -->
+          <div v-if="!loading && !error && attemptInfo" class="card nav-card flex items-center gap-3">
+            <button type="button" class="play-nav-btn" :disabled="isFirstQuestion" @click="goPrevQuestion">
+              <AppIcon name="chev-l" :size="17" />
+              {{ i18n.t({ uz: 'Oldingi savol', kr: 'Олдинги савол' }) }}
+            </button>
+            <div class="flex-1"></div>
+            <button type="button" class="play-nav-btn play-nav-primary" @click="goNextQuestion">
+              {{ isLastQuestion
+                ? i18n.t({ uz: 'Testni yakunlash', kr: 'Тестни якунлаш' })
+                : i18n.t({ uz: 'Keyingi savol', kr: 'Кейинги савол' }) }}
+              <AppIcon :name="isLastQuestion ? 'check' : 'chev-r'" :size="17" />
+            </button>
+          </div>
+        </div>
 
-            <!-- Exam order-lock hint -->
-            <div v-if="isExam" class="text-2xs flex items-center gap-1.5 pt-1" style="color: var(--text-4);">
-              <AppIcon name="lock" :size="11" />
-              {{ i18n.t({ uz: 'Imtihon: 3 xato — yiqilish.', kr: 'Имтиҳон: 3 хато — йиқилиш.' }) }}
+        <!-- ── O'ng ustun: taymer, savol ma'lumoti, izoh ─────────────────── -->
+        <aside v-if="attemptInfo" class="flex flex-col gap-3 lg:sticky lg:top-5">
+          <!-- Taymer (faqat vaqtli rejimlarda) -->
+          <div v-if="remainingSec !== null" class="card p-4 sm:p-5">
+            <div class="flex items-center gap-2 mb-2.5" style="color: var(--text-3);">
+              <AppIcon name="clock" :size="16" />
+              <span class="text-[13px] font-medium">{{ i18n.t({ uz: 'Qolgan vaqt', kr: 'Қолган вақт' }) }}</span>
+            </div>
+            <div class="text-[34px] leading-none font-bold tabular-nums"
+                 :style="{ color: timerCritical ? 'var(--danger-ink)' : 'var(--text-1)' }">
+              {{ timerLabel }}
+            </div>
+            <div class="mt-3.5 h-1.5 rounded-full overflow-hidden" style="background: var(--surface-inset);">
+              <div class="h-full rounded-full transition-all duration-700"
+                   :style="{
+                     width: timeElapsedPercent + '%',
+                     background: timerCritical ? 'var(--danger)' : 'var(--grad-progress)',
+                   }"></div>
+            </div>
+            <div class="mt-2 text-xs" style="color: var(--text-4);">
+              {{ i18n.t({ uz: 'Taxminiy vaqt', kr: 'Тахминий вақт' }) }}: {{ totalTimeLabel }}
             </div>
           </div>
+
+          <!-- Savol ma'lumoti -->
+          <div class="card p-2">
+            <div v-if="currentTopic" class="rail-row">
+              <span class="rail-tile rail-tile-primary">
+                <AppIcon name="clipboard" :size="15" />
+              </span>
+              <span class="rail-text">
+                <span class="rail-label">{{ i18n.t({ uz: 'Kategoriya', kr: 'Категория' }) }}</span>
+                <span class="rail-value">{{ currentTopic }}</span>
+              </span>
+            </div>
+            <div class="rail-row">
+              <span class="rail-tile rail-tile-violet">
+                <AppIcon name="circle-dot" :size="15" />
+              </span>
+              <span class="rail-text">
+                <span class="rail-label">{{ i18n.t({ uz: 'Savol', kr: 'Савол' }) }}</span>
+                <span class="rail-value tabular-nums">{{ currentPosition }} / {{ attemptInfo.total }}</span>
+              </span>
+            </div>
+            <div class="rail-row">
+              <span class="rail-tile rail-tile-amber">
+                <AppIcon name="flame" :size="15" />
+              </span>
+              <span class="rail-text">
+                <span class="rail-label">{{ i18n.t({ uz: 'To\'g\'ri javoblar seriyasi', kr: 'Тўғри жавоблар серияси' }) }}</span>
+                <span class="rail-value tabular-nums">{{ correctStreak }}</span>
+              </span>
+            </div>
+            <div v-if="auth.user" class="rail-row">
+              <span class="rail-tile rail-tile-emerald">
+                <AppIcon name="star" :size="15" />
+              </span>
+              <span class="rail-text">
+                <span class="rail-label">{{ i18n.t({ uz: 'Umumiy XP', kr: 'Умумий XP' }) }}</span>
+                <span class="rail-value tabular-nums">{{ (auth.user.points ?? 0).toLocaleString() }} XP</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Imtihonda — qoidalar; boshqa rejimlarda — AI tushuntirish -->
+          <div v-if="isExam" class="rail-note">
+            <div class="rail-note-head">
+              <AppIcon name="graduation" :size="16" />
+              {{ i18n.t({ uz: 'Imtihon haqida', kr: 'Имтиҳон ҳақида' }) }}
+            </div>
+            <!-- Matn maketdagi aynan uch qator -->
+            <p>{{ i18n.t({ uz: 'Rasmiy imtihon formatida tayyorlangan.', kr: 'Расмий имтиҳон форматида тайёрланган.' }) }}</p>
+            <p>{{ i18n.t({ uz: 'Har bir savol uchun vaqt cheklovi mavjud.', kr: 'Ҳар бир савол учун вақт чеклови мавжуд.' }) }}</p>
+            <p>{{ i18n.t({ uz: 'Diqqat bilan o\'qing va to\'g\'ri javobni tanlang.', kr: 'Диққат билан ўқинг ва тўғри жавобни танланг.' }) }}</p>
+          </div>
+
+          <template v-else-if="currentItem">
+            <!-- Javob berilgunga qadar tushuntirish yo'q — joy bo'sh qolmasin -->
+            <div v-if="!showExplanation || !explanationText()" class="rail-note rail-note-muted">
+              <div class="rail-note-head">
+                <AppIcon name="ai" :size="16" />
+                {{ i18n.t({ uz: 'AI tushuntirish', kr: 'AI тушунтириш' }) }}
+              </div>
+              <p>{{ i18n.t({
+                uz: 'Javob berganingizdan keyin tushuntirish shu yerda ochiladi.',
+                kr: 'Жавоб берганингиздан кейин тушунтириш шу ерда очилади.'
+              }) }}</p>
+            </div>
+
+            <button v-else-if="!aiOchildi[currentItem.question.id]"
+                    type="button" class="ai-btn w-full justify-center"
+                    @click="aiKorsat(currentItem.question.id)">
+              <AppIcon name="ai" :size="16" />
+              {{ i18n.t({ uz: 'AI tushuntirish', kr: 'AI тушунтириш' }) }}
+            </button>
+
+            <div v-else class="ai-box">
+              <div class="ai-head">
+                <AppIcon name="ai" :size="15" />
+                {{ i18n.t({ uz: 'AI tushuntirish', kr: 'AI тушунтириш' }) }}
+              </div>
+              <div v-if="aiFikr[currentItem.question.id]" class="ai-fikr" role="status">
+                <span class="ai-dots"><i /><i /><i /></span>
+                {{ i18n.t({ uz: 'AI o\'ylanmoqda…', kr: 'AI ўйланмоқда…' }) }}
+              </div>
+              <p v-else class="ai-text">{{
+                aiYozilmoqda[currentItem.question.id] ? aiMatn[currentItem.question.id] : explanationText()
+              }}<span v-if="aiYozilmoqda[currentItem.question.id]" class="ai-caret" /></p>
+            </div>
+          </template>
+
+          <!-- Xatolik haqida xabar -->
+          <button type="button" class="rail-report" :disabled="!currentItem"
+                  @click="openReport">
+            <AppIcon name="flag" :size="15" />
+            <span v-if="currentItem && reportedIds.has(currentItem.question.id)">
+              {{ i18n.t({ uz: 'Xabaringiz yuborildi', kr: 'Хабарингиз юборилди' }) }}
+            </span>
+            <span v-else>{{ i18n.t({ uz: 'Xatolik haqida xabar berish', kr: 'Хатолик ҳақида хабар бериш' }) }}</span>
+          </button>
+        </aside>
       </div>
-    </main>
+    </div>
 
     <!-- Image zoom lightbox -->
     <Transition
@@ -724,6 +910,63 @@ onBeforeUnmount(() => {
             <span v-if="submitting" class="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
             <span v-else>{{ i18n.t({ uz: 'Tushundim', kr: 'Тушундим' }) }}</span>
           </button>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Xatolik haqida xabar berish -->
+    <Transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0">
+      <div v-if="reportModal"
+           class="fixed inset-0 z-50 flex items-center justify-center p-4"
+           style="background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(4px);"
+           @click.self="reportModal = false">
+        <div class="card p-6 max-w-md w-full anim-in" style="background: var(--surface);">
+          <div class="flex items-center gap-2.5 mb-1">
+            <AppIcon name="flag" :size="18" style="color: var(--text-2);" />
+            <div class="text-lg font-semibold" style="color: var(--text-1);">
+              {{ i18n.t({ uz: 'Xatolik haqida xabar berish', kr: 'Хатолик ҳақида хабар бериш' }) }}
+            </div>
+          </div>
+          <p class="text-sm mb-4" style="color: var(--text-3);">
+            {{ i18n.t({
+              uz: 'Nima noto\'g\'ri ekanini belgilang — savolni tekshirib chiqamiz.',
+              kr: 'Нима нотўғри эканини белгиланг — саволни текшириб чиқамиз.'
+            }) }}
+          </p>
+
+          <div class="flex flex-col gap-1.5 mb-4">
+            <label v-for="r in reportReasons" :key="r.value" class="report-option"
+                   :class="{ 'report-option-on': reportReason === r.value }">
+              <input type="radio" name="report-reason" class="sr-only"
+                     :value="r.value" v-model="reportReason">
+              <span class="report-dot"><span v-if="reportReason === r.value" class="report-dot-fill" /></span>
+              {{ r.label }}
+            </label>
+          </div>
+
+          <textarea v-model="reportComment" rows="3" maxlength="500"
+                    class="input w-full resize-none"
+                    :placeholder="i18n.t({ uz: 'Qo\'shimcha izoh (ixtiyoriy)', kr: 'Қўшимча изоҳ (ихтиёрий)' })"></textarea>
+
+          <div v-if="reportError" class="text-sm mt-2" style="color: var(--danger-ink);">{{ reportError }}</div>
+
+          <div class="flex gap-3 mt-5">
+            <button type="button" class="btn-ghost btn-lg flex-1" :disabled="reportSending"
+                    @click="reportModal = false">
+              {{ i18n.t({ uz: 'Bekor qilish', kr: 'Бекор қилиш' }) }}
+            </button>
+            <button type="button" class="btn-primary btn-lg flex-1" :disabled="reportSending"
+                    @click="sendReport">
+              <span v-if="reportSending" class="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              <span v-else>{{ i18n.t({ uz: 'Yuborish', kr: 'Юбориш' }) }}</span>
+            </button>
+          </div>
         </div>
       </div>
     </Transition>
@@ -786,12 +1029,197 @@ onBeforeUnmount(() => {
   --ai-border: rgba(99, 102, 241, 0.20);
   --ai-ink: #3730a3;
   --ai-accent: #4f46e5;
+  /* `--ok-soft` global to'plamda yo'q (faqat --danger-soft/--warn-soft bor).
+     Qorong'ida to'ldirish SHAFFOF: to'q sirt ustida qattiq rang "yamoq". */
+  --ok-soft2: #d1fae5;
 }
 .dark .play-ai {
   --ai-bg: rgba(99, 102, 241, 0.12);
   --ai-border: rgba(129, 140, 248, 0.30);
   --ai-ink: #c7d2fe;
   --ai-accent: #a5b4fc;
+  --ok-soft2: rgba(16, 185, 129, 0.16);
+}
+
+/* ── Yuqori qator ─────────────────────────────────────────────────────── */
+.play-chip {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  height: 2.75rem; padding: 0 0.9rem;
+  border-radius: 0.75rem;
+  background: var(--surface); border: 1px solid var(--border-1);
+  box-shadow: var(--shadow-soft);
+  font-size: 0.875rem; font-weight: 500; color: var(--text-2);
+}
+.play-chip-btn { transition: border-color 0.15s, color 0.15s; }
+.play-chip-btn:hover { border-color: var(--text-4); color: var(--text-1); }
+
+/* Taymer chipi FAQAT tor ekranda — keng ekranda o'ng ustundagi taymer
+   kartasi bor, maketda yuqori qatorda taymer yo'q.
+   DIQQAT: Tailwind'ning `lg:hidden` bu yerda ISHLAMAYDI — scoped uslub
+   Tailwind utilitalaridan KEYIN kiritiladi va `.play-chip { display:
+   inline-flex }` uni bosib ketadi. Shuning uchun o'z media so'rovimiz. */
+@media (min-width: 1024px) {
+  .play-chip-narrow { display: none; }
+}
+
+/* ── Savol raqamlari ──────────────────────────────────────────────────── */
+.strip-card { padding: 0.75rem; }
+.strip-tile {
+  width: 2.75rem; height: 2.75rem;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 0.75rem; border: 1px solid;
+  font-size: 0.875rem; font-weight: 600; font-variant-numeric: tabular-nums;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.strip-tile:hover:not(:disabled) { transform: translateY(-1px); }
+
+.play-eyebrow {
+  font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--primary-ink);
+}
+
+/* ── Savol kartasi ─────────────────────────────────────────────────────── */
+.q-bookmark {
+  flex-shrink: 0; display: grid; place-items: center;
+  width: 1.875rem; height: 1.875rem; border-radius: 0.5rem;
+  color: var(--text-4);
+  transition: background 0.15s, color 0.15s;
+}
+.q-bookmark:hover { background: var(--surface-inset); color: var(--text-2); }
+.q-bookmark[aria-pressed="true"] { color: var(--primary-ink); }
+
+/* Maketda OQ doira, ichida kattalashtirish ikonkasi */
+.q-zoom {
+  position: absolute; top: 0.625rem; right: 0.625rem;
+  display: grid; place-items: center;
+  width: 2.25rem; height: 2.25rem; border-radius: 9999px;
+  background: var(--surface); color: var(--text-2);
+  box-shadow: var(--shadow-card);
+}
+
+/* ── Javob variantlari ─────────────────────────────────────────────────── */
+.q-opt {
+  display: flex; align-items: center; gap: 0.75rem;
+  width: 100%; padding: 0.875rem 1rem;
+  border-radius: 0.75rem; border: 1px solid var(--border-1);
+  background: var(--surface); text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+.q-opt:hover:not(:disabled) { border-color: var(--primary); }
+.q-opt-selected { border-color: var(--text-1); background: var(--surface-hover); }
+.q-opt-correct  { border-color: var(--ok);     background: var(--ok-soft2); }
+.q-opt-wrong    { border-color: var(--danger); background: var(--danger-soft); }
+
+/* Harf plitasi — maketda lavanda fon + siyohrang harf, 2rem */
+.q-letter {
+  flex-shrink: 0; display: grid; place-items: center;
+  width: 2rem; height: 2rem; border-radius: 0.5rem;
+  font-size: 0.875rem; font-weight: 700;
+  background: var(--primary-soft); color: var(--primary-ink);
+}
+.q-letter-selected { background: var(--text-1); color: var(--surface); }
+.q-letter-correct  { background: var(--ok-surface-2); color: #fff; }
+.q-letter-wrong    { background: var(--danger); color: #fff; }
+
+/* ── Pastki navigatsiya ───────────────────────────────────────────────── */
+.nav-card { padding: 0.75rem; }
+.play-nav-btn {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  height: 3rem; padding: 0 1.25rem;
+  border-radius: 0.75rem;
+  background: var(--surface); border: 1px solid var(--border-1);
+  box-shadow: var(--shadow-soft);
+  font-size: 0.9375rem; font-weight: 600; color: var(--text-2);
+  transition: border-color 0.15s, color 0.15s, filter 0.15s;
+}
+.play-nav-btn:hover:not(:disabled) { border-color: var(--text-4); color: var(--text-1); }
+.play-nav-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* `--primary` EMAS, `--primary-strong`: #4f6ef0 oq matn ostida 4.36:1
+   (AA 4.5:1 dan past), #3f5ad8 esa 5.72:1 — ko'rinishi bir xil. */
+.play-nav-primary {
+  background: var(--primary-strong); border-color: var(--primary-strong);
+  color: var(--primary-contrast);
+}
+.play-nav-primary:hover:not(:disabled) {
+  background: var(--primary); border-color: var(--primary);
+  color: var(--primary-contrast);
+}
+
+/* ── O'ng ustun ───────────────────────────────────────────────────────── */
+.rail-row {
+  display: flex; align-items: center; gap: 0.7rem;
+  padding: 0.6rem 0.65rem; border-radius: 0.65rem;
+}
+.rail-row + .rail-row { margin-top: 0.1rem; }
+/* Maketda DOIRA (yumaloqlangan kvadrat emas) */
+.rail-tile {
+  width: 2rem; height: 2rem; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 9999px;
+}
+/* Ohanglar `IconTile` bilan bir xil. Qorong'i rejimda och fon + to'q matn
+   ko'rinmay qoladi, shuning uchun ikkalasi ham almashadi. */
+.rail-tile-primary  { background: var(--primary-soft); color: var(--primary-ink); }
+.rail-tile-violet   { background: #ede9fe; color: #6d28d9; }
+.rail-tile-amber    { background: #fef3c7; color: #b45309; }
+.rail-tile-emerald  { background: #d1fae5; color: #047857; }
+.dark .rail-tile-violet  { background: rgba(139, 92, 246, 0.18); color: #c4b5fd; }
+.dark .rail-tile-amber   { background: rgba(251, 191, 36, 0.18); color: #fcd34d; }
+.dark .rail-tile-emerald { background: rgba(16, 185, 129, 0.18); color: #6ee7b7; }
+.rail-text { display: flex; flex-direction: column; min-width: 0; gap: 0.05rem; }
+/* `--text-4` oq fonda 3.40:1 beradi — 11px yorliq uchun AA 4.5:1 dan past */
+.rail-label { font-size: 0.6875rem; color: var(--text-3); line-height: 1.2; }
+.rail-value {
+  font-size: 0.875rem; font-weight: 600; color: var(--text-1); line-height: 1.3;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.rail-note {
+  padding: 0.95rem 1rem; border-radius: 0.9rem;
+  background: var(--primary-soft); border: 1px solid var(--primary-ring);
+}
+.rail-note-head {
+  display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.5rem;
+  font-size: 0.875rem; font-weight: 700; color: var(--primary-ink);
+}
+.rail-note p { font-size: 0.8125rem; line-height: 1.6; color: var(--text-2); }
+.rail-note-muted {
+  background: var(--surface-soft); border-color: var(--border-1);
+}
+.rail-note-muted .rail-note-head { color: var(--text-2); }
+
+/* `--text-4` 3.03:1 berardi — bu bosiladigan matn, AA 4.5:1 kerak */
+.rail-report {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.6rem 0.4rem; border-radius: 0.6rem;
+  font-size: 0.8125rem; color: var(--text-3);
+  transition: color 0.15s;
+}
+.rail-report:hover:not(:disabled) { color: var(--text-2); }
+.rail-report:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Xabar berish oynasi ──────────────────────────────────────────────── */
+.report-option {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.65rem 0.8rem; border-radius: 0.65rem;
+  border: 1px solid var(--border-1); cursor: pointer;
+  font-size: 0.875rem; color: var(--text-2);
+  transition: border-color 0.15s, background 0.15s;
+}
+.report-option:hover { border-color: var(--text-4); }
+.report-option-on {
+  border-color: var(--primary); background: var(--primary-soft); color: var(--primary-ink);
+  font-weight: 600;
+}
+.report-dot {
+  width: 1.05rem; height: 1.05rem; flex-shrink: 0;
+  border-radius: 9999px; border: 1.5px solid var(--border-1);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.report-option-on .report-dot { border-color: var(--primary); }
+.report-dot-fill {
+  width: 0.5rem; height: 0.5rem; border-radius: 9999px; background: var(--primary);
 }
 
 .ai-btn {

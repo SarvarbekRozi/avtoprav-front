@@ -67,6 +67,8 @@ const NAME_MAP: Record<string, string> = {
   // yo'l belgilari sahifasi: kategoriya ikonkalari + saqlash holati
   'circle-dot':   'lucide:circle-dot',
   'bookmark-on':  'lucide:bookmark-check',
+  // test ekrani: rasmni kattalashtirish
+  expand:         'lucide:maximize-2',
   // AI izoh sarlavhasi — `sparkles` (✨) hamma joyda "sun'iy intellekt" belgisi,
   // ya'ni panelning AI'ligi bir qarashda bilinadi (ilgari oddiy chat ikonkasi edi).
   ai:             'lucide:sparkles',
