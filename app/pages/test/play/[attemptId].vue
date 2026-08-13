@@ -101,6 +101,47 @@ function explanationText() {
   return i18n.locale.value === 'uz_cyrl' ? lastAnswer.value.explanation_kr : lastAnswer.value.explanation_uz
 }
 
+/* ── AI tushuntirish ──────────────────────────────────────────────────────
+   Ilgari oddiy rejimlarda javob bergandan keyin izoh AVTOMATIK ochilardi.
+   Endi o'sha izoh yo'q — o'rniga "AI tushuntirish" tugmasi: bosilganda AI
+   javob berayotgandek yozilib chiqadi.
+
+   Matn javob bilan BIRGA keladi (`lastAnswer.explanation_*`), ya'ni bu faqat
+   lokal animatsiya — qo'shimcha so'rov yo'q. Holat savol id'i bo'yicha
+   saqlanadi, shuning uchun savol almashganda o'zi tozalanadi.
+   Imtihon va blitsda tushuntirish umuman yo'q (`showExplanation` false). */
+const aiOchildi = ref<Record<number, boolean>>({})
+const aiFikr = ref<Record<number, boolean>>({})
+const aiYozilmoqda = ref<Record<number, boolean>>({})
+const aiMatn = ref<Record<number, string>>({})
+const aiTaymer: Record<number, ReturnType<typeof setTimeout>> = {}
+
+function aiKorsat(qid: number) {
+  if (aiOchildi.value[qid]) return
+  aiOchildi.value[qid] = true
+  const toliq = explanationText()
+  if (!toliq) return
+
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+    aiMatn.value[qid] = toliq
+    return
+  }
+  aiFikr.value[qid] = true
+  aiTaymer[qid] = setTimeout(() => {
+    aiFikr.value[qid] = false
+    aiYozilmoqda.value[qid] = true
+    aiMatn.value[qid] = ''
+    let i = 0
+    const qadam = () => {
+      i = Math.min(toliq.length, i + 3)
+      aiMatn.value[qid] = toliq.slice(0, i)
+      if (i < toliq.length) aiTaymer[qid] = setTimeout(qadam, 24)
+      else aiYozilmoqda.value[qid] = false
+    }
+    qadam()
+  }, 550)
+}
+
 function isBookmarked(id: number) { return bookmarked.value.has(id) }
 async function toggleBookmark(id: number) {
   const had = bookmarked.value.has(id)
@@ -447,7 +488,8 @@ onBeforeUnmount(() => {
     </div>
   </div>
 
-  <div class="min-h-screen flex flex-col">
+  <!-- `play-ai` — AI tushuntirish tokenlari shu ildizda aniqlanadi -->
+  <div class="play-ai min-h-screen flex flex-col">
     <!-- Sticky: top bar + progress + question strip (always visible, no scroll to navigate) -->
     <div class="sticky top-0 z-10" style="background: var(--surface);">
       <header class="border-b" style="border-color: var(--border-soft);">
@@ -591,16 +633,32 @@ onBeforeUnmount(() => {
               </button>
             </div>
 
-            <!-- Explanation -->
-            <div v-if="showExplanation && explanationText()"
-                 class="p-4 rounded-2xl border flex gap-3"
-                 style="background: rgba(251,191,36,0.10); border-color: rgba(251,191,36,0.30);">
-              <AppIcon name="info" :size="18" class="flex-shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
-              <div class="text-sm leading-relaxed text-amber-900 dark:text-amber-200">
-                <b>{{ i18n.t({ uz: 'Izoh.', kr: 'Изоҳ.' }) }}</b>
-                {{ explanationText() }}
+            <!-- AI tushuntirish — avtomatik chiqadigan izoh o'rniga.
+                 Imtihon/blitsda `showExplanation` false, ya'ni ko'rinmaydi. -->
+            <template v-if="showExplanation && explanationText()">
+              <button
+                v-if="!aiOchildi[currentItem.question.id]"
+                type="button" class="ai-btn"
+                @click="aiKorsat(currentItem.question.id)"
+              >
+                <AppIcon name="ai" :size="16" />
+                {{ i18n.t({ uz: 'AI tushuntirish', kr: 'AI тушунтириш' }) }}
+              </button>
+
+              <div v-else class="ai-box">
+                <div class="ai-head">
+                  <AppIcon name="ai" :size="15" />
+                  {{ i18n.t({ uz: 'AI tushuntirish', kr: 'AI тушунтириш' }) }}
+                </div>
+                <div v-if="aiFikr[currentItem.question.id]" class="ai-fikr" role="status">
+                  <span class="ai-dots"><i /><i /><i /></span>
+                  {{ i18n.t({ uz: 'AI o\'ylanmoqda…', kr: 'AI ўйланмоқда…' }) }}
+                </div>
+                <p v-else class="ai-text">{{
+                  aiYozilmoqda[currentItem.question.id] ? aiMatn[currentItem.question.id] : explanationText()
+                }}<span v-if="aiYozilmoqda[currentItem.question.id]" class="ai-caret" /></p>
               </div>
-            </div>
+            </template>
 
             <!-- Exam order-lock hint -->
             <div v-if="isExam" class="text-2xs flex items-center gap-1.5 pt-1" style="color: var(--text-4);">
@@ -718,3 +776,59 @@ onBeforeUnmount(() => {
   </template>
   </ClientOnly>
 </template>
+
+<style scoped>
+/* ── AI tushuntirish ──────────────────────────────────────────────────────
+   Natija sahifasi bilan bir xil ohang (lavanda) — foydalanuvchi ikkala
+   joyda ham bir narsani ko'rsin. */
+.play-ai {
+  --ai-bg: #eef2ff;
+  --ai-border: rgba(99, 102, 241, 0.20);
+  --ai-ink: #3730a3;
+  --ai-accent: #4f46e5;
+}
+.dark .play-ai {
+  --ai-bg: rgba(99, 102, 241, 0.12);
+  --ai-border: rgba(129, 140, 248, 0.30);
+  --ai-ink: #c7d2fe;
+  --ai-accent: #a5b4fc;
+}
+
+.ai-btn {
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--ai-border); background: var(--surface);
+  font-size: 0.875rem; font-weight: 600; color: var(--ai-accent);
+  transition: border-color 0.15s;
+}
+.ai-btn:hover { border-color: var(--ai-accent); }
+
+.ai-box {
+  padding: 0.875rem 1rem; border-radius: 0.75rem;
+  background: var(--ai-bg); border: 1px solid var(--ai-border);
+}
+.ai-head {
+  display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.5rem;
+  font-size: 0.8125rem; font-weight: 600; color: var(--ai-accent);
+}
+.ai-text { font-size: 0.875rem; line-height: 1.7; color: var(--ai-ink); white-space: pre-line; }
+
+.ai-caret {
+  display: inline-block; width: 2px; height: 0.9em; margin-left: 2px;
+  background: var(--ai-accent); vertical-align: middle;
+  animation: aiYonish 1s steps(2) infinite;
+}
+@keyframes aiYonish { 0%, 100% { opacity: 1 } 50% { opacity: 0 } }
+
+.ai-fikr { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: var(--ai-accent); }
+.ai-dots { display: inline-flex; gap: 0.2rem; }
+.ai-dots i { width: 0.35rem; height: 0.35rem; border-radius: 9999px; background: var(--ai-accent); animation: aiSakra 0.9s infinite; }
+.ai-dots i:nth-child(2) { animation-delay: 0.15s; }
+.ai-dots i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes aiSakra { 0%, 60%, 100% { transform: translateY(0) } 30% { transform: translateY(-0.25rem) } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-caret, .ai-dots i { animation: none; }
+}
+</style>
