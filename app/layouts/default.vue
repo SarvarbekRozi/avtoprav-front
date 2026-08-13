@@ -2,6 +2,12 @@
 const auth = useAuthStore()
 const i18n = useI18n()
 const theme = useTheme()
+const route = useRoute()
+
+/** Sahifa `definePageMeta({ mobileChrome: false })` bersa suzuvchi
+ *  boshqaruvlar (qo'ng'iroq) mobilda chiqmaydi — DashboardSidebar'dagi
+ *  hamburger ham xuddi shu belgiga qaraydi. */
+const mobileChrome = computed(() => route.meta.mobileChrome !== false)
 
 async function changeLocale(value: 'uz_latn' | 'uz_cyrl') {
   await i18n.setLocale(value)
@@ -30,8 +36,11 @@ const themeLabel = computed(() => theme.isDark.value
          middleware'dan keyin to'ladi. Uni snapshotga olish (const isAuthed = ...)
          mehmon/foydalanuvchi tarmoqlarini muzlatib qo'yadi. -->
 
-    <!-- Mobil uchun suzuvchi qo'ng'iroq; desktop'da u sidebar ichida turadi -->
-    <NotificationBell class="md:hidden" />
+    <!-- Mobil uchun suzuvchi qo'ng'iroq; desktop'da u sidebar ichida turadi.
+         `mobileChrome: false` bo'lgan sahifalarda chiqmaydi — test o'ynash
+         ekranida `fixed top-3 right-3` bo'lgani uchun XP chipini bosib
+         turardi, ustiga test paytida bildirishnoma ochish ham keraksiz. -->
+    <NotificationBell v-if="mobileChrome" class="md:hidden" />
 
     <DashboardSidebar />
 

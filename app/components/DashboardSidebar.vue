@@ -18,6 +18,16 @@ const route = useRoute()
 
 const mobileOpen = ref(false)
 
+/**
+ * Mobil hamburger ko'rinishi. Sahifa `definePageMeta({ mobileChrome: false })`
+ * bersa chiqmaydi — test o'ynash ekranida `fixed` tugma sahifaning yuqori
+ * qatori ustiga chiqib qolardi.
+ */
+const mobileChrome = computed(() => route.meta.mobileChrome !== false)
+
+// Drawer sahifa almashganda ochiq qolmasin (masalan testga kirishda)
+watch(mobileChrome, (v) => { if (!v) mobileOpen.value = false })
+
 // Yig'ilgan holat localStorage'da. O'qish faqat onMounted'da — SSR bilan
 // mos kelishi uchun boshlang'ich qiymat doim `false`.
 const collapsed = ref(false)
@@ -172,8 +182,11 @@ const points = computed(() => auth.user?.points ?? 0)
     </button>
   </aside>
 
-  <!-- ── Mobil: hamburger ── -->
-  <button type="button"
+  <!-- ── Mobil: hamburger ──
+       `mobileChrome: false` bo'lgan sahifalarda chiqmaydi (test o'ynash
+       ekrani): `fixed top-3 left-3` bo'lgani uchun sahifaning yuqori qatori
+       ustiga chiqib qolardi. -->
+  <button v-if="mobileChrome" type="button"
     class="md:hidden fixed top-3 left-3 z-30 h-10 w-10 rounded-full grid place-items-center border shadow-soft"
     style="background: var(--surface); border-color: var(--border-soft); color: var(--text-2);"
     :aria-label="i18n.t({ uz: 'Menyu', kr: 'Меню' })"

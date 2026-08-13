@@ -1,7 +1,12 @@
 <script setup lang="ts">
 // Test ekrani endi dashboard qobig'i ichida turadi (chap panel + o'ng axborot
 // ustuni). Ilgari yalang'och `test` layout ishlatilardi.
-definePageMeta({ middleware: 'auth', layout: 'default' })
+// `mobileChrome: false` — mobilda hamburger va bildirishnoma tugmasi CHIQMAYDI.
+// Ikkisi ham `fixed top-3` va bu sahifada yuqori qatorning ustiga chiqib
+// qolardi: hamburger "Chiqish" tugmasini, qo'ng'iroq esa XP chipini bosib
+// turardi ("220 X…" deb qirqilib ko'rinardi). Test paytida yon menyu ham,
+// bildirishnoma ham kerak emas — chiqish uchun "Chiqish" tugmasi bor.
+definePageMeta({ middleware: 'auth', layout: 'default', mobileChrome: false })
 
 const route = useRoute()
 const i18n = useI18n()
@@ -640,7 +645,14 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- Ikki ustun: savol · axborot paneli -->
-      <div class="grid gap-3 sm:gap-4 items-start lg:grid-cols-[minmax(0,1fr)_340px]">
+      <!-- `grid-cols-1` SHART: usiz mobilda hech qanday ustun shabloni yo'q va
+           YASHIRIN `auto` ustun paydo bo'ladi. `auto` trek `max-content`ga
+           cho'ziladi va konteyner kengligi bilan CHEKLANMAYDI — o'lchandi:
+           375px ekranda savol kartasi 467px bo'lib, sahifa 483px ga toshib
+           ketardi (kartalarning o'ng cheti ekrandan chiqib qolardi).
+           Tailwind `grid-cols-1` = `repeat(1, minmax(0, 1fr))`, ya'ni trek
+           konteynerga qisiladi. -->
+      <div class="grid grid-cols-1 gap-3 sm:gap-4 items-start lg:grid-cols-[minmax(0,1fr)_340px]">
         <div class="min-w-0 flex flex-col gap-3 sm:gap-4">
           <!-- Loading -->
           <div v-if="loading" class="space-y-4">
@@ -735,9 +747,14 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- ── O'ng ustun: taymer, savol ma'lumoti, izoh ─────────────────── -->
-        <aside v-if="attemptInfo" class="flex flex-col gap-3 lg:sticky lg:top-5">
-          <!-- Taymer (faqat vaqtli rejimlarda) -->
-          <div v-if="remainingSec !== null" class="card p-4 sm:p-5">
+        <!-- min-w-0: ichida uzun kategoriya nomi bor, usiz ustun min-content
+             kengligiga cho'zilib gridni toshirishi mumkin -->
+        <aside v-if="attemptInfo" class="min-w-0 flex flex-col gap-3 lg:sticky lg:top-5">
+          <!-- Taymer (faqat vaqtli rejimlarda).
+               MOBILDA CHIQMAYDI: tor ekranda o'ng ustun savol ostiga tushadi va
+               yuqoridagi taymer chipi bilan bir sahifada IKKI marta vaqt
+               ko'rsatilardi ("23:41" tepada chip, pastda katta karta). -->
+          <div v-if="remainingSec !== null" class="dup-mobile card p-4 sm:p-5">
             <div class="flex items-center gap-2 mb-2.5" style="color: var(--text-3);">
               <AppIcon name="clock" :size="16" />
               <span class="text-[13px] font-medium">{{ i18n.t({ uz: 'Qolgan vaqt', kr: 'Қолган вақт' }) }}</span>
@@ -758,9 +775,13 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <!-- Savol ma'lumoti -->
+          <!-- Savol ma'lumoti.
+               MOBILDA faqat "seriya" qatori qoladi — qolgan uchtasi allaqachon
+               ekranda bor: kategoriya savol kartasining tepasida, "7 / 20" va
+               XP esa yuqori qatordagi chiplarda. Ularni takrorlash tor ekranda
+               savol ostiga to'rt qatorli keraksiz karta qo'shardi. -->
           <div class="card p-2">
-            <div v-if="currentTopic" class="rail-row">
+            <div v-if="currentTopic" class="rail-row dup-mobile">
               <span class="rail-tile rail-tile-primary">
                 <AppIcon name="clipboard" :size="15" />
               </span>
@@ -769,7 +790,7 @@ onBeforeUnmount(() => {
                 <span class="rail-value">{{ currentTopic }}</span>
               </span>
             </div>
-            <div class="rail-row">
+            <div class="rail-row dup-mobile">
               <span class="rail-tile rail-tile-violet">
                 <AppIcon name="circle-dot" :size="15" />
               </span>
@@ -787,7 +808,7 @@ onBeforeUnmount(() => {
                 <span class="rail-value tabular-nums">{{ correctStreak }}</span>
               </span>
             </div>
-            <div v-if="auth.user" class="rail-row">
+            <div v-if="auth.user" class="rail-row dup-mobile">
               <span class="rail-tile rail-tile-emerald">
                 <AppIcon name="star" :size="15" />
               </span>
@@ -1065,6 +1086,20 @@ onBeforeUnmount(() => {
   .play-chip-narrow { display: none; }
 }
 
+/* Tor ekranda o'ng ustun savol OSTIGA tushadi va yuqori qatordagi chiplar
+   bilan bir xil ma'lumotni ikkinchi marta ko'rsatardi (vaqt, savol raqami,
+   XP, kategoriya). `.dup-mobile` shu takrorlarni faqat mobilda yashiradi.
+   Qoidalar uslub blokining OXIRIDA — `.dup-mobile` ni ham Tailwind
+   utilitalari, ham keyinroq e'lon qilingan `.rail-row { display: flex }`
+   bosib ketmasligi uchun (o'lchandi: `.rail-row` va `.dup-mobile` aniqligi
+   teng, keyingisi g'olib chiqib qatorlar mobilda ham chiqib turardi). */
+.dup-mobile,
+.rail-row.dup-mobile { display: none; }
+@media (min-width: 1024px) {
+  .dup-mobile { display: block; }
+  .rail-row.dup-mobile { display: flex; }
+}
+
 /* ── Savol raqamlari ──────────────────────────────────────────────────── */
 .strip-card { padding: 0.75rem; }
 .strip-tile {
@@ -1131,13 +1166,29 @@ onBeforeUnmount(() => {
 /* ── Pastki navigatsiya ───────────────────────────────────────────────── */
 .nav-card { padding: 0.75rem; }
 .play-nav-btn {
-  display: inline-flex; align-items: center; gap: 0.5rem;
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
   height: 3rem; padding: 0 1.25rem;
   border-radius: 0.75rem;
   background: var(--surface); border: 1px solid var(--border-1);
   box-shadow: var(--shadow-soft);
   font-size: 0.9375rem; font-weight: 600; color: var(--text-2);
+  /* Matn ikki qatorga SINMASIN: 375px da kartaga 319px qoladi va "Oldingi
+     savol" / "Keyingi savol" 1.25rem padding bilan sig'masdi — "Oldingi"
+     va "savol" alohida qatorga tushib tugmalar ikki barobar balandlashardi. */
+  white-space: nowrap;
   transition: border-color 0.15s, color 0.15s, filter 0.15s;
+}
+/* Strelka ikonkasi SIQILMASIN: `flex: 1 1 0` bilan tugma qisilganda ikonka
+   ham 0 kenglikka tushib butunlay yo'qolib qolardi (o'lchandi). Matn `nowrap`
+   bo'lgani uchun u baribir qisilmaydi. */
+.play-nav-btn > * { flex-shrink: 0; }
+
+/* Tor ekranda ikkalasi teng bo'linib butun kenglikni oladi (o'rtadagi bo'sh
+   ajratgich mobilda keraksiz). Padding 1.25rem → 0.75rem va shrift 15 → 14:
+   375px da kartaga 319px qoladi, standart o'lchamlarda ikki tugma 330px
+   talab qilib ikki qatorga sinardi. */
+@media (max-width: 420px) {
+  .play-nav-btn { flex: 1 1 0; padding: 0 0.75rem; font-size: 0.875rem; }
 }
 .play-nav-btn:hover:not(:disabled) { border-color: var(--text-4); color: var(--text-1); }
 .play-nav-btn:disabled { opacity: 0.45; cursor: not-allowed; }
