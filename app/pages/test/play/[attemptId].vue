@@ -585,7 +585,10 @@ onBeforeUnmount(() => {
 
   <!-- `play-ai` — AI tushuntirish tokenlari shu ildizda aniqlanadi -->
   <div class="play-ai min-h-screen" style="background: var(--canvas);">
-    <div class="mx-auto w-full max-w-[1400px] px-3 sm:px-5 py-3 sm:py-5 flex flex-col gap-3 sm:gap-4">
+    <!-- Konteyner /tickets, /topics, /belgilar va natija sahifasi bilan AYNAN
+         bir xil: ilgari `max-w-[1400px]` + kichik padding edi va ikki yonda
+         keraksiz bo'sh joy qolardi. -->
+    <div class="mx-auto w-full max-w-[1800px] px-4 sm:px-6 lg:px-8 xl:px-10 pt-6 lg:pt-8 pb-16 md:pb-12 flex flex-col gap-3 sm:gap-4">
 
       <!-- Yuqori qator: chiqish · savol hisobi · XP -->
       <div class="flex items-center gap-2 sm:gap-3">
