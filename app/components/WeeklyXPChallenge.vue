@@ -108,7 +108,11 @@ const note = computed(() => {
 </script>
 
 <template>
-  <section class="card p-5 sm:p-6 h-full min-h-[248px] flex flex-col">
+  <!-- Mobilda ham AYNAN shu zinapoya, faqat ixchamroq: 375px da kartaga 303px
+       ichki kenglik qoladi, ya'ni 5 ustunga ~60px. "100 XP" 14px da 52px
+       oladi — sig'adi, lekin siqilib turadi, shuning uchun mobilda 12.5px
+       (o'lchangan). Balandlik ham 248px dan tushadi. -->
+  <section class="card p-4 sm:p-6 h-full sm:min-h-[248px] flex flex-col">
     <!-- Sarlavha -->
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
@@ -130,7 +134,7 @@ const note = computed(() => {
     </div>
 
     <!-- Zinapoya. Namunadagidek: tugun YUQORIDA, ikkala yorliq esa OSTIDA. -->
-    <ol class="grid grid-cols-5 mt-7" role="list">
+    <ol class="grid grid-cols-5 mt-5 sm:mt-7" role="list">
       <li v-for="(step, i) in STEPS" :key="step" class="flex flex-col items-center min-w-0">
         <!-- Tugun + ulovchi chiziqlar -->
         <div class="relative w-full h-8 flex items-center justify-center">
@@ -150,13 +154,13 @@ const note = computed(() => {
         </div>
 
         <!-- XP miqdori -->
-        <div class="mt-3.5 text-[14px] font-bold tabular-nums leading-none whitespace-nowrap"
+        <div class="mt-2.5 sm:mt-3.5 text-[12.5px] sm:text-[14px] font-bold tabular-nums leading-none whitespace-nowrap"
              :style="{ color: stateOf(i) === 'locked' ? 'var(--text-4)' : 'var(--text-1)' }">
           {{ step }} XP
         </div>
 
         <!-- Kun yorlig'i (maketdagidek: "1 kun", "2 kun", …) -->
-        <div class="mt-1.5 text-xs font-medium truncate"
+        <div class="mt-1 sm:mt-1.5 text-[11px] sm:text-xs font-medium truncate"
              :style="{
                color: stateOf(i) === 'current' ? 'var(--primary-ink)' : 'var(--text-4)',
                fontWeight: stateOf(i) === 'current' ? 700 : 500,
@@ -167,11 +171,11 @@ const note = computed(() => {
     </ol>
 
     <!-- Izoh — namunada ko'kimtir (amber emas) -->
-    <div class="mt-auto pt-6">
-      <div class="flex items-center gap-2.5 rounded-xl px-3.5 py-3"
+    <div class="mt-auto pt-4 sm:pt-6">
+      <div class="flex items-center gap-2.5 rounded-xl px-3 sm:px-3.5 py-2.5 sm:py-3"
            style="background: var(--primary-soft);">
         <AppIcon name="flame" :size="17" class="text-amber-500 shrink-0" />
-        <p class="text-[13px] font-medium leading-snug" style="color: var(--text-2);">{{ note }}</p>
+        <p class="text-[12.5px] sm:text-[13px] font-medium leading-snug" style="color: var(--text-2);">{{ note }}</p>
         <span v-if="loaded" class="ml-auto text-2xs font-semibold tabular-nums shrink-0 whitespace-nowrap"
               style="color: var(--text-4);">
           {{ xp }}/{{ STEPS[STEPS.length - 1] }} XP

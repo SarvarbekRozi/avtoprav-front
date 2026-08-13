@@ -106,42 +106,10 @@ const examLabel = computed(() => {
       </div>
     </section>
 
-    <!-- ── Imtihon ── -->
-    <NuxtLink to="/test/start/exam" class="mh-exam mt-3.5">
-      <div class="min-w-0 flex-1">
-        <div class="text-white text-[24px] font-bold leading-none tracking-tightish">
-          {{ i18n.t({ uz: 'Imtihon', kr: 'Имтиҳон' }) }}
-        </div>
-        <div class="mt-1.5 text-[14px] text-white/85">
-          {{ i18n.t({
-            uz: '20 savol · 25 daqiqa · real imtihon',
-            kr: '20 савол · 25 дақиқа · реал имтиҳон'
-          }) }}
-        </div>
-      </div>
-      <span class="mh-exam-ic" aria-hidden="true">
-        <AppIcon name="exam" :size="24" />
-      </span>
-    </NuxtLink>
-
-    <!-- ── Haftalik XP musobaqasi ── -->
-    <NuxtLink to="/me/stats" class="mh-xpc mt-3">
-      <span class="mh-xpc-ic" aria-hidden="true">
-        <AppIcon name="trophy" :size="24" />
-      </span>
-      <span class="min-w-0 flex-1">
-        <span class="block text-[16px] font-bold leading-tight" style="color: var(--text-1);">
-          {{ i18n.t({ uz: 'Haftalik XP musobaqasi', kr: 'Ҳафталик XP мусобақаси' }) }}
-        </span>
-        <span class="block mt-1 text-[13.5px] leading-[1.4]" style="color: var(--text-3);">
-          {{ i18n.t({
-            uz: 'XP yig\'ing va yetakchilar ro\'yxatida yuqoriga chiqing',
-            kr: 'XP йиғинг ва етакчилар рўйхатида юқорига чиқинг'
-          }) }}
-        </span>
-      </span>
-      <AppIcon name="chev-r" :size="18" class="shrink-0" style="color: var(--text-4);" />
-    </NuxtLink>
+    <!-- Imtihon va XP challenge kartalari BU YERDA EMAS: ular index.vue da
+         ish stoli bilan UMUMIY qatorda turadi (ExamCTA / WeeklyXPChallenge),
+         faqat mobilda ixchamlashadi. DOM tartibi ikkala tartibga ham to'g'ri
+         keladi, shuning uchun nusxa kerak emas. -->
   </div>
 </template>
 
@@ -190,50 +158,4 @@ const examLabel = computed(() => {
 }
 .mh-date-link::after { content: ''; position: absolute; inset: -8px 0; }
 
-.mh-exam {
-  display: flex;
-  align-items: center;
-  gap: 0.875rem;
-  padding: 1.125rem 1.25rem;
-  border-radius: 18px;
-  /* Ish stolidagi `.exam-cta` bilan bir xil gradient — brend bir joyda ikki
-     xil ko'rinmasin. */
-  background: linear-gradient(103deg, #4c5bb8 0%, #6c4fd8 48%, #8b3fe8 100%);
-  box-shadow: 0 12px 26px -14px rgba(108, 79, 216, 0.7);
-}
-.mh-exam-ic {
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  width: 3.25rem;
-  height: 3.25rem;
-  border-radius: 9999px;
-  background: #ffffff;
-  color: #5b4bd0;
-}
-
-.mh-xpc {
-  display: flex;
-  align-items: center;
-  gap: 0.875rem;
-  padding: 1rem 1.125rem;
-  border-radius: 18px;
-  background: var(--warn-soft);
-  border: 1px solid var(--warn);
-}
-/* Ochiq mavzuda `--warn` (#f59e0b) to'la ramka sifatida juda quyuq — 40%
-   shaffoflik maketdagi yumshoq chegarani beradi. Qorong'ida `--warn-soft`
-   allaqachon shaffof, ramka ham shunga mos ochiladi. */
-.mh-xpc { border-color: color-mix(in srgb, var(--warn) 40%, transparent); }
-.mh-xpc-ic {
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  width: 3.25rem;
-  height: 3.25rem;
-  border-radius: 9999px;
-  background: linear-gradient(140deg, #f7a416, #ef8a06);
-  color: #ffffff;
-  box-shadow: 0 6px 14px -6px rgba(239, 138, 6, 0.7);
-}
 </style>

@@ -133,7 +133,6 @@ const tiles = computed<{ icon: string, tone: Tone, title: string, sub: string, t
     <MobileHomeTop
       :readiness="readiness" :accuracy="accuracy" :points="points"
       :exam-days-left="examDaysLeft" />
-    <HomeChips class="md:hidden mt-4" :daily-tests="dailyTests" :is-guest="isGuest" :current="current" />
 
     <!-- ══ ISH STOLI (≥ md) ══ -->
     <div class="hidden md:block">
@@ -153,18 +152,29 @@ const tiles = computed<{ icon: string, tone: Tone, title: string, sub: string, t
         </div>
       </div>
 
-      <!-- ── 2-qator: imtihon CTA + haftalik XP ──
-           Namunada bu ikki karta deyarli TENG kenglikda (≈49/51), 7/5 emas. -->
-      <div class="grid grid-cols-1 gap-4 sm:gap-6 mt-4 sm:mt-6
-                  xl:grid-cols-[minmax(0,49fr)_minmax(0,51fr)]">
-        <div class="min-w-0">
-          <ExamCTA />
-        </div>
-        <div class="min-w-0">
-          <WeeklyXPChallenge :week-xp="weekXp" :streak-current="streakCurrent" />
-        </div>
+    </div>
+
+    <!-- ── Imtihon CTA + haftalik XP challenge — IKKALA tartibda ham shu yerda.
+         Namunada bu ikki karta deyarli TENG kenglikda (≈49/51), 7/5 emas.
+         Mobilda grid bir ustunga tushadi, kartalar o'zlari ixchamlashadi.
+
+         DOM tartibi ikkala tartibga ham to'g'ri keladi, shuning uchun `order`
+         hiylalari kerak emas:
+           mobil:  MobileHomeTop → bu qator → HomeChips → rejimlar
+           web:    yuqoridagi blok → bu qator → rejimlar -->
+    <div class="grid grid-cols-1 gap-4 sm:gap-6 mt-4 sm:mt-6
+                xl:grid-cols-[minmax(0,49fr)_minmax(0,51fr)]">
+      <div class="min-w-0">
+        <ExamCTA />
+      </div>
+      <div class="min-w-0">
+        <WeeklyXPChallenge :week-xp="weekXp" :streak-current="streakCurrent" />
       </div>
     </div>
+
+    <!-- Mobilda chiplar maketdagidek kartalardan KEYIN turadi (ish stolida esa
+         yuqoridagi blok ichida, salomlashuv ostida) -->
+    <HomeChips class="md:hidden mt-4" :daily-tests="dailyTests" :is-guest="isGuest" :current="current" />
 
     <!-- ── Rejimlar — ikkala tartibda ham shu yerda (QuickActionCard o'zi
          mobil/ish stoli ko'rinishini boshqaradi) ── -->

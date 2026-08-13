@@ -32,7 +32,10 @@ const t = useTone(() => props.tone)
       <!-- `truncate` EMAS: 375px da yorliqqa ~90px qoladi va "Saqlangan",
            "Statistika" qirqilib "Saqlan…" bo'lib chiqardi (o'lchangan).
            Endi shrift kengligiga moslashadi, zarur bo'lsa ikki qatorga o'tadi. -->
-      <span class="qa-title min-w-0 flex-1 font-bold leading-tight" style="color: var(--text-1);">
+      <!-- `font-bold` EMAS: 700 og'irlikda "Kunlik", "Blits" kabi qisqa
+           yorliqlar juda qalin ko'rinardi. 600 — ish stoli kartasi bilan ham
+           bir xil og'irlik. -->
+      <span class="qa-title min-w-0 flex-1 font-semibold leading-tight" style="color: var(--text-1);">
         {{ title }}
       </span>
     </span>
@@ -93,9 +96,9 @@ const t = useTone(() => props.tone)
 }
 
 /* Tor telefonlarda (≤ 400px) yorliq kichikroq — 42px ikonka va 12px padding
-   bilan matnga ~90px qoladi. Kengroq telefonlarda maketdagi 17px qaytadi. */
+   bilan matnga ~90px qoladi. Kengroq telefonlarda 16px. */
 .qa-title { font-size: 15.5px; }
-@media (min-width: 400px) { .qa-title { font-size: 17px; } }
+@media (min-width: 400px) { .qa-title { font-size: 16px; } }
 
 .qa-tag {
   position: absolute;
