@@ -356,7 +356,13 @@ onMounted(() => {
           <!-- Mobilda ikkisi BITTA qatorga qo'shiladi: `hero-date` inline
                bo'ladi va "O'tkazilgan sana:" yorlig'i yashiriladi (sana o'zi
                "Bugun, 17:06" ko'rinishida tushunarli). -->
-          <p class="hero-mode">{{ rejim }} <span class="dot">•</span> {{ vaqtSoz(a.time_spent_sec) }}</p>
+          <!-- Vaqt SHU YERDA, alohida kartada emas: "0:19 / 25:00" ko'rinishi
+               limitni ham beradi, ya'ni pastdagi "Vaqt" kartasi aynan takror
+               bo'lib qolardi (o'sha karta olib tashlandi). -->
+          <p class="hero-mode">
+            {{ rejim }} <span class="dot">•</span>
+            <span class="tabular-nums">{{ vaqt(a.time_spent_sec) }}<span v-if="a.time_limit_sec" class="hero-lim"> / {{ vaqt(a.time_limit_sec) }}</span></span>
+          </p>
           <p class="hero-date">
             <span class="hero-date-lbl">{{ i18n.t({ uz: 'O\'tkazilgan sana:', kr: 'Ўтказилган сана:' }) }}</span>
             <span>{{ sana }}</span>
@@ -393,16 +399,8 @@ onMounted(() => {
               <div class="stat-sub tabular-nums">{{ ulush(a.wrong_count) }}%</div>
             </div>
 
-            <div class="stat stat-time">
-              <div class="stat-top">
-                <span class="stat-ic si-time"><AppIcon name="clock" :size="17" /></span>
-                <span class="stat-lbl">{{ i18n.t({ uz: 'Vaqt', kr: 'Вақт' }) }}</span>
-              </div>
-              <div class="stat-val tabular-nums">
-                {{ vaqt(a.time_spent_sec) }}
-                <span v-if="a.time_limit_sec" class="stat-inline">/ {{ vaqt(a.time_limit_sec) }}</span>
-              </div>
-            </div>
+            <!-- "Vaqt" kartasi OLIB TASHLANDI: aynan shu ma'lumot sarlavha
+                 ostidagi qatorda ("Imtihon rejimi • 0:19 / 25:00") bor. -->
 
             <!-- `stat-pct` — MOBILDA CHIQMAYDI: bu foiz sahifada uch joyda
                  takrorlanardi (to'g'ri javoblar kartasining ostida, shu yerda
@@ -595,6 +593,11 @@ onMounted(() => {
           <div class="ai-head">
             <AppIcon name="ai" :size="16" class="ai-ic" />
             <span class="ai-title">{{ i18n.t({ uz: 'AI tushuntirish', kr: 'AI тушунтириш' }) }}</span>
+            <!-- Savol raqami — MOBILDA muhim: u yerda AI karta savol
+                 kartasining OSTIDA turadi va qaysi savolga tegishli ekani
+                 bilinmasdi. Ish stolida yonma-yon turgani uchun chiqmaydi. -->
+            <span class="ai-qnum tabular-nums" aria-hidden="true">{{ x.position }}</span>
+            <span class="sr-only">{{ i18n.t({ uz: 'savol', kr: 'савол' }) }} {{ x.position }}</span>
           </div>
 
           <!-- Izohi yo'q savol -->
@@ -714,7 +717,12 @@ onMounted(() => {
 .s-fail { color: var(--danger-ink); }
 
 .hero-mode { margin-top: 0.6rem; font-size: 0.875rem; color: var(--text-3); }
-.dot { color: var(--text-muted); }
+/* Vaqt limiti — asosiy qiymatdan susroq (u faqat kontekst beradi) */
+.hero-lim { color: var(--text-4); }
+/* `margin-right` SHART: `<span class="dot">•</span>` dan keyingi element
+   bilan orasidagi yangi qatorli bo'shliqni Vue kompilyatori olib tashlaydi
+   va "rejimi •0:01" bo'lib qolardi. */
+.dot { color: var(--text-muted); margin-right: 0.25em; }
 .hero-date { margin-top: 0.2rem; font-size: 0.8125rem; color: var(--text-3); min-height: 1.2em; }
 /* Bo'shliq CSS bilan: Vue shablon kompilyatori ikki element orasidagi
    yangi qatorli bo'shliqni olib tashlaydi va "sana:Bugun" bo'lib qolardi.
@@ -742,7 +750,8 @@ onMounted(() => {
 /* `@container` — `@media` DERAZANI o'lchaydi va yon menyu (~280px) ni
    hisobga olmaydi, ya'ni plitalar noto'g'ri kenglikda sinardi. */
 .stats { display: grid; gap: 0.75rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-@container (min-width: 40rem) { .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+/* 3 ta karta: To'g'ri, Xato, Foiz ("Vaqt" sarlavha qatoriga ko'chdi) */
+@container (min-width: 40rem) { .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
 .stat { padding: 0.875rem; border: 1px solid var(--border-1); border-radius: 0.75rem; background: var(--surface); }
 .stat-top { display: flex; align-items: center; gap: 0.55rem; }
@@ -941,6 +950,16 @@ onMounted(() => {
 .ai-head { display: flex; align-items: center; gap: 0.45rem; font-size: 0.9375rem; font-weight: 600; color: var(--ai-accent); margin-bottom: 0.75rem; }
 .ai-ic { flex-shrink: 0; }
 .ai-title { flex: 1 1 auto; }
+/* Savol raqami — faqat mobilda (pastdagi media blokida yoqiladi) */
+.ai-qnum {
+  display: none;
+  flex-shrink: 0;
+  min-width: 1.5rem; height: 1.5rem; padding: 0 0.35rem;
+  border-radius: 0.4rem;
+  background: var(--surface); border: 1px solid var(--ai-border);
+  font-size: 0.75rem; font-weight: 700; line-height: 1.4rem; text-align: center;
+  color: var(--ai-accent);
+}
 
 .ai-btn {
   display: inline-flex; align-items: center; gap: 0.45rem;
@@ -1028,9 +1047,17 @@ onMounted(() => {
      Vaqt kartasi bo'shab qolgan ustunni to'ldiradi. */
   .stat-sub { display: none; }
   .stat-pct { display: none; }
-  .stat-time { grid-column: 1 / -1; }
 
-  .bar { margin-top: 1.125rem; padding-top: 2.25rem; }
+  /* `padding-top` yorliq + qiymat uchun joy: 2.25rem (36px) da "15%" progress
+     chizig'iga TEGIB turardi (yorliq 17px + qiymat 20px = 37px, o'lchandi).
+     2.75rem (44px) bilan 7px havo qoladi. */
+  .bar { margin-top: 1.125rem; padding-top: 2.75rem; }
+
+  /* AI kartani savolga BOG'LASH: raqam chipi chiqadi va karta savol
+     kartasiga yaqinlashadi, ya'ni "bu shu savolning izohi" ekani ko'rinadi. */
+  .ai-qnum { display: block; }
+  .qrow { gap: 0.5rem; }
+  .ai-card { padding: 1rem 1.125rem; }
 
   /* Legend TAKRORI: filtr chiplari ("Barchasi 20 · To'g'ri 3 · Xato 3")
      o'zi rangli va sonli, ya'ni bir xil ma'lumotni ikki marta bermaymiz. */
