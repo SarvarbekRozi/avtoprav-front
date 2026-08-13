@@ -497,7 +497,9 @@ onMounted(() => {
               </button>
             </div>
 
-            <div v-if="oraliqlar.length" class="range">
+            <!-- `> 1`: bitta variantli tanlov foydasiz — 20 savolli testda
+                 "1–20 savollar" degan yagona qator chiqib turardi. -->
+            <div v-if="oraliqlar.length > 1" class="range">
               <select v-model.number="oraliq" class="range-sel" :aria-label="i18n.t({ uz: 'Savollar oralig\'i', kr: 'Саволлар оралиғи' })">
                 <option v-for="o in oraliqlar" :key="o.id" :value="o.id">{{ o.label }}</option>
               </select>
@@ -514,7 +516,11 @@ onMounted(() => {
             @click="savolgaOt(x.position)"
           >
             <span class="qtile-n tabular-nums">{{ x.position }}</span>
-            <AppIcon :name="HOLAT[holat(x)].icon" :size="11" />
+            <!-- Ikonka mobilda chiqmaydi: u yerda plita 33px ga tushadi va
+                 raqam bilan ikonka birga sig'maydi. Holat rang bilan
+                 beriladi, matnli tavsif esa `aria-label` da va quyidagi
+                 savol kartasida ("Savol 1 · Xato javob") turadi. -->
+            <AppIcon :name="HOLAT[holat(x)].icon" :size="11" class="qtile-ic" />
           </button>
         </div>
         <p v-if="!korinadigan.length" class="qgrid-empty">
@@ -572,7 +578,12 @@ onMounted(() => {
 
             <div class="qans">
               <div class="ans-lbl">{{ i18n.t({ uz: 'Sizning javobingiz', kr: 'Сизнинг жавобингиз' }) }}</div>
+              <!-- `ans-lbl-in` — MOBILDA yorliq blokning ICHIDA turadi
+                   ("Sizning javobingiz: A · matn"), tashqaridagi alohida qator
+                   esa yashiriladi. Tor ekranda har javob uchun ikkita qator
+                   (yorliq + blok) keraksiz balandlik berardi. -->
               <div class="ans" :class="`a-${holat(x)}`">
+                <span class="ans-lbl-in">{{ i18n.t({ uz: 'Sizning javobingiz:', kr: 'Сизнинг жавобингиз:' }) }}</span>
                 <span v-if="tanlanganHarf(x)" class="ans-h">{{ tanlanganHarf(x) }}</span>
                 <span class="ans-t">{{ tanlanganMatn(x) }}</span>
                 <AppIcon :name="HOLAT[holat(x)].icon" :size="15" class="ans-ic" />
@@ -580,6 +591,7 @@ onMounted(() => {
 
               <div class="ans-lbl lbl-ok">{{ i18n.t({ uz: 'To\'g\'ri javob', kr: 'Тўғри жавоб' }) }}</div>
               <div class="ans a-togri">
+                <span class="ans-lbl-in">{{ i18n.t({ uz: 'To\'g\'ri javob:', kr: 'Тўғри жавоб:' }) }}</span>
                 <span class="ans-h">{{ togriHarf(x) }}</span>
                 <span class="ans-t">{{ togriMatn(x) }}</span>
                 <AppIcon name="check" :size="15" class="ans-ic" />
@@ -921,6 +933,8 @@ onMounted(() => {
 
 .qans { min-width: 0; }
 .ans-lbl { font-size: 0.8125rem; color: var(--text-3); margin-bottom: 0.4rem; }
+/* Blok ichidagi yorliq faqat mobilda chiqadi (pastdagi media blokida) */
+.ans-lbl-in { display: none; }
 .ans-lbl.lbl-ok { color: var(--ok-ink); margin-top: 0.875rem; }
 .ans {
   display: flex; align-items: center; gap: 0.5rem;
@@ -1053,11 +1067,53 @@ onMounted(() => {
      2.75rem (44px) bilan 7px havo qoladi. */
   .bar { margin-top: 1.125rem; padding-top: 2.75rem; }
 
-  /* AI kartani savolga BOG'LASH: raqam chipi chiqadi va karta savol
-     kartasiga yaqinlashadi, ya'ni "bu shu savolning izohi" ekani ko'rinadi. */
-  .ai-qnum { display: block; }
-  .qrow { gap: 0.5rem; }
-  .ai-card { padding: 1rem 1.125rem; }
+  /* ── Savol plitalari: ixcham panel ──
+     3.5rem balandlik + ikonka juda katta joy olardi. Endi 2.25rem, ikonkasiz,
+     shuning uchun bir ekranda 20 savol ikki qatorga sig'adi. Ustunlar soni
+     qat'iy emas: 375px da 8 ta, 430px da 9 ta chiqadi. */
+  .qgrid { gap: 0.375rem; grid-template-columns: repeat(auto-fill, minmax(2rem, 1fr)); }
+  .qtile { height: 2.25rem; border-radius: 0.5rem; gap: 0; }
+  .qtile-n { font-size: 0.8125rem; }
+  /* `!important` SHART: AppIcon o'z ildiziga `display: inline-block` ni
+     INLINE style bilan beradi va oddiy klass qoidasi uni yenga olmaydi. */
+  .qtile-ic { display: none !important; }
+
+  /* ── Javob bloklari: yorliq blok ICHIDA ──
+     "Sizning javobingiz: A · matn" bitta blokda. Tashqi yorliq qatori
+     yashiriladi — har javob uchun ikkita qator keraksiz balandlik berardi. */
+  .ans-lbl { display: none; }
+  /* `display: block` + ichidagilar `inline` — hammasi BITTA matn oqimi:
+     "Sizning javobingiz: A · Gidravlik tormoz...". Flex bo'lib qolsa har
+     bo'lak alohida element bo'lib, uzun matn o'z qatoriga tushib ketardi va
+     harf bilan matn orasida bo'sh joy qolardi. */
+  .ans { display: block; }
+  .ans-lbl-in { display: inline; font-weight: 700; margin-right: 0.15rem; }
+  .ans-t { display: inline; }
+  .ans-h {
+    display: inline; width: auto; height: auto;
+    background: none; font-weight: 700;
+  }
+  .ans-h::after { content: ' · '; font-weight: 400; opacity: 0.55; }
+  .ans-ic { display: none !important; }
+  .qbody { gap: 0.875rem; }
+
+  /* ── AI tushuntirish savol kartasiga YOPISHADI ──
+     Ilgari orada bo'shliq bor edi va u alohida karta kabi ko'rinib, qaysi
+     savolga tegishli ekani bilinmasdi. Endi ikkisi bitta karta: savol —
+     ustki qism, AI — pastki qism. Shu sababli raqam chipi ham kerak emas. */
+  .qrow { gap: 0; margin-bottom: 0.875rem; }
+  .qcard {
+    border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+    border-bottom: 0; padding-bottom: 0.875rem;
+  }
+  .ai-card {
+    border-top-left-radius: 0; border-top-right-radius: 0;
+    padding: 0.875rem 1.125rem 1.125rem;
+    /* Maketdagidek oq fonda faqat tugma lavanda bo'lsin */
+    background: var(--surface); border-color: var(--border-soft);
+  }
+  .ai-head { font-size: 0.8125rem; margin-bottom: 0.5rem; }
+  .ai-qnum { display: none; }
 
   /* Legend TAKRORI: filtr chiplari ("Barchasi 20 · To'g'ri 3 · Xato 3")
      o'zi rangli va sonli, ya'ni bir xil ma'lumotni ikki marta bermaymiz. */
