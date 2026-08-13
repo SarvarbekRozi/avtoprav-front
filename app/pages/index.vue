@@ -39,6 +39,9 @@ const { data: weekBoard } = await useAsyncData('home-week-xp', async () => {
 const totals = computed(() => stats.value?.totals ?? null)
 const readiness = computed(() => totals.value?.readiness_percent ?? 0)
 const coverage = computed(() => totals.value?.coverage_percent ?? 0)
+// Mobil tayyorgarlik kartasi uchun (maketda doira o'rniga aniqlik ko'rsatiladi).
+// Backend bir kasrli qaytaradi — kartada butun songa yaxlitlanadi.
+const accuracy = computed(() => Math.round(totals.value?.accuracy_percent ?? 0))
 const attempts = computed(() => totals.value?.attempts ?? 0)
 const seen = computed(() => totals.value?.distinct_seen ?? 0)
 const bankTotal = computed(() => totals.value?.bank_total ?? 0)
@@ -60,24 +63,26 @@ const weekXp = computed<number | null>(() => {
 const examDaysLeft = computed(() => auth.user?.exam_days_left ?? null)
 const isGuest = computed(() => auth.user?.is_guest ?? false)
 
+// `freeTestsLeft` hisoblanishi HomeChips ichiga ko'chdi (u yerda ishlatiladi)
 const dailyTests = computed(() => auth.user?.daily_tests ?? null)
-const freeTestsLeft = computed(() => {
-  const d = dailyTests.value
-  if (!d || d.limit === null) return 0
-  return Math.max(0, d.limit - d.used_today)
-})
 
 /** Rejimlar — har biri mavjud marshrutga olib boradi, "soxta" tugma yo'q */
-const tiles = computed<{ icon: string, tone: Tone, title: string, sub: string, to: string, badge?: number | null }[]>(() => [
+const tiles = computed<{ icon: string, tone: Tone, title: string, sub: string, to: string, badge?: number | null, tag?: string | null }[]>(() => [
   {
     icon: 'star', tone: 'violet', to: '/test/start/daily',
     title: i18n.t({ uz: 'Kunlik', kr: 'Кунлик' }),
     sub: i18n.t({ uz: 'Kunlik savollar', kr: 'Кунлик саволлар' }),
+    // Doimiy "Yangi" yozuvi ma'nosiz bo'lardi — bugun hali test boshlanmagan
+    // bo'lsa chiqadi, ya'ni haqiqatan yangi kun boshlangani bildiriladi.
+    tag: (dailyTests.value?.used_today ?? 1) === 0
+      ? i18n.t({ uz: 'Yangi', kr: 'Янги' })
+      : null,
   },
   {
     icon: 'bolt', tone: 'amber', to: '/test/start/blitz',
     title: i18n.t({ uz: 'Blits', kr: 'Блиц' }),
     sub: i18n.t({ uz: '60 soniyada eng ko\'p to\'g\'ri javob', kr: '60 сонияда энг кўп тўғри жавоб' }),
+    tag: '60s',
   },
   {
     icon: 'ticket', tone: 'sky', to: '/tickets',
@@ -120,76 +125,54 @@ const tiles = computed<{ icon: string, tone: Tone, title: string, sub: string, t
   <div v-if="auth.user" class="mx-auto w-full max-w-[1800px] px-4 sm:px-6 lg:px-8 xl:px-10 pb-16 md:pb-12">
     <OnboardingModal />
 
-    <!-- ── 1-qator: salomlashuv + tayyorgarlik ──
-         Nisbat namunadan olingan: chap ustun ~38%, tayyorgarlik kartasi ~62%. -->
-    <div class="grid grid-cols-1 gap-4 sm:gap-6 pt-5 sm:pt-8
-                xl:grid-cols-[minmax(0,38fr)_minmax(0,62fr)]">
-      <!-- pl-14: mobil hamburger; pr-12: mobil bildirishnoma tugmasi -->
-      <div class="min-w-0 pl-14 pr-12 md:pl-0 md:pr-0 flex flex-col justify-center">
-        <DashboardHeader :exam-days-left="examDaysLeft" />
+    <!-- ══ MOBIL (< md) ══
+         Maketda AI tavsiyagacha bo'lgan qism butunlay boshqa tartibda: sarlavha
+         qatori (XP chipi bilan), ixcham tayyorgarlik, imtihon banneri va XP
+         musobaqasi banneri. Kartalar mazmuni ham boshqa, faqat qayta terilishi
+         emas — shuning uchun alohida komponent, `md:` shoxlari emas. -->
+    <MobileHomeTop
+      :readiness="readiness" :accuracy="accuracy" :points="points"
+      :exam-days-left="examDaysLeft" />
+    <HomeChips class="md:hidden mt-4" :daily-tests="dailyTests" :is-guest="isGuest" :current="current" />
 
-        <div v-if="(dailyTests && dailyTests.limit !== null) || isGuest"
-             class="mt-4 flex flex-wrap items-center gap-2">
-          <template v-if="dailyTests && dailyTests.limit !== null">
-            <span v-if="freeTestsLeft > 0"
-                  class="inline-flex items-center gap-2 h-8 px-3 rounded-full text-xs font-medium"
-                  style="background: var(--primary-soft); color: var(--primary);">
-              <span class="flex gap-1" aria-hidden="true">
-                <span v-for="n in dailyTests.limit" :key="n" class="w-1.5 h-1.5 rounded-full"
-                      :style="{ background: n <= freeTestsLeft ? 'var(--primary)' : 'var(--border-1)' }"></span>
-              </span>
-              {{ i18n.t({ uz: `Bugun ${freeTestsLeft} ta bepul test`, kr: `Бугун ${freeTestsLeft} та бепул тест` }) }}
-            </span>
-            <NuxtLink v-else to="/pricing"
-                      class="inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-xs font-medium text-amber-700"
-                      style="background: rgba(251,191,36,0.16);">
-              <AppIcon name="spark" :size="12" />
-              {{ i18n.t({ uz: 'Limit tugadi — Premium: cheksiz', kr: 'Лимит тугади — Премиум: чексиз' }) }}
-            </NuxtLink>
-          </template>
-          <NuxtLink v-if="isGuest" to="/register"
-                    class="text-xs underline underline-offset-4" style="color: var(--text-3);">
-            {{ i18n.t({ uz: 'Natijani saqlash uchun ro\'yxatdan o\'ting', kr: 'Натижани сақлаш учун рўйхатдан ўтинг' }) }}
-          </NuxtLink>
+    <!-- ══ ISH STOLI (≥ md) ══ -->
+    <div class="hidden md:block">
+      <!-- ── 1-qator: salomlashuv + tayyorgarlik ──
+           Nisbat namunadan olingan: chap ustun ~38%, tayyorgarlik kartasi ~62%. -->
+      <div class="grid grid-cols-1 gap-4 sm:gap-6 pt-5 sm:pt-8
+                  xl:grid-cols-[minmax(0,38fr)_minmax(0,62fr)]">
+        <div class="min-w-0 flex flex-col justify-center">
+          <DashboardHeader :exam-days-left="examDaysLeft" />
+          <HomeChips class="mt-4" :daily-tests="dailyTests" :is-guest="isGuest" :current="current" />
+        </div>
 
-          <!-- Tugallanmagan urinish — namunada alohida karta YO'Q, shuning uchun
-               u shu yerda ixcham chip ko'rinishida (funksiya saqlanadi, tartib buzilmaydi). -->
-          <NuxtLink v-if="current" :to="`/test/play/${current.id}`"
-                    class="inline-flex items-center gap-2 h-9 pl-2.5 pr-3 rounded-full text-xs font-semibold text-white transition-transform hover:-translate-y-0.5"
-                    style="background: linear-gradient(118deg, var(--ok-surface), var(--ok-surface-2)); box-shadow: 0 6px 16px -8px rgba(16,185,129,0.8);">
-            <span class="w-4 h-4 rounded-full grid place-items-center shrink-0" style="background: rgba(255,255,255,0.25);">
-              <svg width="8" height="8" viewBox="0 0 20 20" fill="currentColor"><path d="M6 4l11 6-11 6z" /></svg>
-            </span>
-            {{ i18n.t({ uz: 'Davom etish', kr: 'Давом этиш' }) }}
-            <span class="font-medium text-white/85 tabular-nums">{{ current.answered }}/{{ current.total }}</span>
-          </NuxtLink>
+        <div class="min-w-0">
+          <PreparationCard
+            :readiness="readiness" :attempts="attempts" :coverage="coverage"
+            :seen="seen" :bank-total="bankTotal" :points="points" />
         </div>
       </div>
 
-      <div class="min-w-0">
-        <PreparationCard
-          :readiness="readiness" :attempts="attempts" :coverage="coverage"
-          :seen="seen" :bank-total="bankTotal" :points="points" />
+      <!-- ── 2-qator: imtihon CTA + haftalik XP ──
+           Namunada bu ikki karta deyarli TENG kenglikda (≈49/51), 7/5 emas. -->
+      <div class="grid grid-cols-1 gap-4 sm:gap-6 mt-4 sm:mt-6
+                  xl:grid-cols-[minmax(0,49fr)_minmax(0,51fr)]">
+        <div class="min-w-0">
+          <ExamCTA />
+        </div>
+        <div class="min-w-0">
+          <WeeklyXPChallenge :week-xp="weekXp" :streak-current="streakCurrent" />
+        </div>
       </div>
     </div>
 
-    <!-- ── 2-qator: imtihon CTA + haftalik XP ──
-         Namunada bu ikki karta deyarli TENG kenglikda (≈49/51), 7/5 emas. -->
-    <div class="grid grid-cols-1 gap-4 sm:gap-6 mt-4 sm:mt-6
-                xl:grid-cols-[minmax(0,49fr)_minmax(0,51fr)]">
-      <div class="min-w-0">
-        <ExamCTA />
-      </div>
-      <div class="min-w-0">
-        <WeeklyXPChallenge :week-xp="weekXp" :streak-current="streakCurrent" />
-      </div>
-    </div>
-
-    <!-- ── 3-qator: rejimlar ── -->
+    <!-- ── Rejimlar — ikkala tartibda ham shu yerda (QuickActionCard o'zi
+         mobil/ish stoli ko'rinishini boshqaradi) ── -->
     <nav class="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3 sm:gap-3.5 mt-4 sm:mt-6"
          :aria-label="i18n.t({ uz: 'Mashq rejimlari', kr: 'Машқ режимлари' })">
       <QuickActionCard v-for="t in tiles" :key="t.to"
-        :icon="t.icon" :tone="t.tone" :title="t.title" :subtitle="t.sub" :to="t.to" :badge="t.badge" />
+        :icon="t.icon" :tone="t.tone" :title="t.title" :subtitle="t.sub" :to="t.to"
+        :badge="t.badge" :tag="t.tag" />
     </nav>
 
     <!-- ── 4-qator: AI tavsiya + mavzular + faollik ──
