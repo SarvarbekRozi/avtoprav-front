@@ -894,8 +894,11 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <!-- Imtihonda — qoidalar; boshqa rejimlarda — AI tushuntirish -->
-          <div v-if="isExam" class="rail-note">
+          <!-- Imtihonda — qoidalar; boshqa rejimlarda — AI tushuntirish.
+               `rail-exam` MOBILDA chiqmaydi: qoidalar test boshlanishidan
+               oldin o'qiladi, yechish paytida esa faqat joy egallab, ekranga
+               sig'ishga xalaqit beradi. -->
+          <div v-if="isExam" class="rail-note rail-exam">
             <div class="rail-note-head">
               <AppIcon name="graduation" :size="16" />
               {{ i18n.t({ uz: 'Imtihon haqida', kr: 'Имтиҳон ҳақида' }) }}
@@ -1223,6 +1226,9 @@ onBeforeUnmount(() => {
   .q-img { max-height: 20dvh !important; }
   /* `!important` — Tailwind `text-lg` bilan bir xil aniqlikda */
   .q-text { font-size: 0.9375rem !important; line-height: 1.4 !important; }
+
+  /* Imtihon qoidalari mobilda chiqmaydi (yuqoridagi izohga qarang) */
+  .rail-exam { display: none; }
   .q-opt { padding: 0.5rem 0.625rem; }
   .q-opt span { font-size: 0.875rem; }
   .q-letter { width: 1.75rem; height: 1.75rem; }
