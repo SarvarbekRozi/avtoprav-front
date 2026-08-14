@@ -637,7 +637,11 @@ onMounted(() => {
             @click="aiKorsat(x.question)"
           >
             <AppIcon name="ai" :size="15" />
-            {{ i18n.t({ uz: 'Tushuntirib berish', kr: 'Тушунтириб бериш' }) }}
+            <!-- Mobilda tugma yolg'iz turadi (sarlavha yashiriladi), shuning
+                 uchun unda "AI" so'zi bo'lishi kerak — aks holda nima
+                 tushuntirilishi noaniq qolardi. -->
+            <span class="ai-btn-m">{{ i18n.t({ uz: 'AI tushuntirish', kr: 'AI тушунтириш' }) }}</span>
+            <span class="ai-btn-d">{{ i18n.t({ uz: 'Tushuntirib berish', kr: 'Тушунтириб бериш' }) }}</span>
           </button>
 
           <!-- Bosilgan: AI javob berayotgandek yozib chiqadi -->
@@ -999,6 +1003,8 @@ onMounted(() => {
   transition: background 0.15s, border-color 0.15s;
 }
 .ai-btn:hover { border-color: var(--ai-accent); }
+/* Tugma matni: mobil variant faqat media blokida yoqiladi */
+.ai-btn-m { display: none; }
 
 .ai-text { font-size: 0.875rem; line-height: 1.75; color: var(--ai-ink); white-space: pre-line; }
 .ai-none { font-size: 0.875rem; line-height: 1.6; color: var(--text-3); }
@@ -1144,11 +1150,20 @@ onMounted(() => {
      yashiriladi. */
   .ai-head { font-size: 0.8125rem; margin-bottom: 0.5rem; }
   .ai-card:has(.ai-btn) .ai-head { display: none; }
-  .ai-btn { background: var(--ai-bg); width: 100%; justify-content: center; padding: 0.7rem 0.9rem; }
+  /* Maketdagidek: mazmun kengligida, chapda, lavanda fon va ramka */
+  .ai-btn {
+    background: var(--ai-bg); border-color: var(--ai-border);
+    padding: 0.65rem 0.9rem; font-size: 0.875rem;
+  }
+  .ai-btn-m { display: inline; }
+  .ai-btn-d { display: none; }
   .ai-qnum { display: none; }
 
-  /* Javob bloklari: maketda ramkasiz, faqat yumshoq fon */
+  /* Javob bloklari: maketda ramkasiz, faqat yumshoq fon.
+     `margin-top` SHART: bloklar orasidagi bo'shliqni `.ans-lbl.lbl-ok`
+     bergan edi, u esa mobilda yashiriladi — ikki blok yopishib qolardi. */
   .ans { border-color: transparent; }
+  .ans + .ans-lbl + .ans { margin-top: 0.5rem; }
 
   /* Savol sarlavhasi maketdagidek: chipda ikonka, matnda "Savol N · holat" */
   .qnum-n { display: none; }
