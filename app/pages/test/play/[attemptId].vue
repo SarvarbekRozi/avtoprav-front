@@ -550,10 +550,21 @@ const correctStreak = ref(0)
 const currentTopic = computed(() => currentItem.value?.question.topic || '')
 
 /** Savol rasmi serverda yo'q bo'lsa (404) — o'rin egallovchi rasmga tushamiz. */
+/**
+ * Rasmi yo'q savollar. Ikki holat bor:
+ *   1) `question.image` null — savol matnli
+ *   2) `image` bor, lekin fayl serverda yo'q (`error` hodisasi)
+ * Ikkalasida ham o'rin egallovchi rasm chiqadi; MOBILDA u faqat joy
+ * egallaydi, shuning uchun yashiriladi (pastdagi `.q-img-none` qoidasi).
+ */
+const rasmiYoq = ref<Set<number>>(new Set())
+
 function onQuestionImageError(e: Event) {
   const img = e.target as HTMLImageElement | null
   if (!img || img.src.endsWith('/default-pic.png')) return
   img.src = '/default-pic.png'
+  const id = currentItem.value?.question.id
+  if (id) rasmiYoq.value = new Set(rasmiYoq.value).add(id)
 }
 
 /* ── Xatolik haqida xabar ────────────────────────────────────────────────
@@ -767,8 +778,12 @@ onBeforeUnmount(() => {
 
             <!-- Rasm: haqiqiy rasm bo'lsa o'sha, bo'lmasa default o'rin egallovchi
                  rasm. @error — savol rasmi fayli serverda yo'q bo'lsa (404) ham
-                 buzuq belgi o'rniga default rasm chiqadi. -->
+                 buzuq belgi o'rniga default rasm chiqadi.
+                 `q-img-none` — MOBILDA o'rin egallovchi rasm butunlay
+                 yashiriladi: u hech qanday ma'lumot bermaydi, faqat joy olib
+                 savol va variantlarni ekrandan chiqarib yuboradi. -->
             <div class="relative cursor-zoom-in"
+                 :class="{ 'q-img-none': !currentItem.question.image || rasmiYoq.has(currentItem.question.id) }"
                  @click="zoomedImage = currentItem.question.image || '/default-pic.png'">
               <img :src="currentItem.question.image || '/default-pic.png'"
                    @error="onQuestionImageError"
@@ -1229,6 +1244,9 @@ onBeforeUnmount(() => {
 
   /* Imtihon qoidalari mobilda chiqmaydi (yuqoridagi izohga qarang) */
   .rail-exam { display: none; }
+
+  /* Rasmi yo'q savolda o'rin egallovchi rasm ham chiqmaydi */
+  .q-img-none { display: none; }
   .q-opt { padding: 0.5rem 0.625rem; }
   .q-opt span { font-size: 0.875rem; }
   .q-letter { width: 1.75rem; height: 1.75rem; }
