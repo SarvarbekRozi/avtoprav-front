@@ -289,9 +289,13 @@ onMounted(() => {
     }
   }
   catch {}
-  // Bosh sahifadagi ball va kunlik bepul test qoldig'ini yangilaymiz
+  // Bosh sahifadagi XP balini yangilaymiz
   useAuthStore().fetchMe().catch(() => {})
 })
+
+// AI tushuntirish faqat Premium'da. Backend ham izohni bepul foydalanuvchiga
+// yubormaydi — bu yerdagi tekshiruv faqat ko'rinish uchun.
+const isPremium = computed(() => useAuthStore().user?.is_premium ?? false)
 </script>
 
 <template>
@@ -623,8 +627,16 @@ onMounted(() => {
             <span class="sr-only">{{ i18n.t({ uz: 'savol', kr: 'савол' }) }} {{ x.position }}</span>
           </div>
 
+          <!-- Qulf tekshiruvi BIRINCHI: bepul foydalanuvchiga backend izohni
+               umuman yubormaydi, ya'ni `izohBor()` false bo'ladi. Tartib
+               teskari bo'lsa qulf o'rniga "izoh tayyor emas" chiqib qolardi. -->
+          <NuxtLink v-if="!isPremium" to="/pricing" class="ai-btn ai-btn-lock">
+            <AppIcon name="lock" :size="14" />
+            <span>{{ i18n.t({ uz: 'AI tushuntirish — Premium', kr: 'AI тушунтириш — Премиум' }) }}</span>
+          </NuxtLink>
+
           <!-- Izohi yo'q savol -->
-          <p v-if="!izohBor(x.question)" class="ai-none">
+          <p v-else-if="!izohBor(x.question)" class="ai-none">
             {{ i18n.t({
               uz: 'Bu savol uchun izoh hozircha tayyor emas.',
               kr: 'Бу савол учун изоҳ ҳозирча тайёр эмас.'
@@ -1005,6 +1017,14 @@ onMounted(() => {
 .ai-btn:hover { border-color: var(--ai-accent); }
 /* Tugma matni: mobil variant faqat media blokida yoqiladi */
 .ai-btn-m { display: none; }
+/* Qulflangan variant: sariq (qulf ranglari), lavanda emas — u "ochiq AI"
+   degan taassurot berardi. */
+.ai-btn-lock {
+  background: var(--warn-soft);
+  border-color: color-mix(in srgb, var(--warn) 45%, transparent);
+  color: var(--warn-ink);
+}
+.dark .ai-btn-lock { color: var(--warn); }
 
 .ai-text { font-size: 0.875rem; line-height: 1.75; color: var(--ai-ink); white-space: pre-line; }
 .ai-none { font-size: 0.875rem; line-height: 1.6; color: var(--text-3); }

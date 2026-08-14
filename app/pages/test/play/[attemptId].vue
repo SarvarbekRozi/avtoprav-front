@@ -84,6 +84,9 @@ let timerId: any = null
 let deadlineAt: number | null = null
 
 const auth = useAuthStore()
+// AI tushuntirish faqat Premium'da. Backend ham izohni bepul foydalanuvchiga
+// yubormaydi — bu yerdagi tekshiruv faqat ko'rinish uchun.
+const isPremium = computed(() => auth.user?.is_premium ?? false)
 const theme = useTheme()
 const bookmarked = ref<Set<number>>(new Set())
 const stripRef = ref<HTMLElement | null>(null)
@@ -901,8 +904,18 @@ onBeforeUnmount(() => {
           </div>
 
           <template v-else-if="currentItem">
+            <!-- Qulf tekshiruvi BIRINCHI: bepul foydalanuvchiga backend izohni
+                 umuman yubormaydi, ya'ni `explanationText()` bo'sh bo'ladi.
+                 Tartib teskari bo'lsa qulf o'rniga "javob berganingizdan
+                 keyin ochiladi" degan yolg'on va'da chiqib qolardi. -->
+            <NuxtLink v-if="!isPremium" to="/pricing"
+                      class="ai-btn ai-btn-lock w-full justify-center">
+              <AppIcon name="lock" :size="15" />
+              {{ i18n.t({ uz: 'AI tushuntirish — Premium', kr: 'AI тушунтириш — Премиум' }) }}
+            </NuxtLink>
+
             <!-- Javob berilgunga qadar tushuntirish yo'q — joy bo'sh qolmasin -->
-            <div v-if="!showExplanation || !explanationText()" class="rail-note rail-note-muted">
+            <div v-else-if="!showExplanation || !explanationText()" class="rail-note rail-note-muted">
               <div class="rail-note-head">
                 <AppIcon name="ai" :size="16" />
                 {{ i18n.t({ uz: 'AI tushuntirish', kr: 'AI тушунтириш' }) }}
@@ -1361,6 +1374,14 @@ onBeforeUnmount(() => {
    xabar berish" havolasidan ajralib turmasdi va AI ekani bilinmasdi.
    Natija sahifasidagi tugma bilan ham bir xil bo'ldi. */
 .ai-btn { background: var(--ai-bg); border-radius: 0.625rem; }
+/* Qulflangan variant: sariq (qulf ranglari), lavanda emas — u "ochiq AI"
+   degan taassurot berardi. */
+.ai-btn-lock {
+  background: var(--warn-soft);
+  border-color: color-mix(in srgb, var(--warn) 45%, transparent);
+  color: var(--warn-ink);
+}
+.dark .ai-btn-lock { color: var(--warn); }
 .ai-btn:hover { border-color: var(--ai-accent); filter: brightness(0.98); }
 
 .ai-box {
