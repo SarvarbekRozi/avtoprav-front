@@ -623,8 +623,19 @@ function delta(v: number | null | undefined) {
 @media (max-width: 767px) {
   .stats { padding-top: 3.75rem; }
   .page-title { font-size: 1.625rem; }
-  .kpis { grid-template-columns: minmax(0, 1fr); }
-  .kpi-spark { display: none; }
+  /* Ikki ustun (ilgari bittaga tushirilgandi va to'rt karta ekranni
+     egallardi) + diagramma QAYTDI: u sonning YONIDA emas, OSTIDA turadi —
+     375px da kartaga ~123px ichki kenglik qoladi va son bilan yonma-yon
+     sig'masdi, shuning uchun butunlay yashirilgan edi. */
+  .kpis { gap: 0.625rem; margin-top: 1.25rem; }
+  .kpi { padding: 0.875rem 0.9rem; border-radius: 0.875rem; }
+  .kpi-ic { width: 1.75rem; height: 1.75rem; border-radius: 0.5rem; }
+  .kpi-lbl { font-size: 0.625rem; letter-spacing: 0.06em; }
+  .kpi-top { gap: 0.4rem; }
+  .kpi-row { flex-direction: column; align-items: stretch; gap: 0.4rem; margin-top: 0.5rem; }
+  .kpi-num { font-size: 1.375rem; }
+  .kpi-spark { width: 100%; height: 1.75rem; }
+  .kpi-sub { font-size: 0.6875rem; }
   .chart-card, .donut-card, .miss-card, .ai-card { padding: 1.125rem; }
   .segs { width: 100%; }
   /* Mobilda barmoq bilan bosiladi: 30px balandlik juda kichik edi → 36px */

@@ -211,4 +211,16 @@ function fmtScore(s: number | null) {
 }
 
 @media (prefers-reduced-motion: reduce) { .sk { animation: none; } }
+
+/* ── Mobil ───────────────────────────────────────────────────────────────
+   Sarlavha qatorida ikonka + matn + "Barchasini ko'rish" tugmasi yonma-yon
+   turardi va matnga ~110px qolib, "Bugungi challenge — TOP 10" uch qatorga,
+   tavsif esa to'rt qatorga bo'linib ketardi. Endi tugma pastga tushadi va
+   matn butun kenglikni oladi. */
+@media (max-width: 767px) {
+  .lb-head { flex-wrap: wrap; gap: 0.625rem; }
+  .lb-more { order: 3; flex: 1 1 100%; justify-content: center; }
+  .lb-title { font-size: 0.9375rem; }
+  .lb-sub { font-size: 0.75rem; }
+}
 </style>
