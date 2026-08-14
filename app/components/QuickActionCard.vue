@@ -11,19 +11,28 @@ const props = withDefaults(defineProps<{
   badge?: number | null
   /** kichik matnli belgi (masalan "Yangi", "60s") — mobil maketda o'ng yuqorida */
   tag?: string | null
+  /** bepul tarifda yopiq: qulf belgisi chiqadi va tariflar sahifasiga olib boradi */
+  locked?: boolean
 }>(), {
   tone: 'brand',
   subtitle: '',
   badge: null,
   tag: null,
+  locked: false,
 })
 
+// Qulflangan karta o'z rejimiga EMAS, tariflar sahifasiga olib boradi — aks
+// holda foydalanuvchi bosib, keyin 403 xatoga urilardi.
+const havola = computed(() => props.locked ? '/pricing' : props.to)
+
 const t = useTone(() => props.tone)
+const i18n = useI18n()
 </script>
 
 <template>
-  <NuxtLink :to="to"
-    class="qa-card group relative rounded-[18px] transition-all duration-200 active:scale-[0.98]">
+  <NuxtLink :to="havola"
+    class="qa-card group relative rounded-[18px] transition-all duration-200 active:scale-[0.98]"
+    :class="{ 'qa-locked': locked }">
     <!-- MOBIL (< md): ikonka chapda, yozuv o'ngda. Izoh va strelka YO'Q —
          maketda ikki ustunli ixcham ro'yxat, 375px da ikki qatorli izoh
          kartani ikki barobar cho'zib yuborardi. -->
@@ -67,7 +76,11 @@ const t = useTone(() => props.tone)
       {{ badge > 99 ? '99+' : badge }}
     </span>
     <!-- Matnli belgi faqat mobilda: ish stoli kartasida uning o'rnida izoh turadi -->
-    <span v-else-if="tag" class="qa-tag md:hidden">{{ tag }}</span>
+    <span v-else-if="tag && !locked" class="qa-tag md:hidden">{{ tag }}</span>
+    <!-- Qulf belgisi: badge/tag o'rnida, chunki qulflangan kartada ular ma'nosiz -->
+    <span v-if="locked" class="qa-lock" :aria-label="i18n.t({ uz: 'Premium tarifda ochiladi', kr: 'Премиум тарифда очилади' })">
+      <AppIcon name="lock" :size="12" />
+    </span>
   </NuxtLink>
 </template>
 
@@ -111,4 +124,24 @@ const t = useTone(() => props.tone)
   font-weight: 700;
   color: var(--text-3);
 }
+
+/* ── Qulflangan karta ──
+   To'liq kulrang QILINMAYDI: karta bosiladi va tariflar sahifasiga olib
+   boradi, ya'ni u "o'chirilgan" emas — shunchaki hozir yopiq. Ikonka
+   susayadi, o'ng yuqorida sariq qulf belgisi turadi. */
+.qa-locked :deep(.iconify),
+.qa-locked .qa-title { opacity: 0.75; }
+.qa-lock {
+  position: absolute;
+  top: 0.625rem;
+  right: 0.625rem;
+  display: grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  background: rgba(251, 191, 36, 0.2);
+  color: var(--warn-ink);
+}
+.dark .qa-lock { color: var(--warn); }
 </style>

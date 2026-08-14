@@ -303,7 +303,14 @@ const stats = computed(() => [
           <!-- Yagona havola, lekin `::after` bilan BUTUN karta bosiladi:
                kartani ham havola qilsak, ichida ikkinchi havola bo'lib
                qolardi (ekran o'quvchi uchun chalkash, HTMLда noto'g'ri). -->
-          <NuxtLink v-if="t.questions_count > 0" class="topic-cta"
+          <!-- Qulflangan mavzu ham BOSILADI, lekin tariflar sahifasiga olib
+               boradi — aks holda foydalanuvchi bosib 403 xatoga urilardi. -->
+          <NuxtLink v-if="t.is_locked" class="topic-cta topic-cta-lock" to="/pricing"
+                    :aria-label="i18n.t({ uz: `Premium tarifda ochiladi: ${name(t)}`, kr: `Премиум тарифда очилади: ${name(t)}` })">
+            <AppIcon name="lock" :size="14" />
+            {{ i18n.t({ uz: 'Premium tarifda', kr: 'Премиум тарифда' }) }}
+          </NuxtLink>
+          <NuxtLink v-else-if="t.questions_count > 0" class="topic-cta"
                     :to="`/test/start/topic?topic_id=${t.id}`"
                     :aria-label="i18n.t({ uz: `Mashq qilish: ${name(t)}`, kr: `Машқ қилиш: ${name(t)}` })">
             {{ i18n.t({ uz: 'Mashq qilish', kr: 'Машқ қилиш' }) }}
@@ -488,6 +495,12 @@ const stats = computed(() => [
    oq fonda 3.4:1 beradi. */
 .topic-cta-off { color: var(--text-3); cursor: not-allowed; }
 .topic-cta-off::after { content: none; }
+
+/* Qulflangan mavzu: `topic-cta-off` dan FARQLI — u bosiladi (tariflarga olib
+   boradi), shuning uchun `cursor` va butun kartani qamrab oluvchi `::after`
+   o'z joyida qoladi. Faqat rang sariq bo'ladi. */
+.topic-cta-lock { color: var(--warn-ink); }
+.dark .topic-cta-lock { color: var(--warn); }
 
 /* Yuklanish skeleti — karta bilan bir o'lchamda, sahifa kamroq "sakraydi".
    `pointer-events: none`: usiz bo'sh skelet ustiga sichqoncha kelganda

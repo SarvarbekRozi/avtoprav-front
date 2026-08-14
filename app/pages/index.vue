@@ -63,26 +63,31 @@ const weekXp = computed<number | null>(() => {
 const examDaysLeft = computed(() => auth.user?.exam_days_left ?? null)
 const isGuest = computed(() => auth.user?.is_guest ?? false)
 
-// `freeTestsLeft` hisoblanishi HomeChips ichiga ko'chdi (u yerda ishlatiladi)
-const dailyTests = computed(() => auth.user?.daily_tests ?? null)
+// Kunlik urinishlar cheklovi OLIB TASHLANDI (endi cheklov kontentda: 5 bilet,
+// 1 mavzu ochiq, imtihon cheksiz). Premium holati qulf belgilarini boshqaradi.
+const isPremium = computed(() => auth.user?.is_premium ?? false)
 
-/** Rejimlar — har biri mavjud marshrutga olib boradi, "soxta" tugma yo'q */
-const tiles = computed<{ icon: string, tone: Tone, title: string, sub: string, to: string, badge?: number | null, tag?: string | null }[]>(() => [
+/**
+ * Rejimlar — har biri mavjud marshrutga olib boradi, "soxta" tugma yo'q.
+ *
+ * `locked` — bepul tarifda yopiq rejimlar. Backend ham shu ro'yxatni
+ * majburlaydi (`config/premium.php` → `free.modes`); bu yerdagi belgi faqat
+ * ko'rinish uchun, ya'ni foydalanuvchi bosgandan keyin xato olmasin.
+ * Bepul: imtihon, biletlar (5 ta), mavzular (1 ta).
+ */
+const tiles = computed<{ icon: string, tone: Tone, title: string, sub: string, to: string, badge?: number | null, tag?: string | null, locked?: boolean }[]>(() => [
   {
     icon: 'star', tone: 'violet', to: '/test/start/daily',
     title: i18n.t({ uz: 'Kunlik', kr: 'Кунлик' }),
     sub: i18n.t({ uz: 'Kunlik savollar', kr: 'Кунлик саволлар' }),
-    // Doimiy "Yangi" yozuvi ma'nosiz bo'lardi — bugun hali test boshlanmagan
-    // bo'lsa chiqadi, ya'ni haqiqatan yangi kun boshlangani bildiriladi.
-    tag: (dailyTests.value?.used_today ?? 1) === 0
-      ? i18n.t({ uz: 'Yangi', kr: 'Янги' })
-      : null,
+    locked: !isPremium.value,
   },
   {
     icon: 'bolt', tone: 'amber', to: '/test/start/blitz',
     title: i18n.t({ uz: 'Blits', kr: 'Блиц' }),
     sub: i18n.t({ uz: '60 soniyada eng ko\'p to\'g\'ri javob', kr: '60 сонияда энг кўп тўғри жавоб' }),
     tag: '60s',
+    locked: !isPremium.value,
   },
   {
     icon: 'ticket', tone: 'sky', to: '/tickets',
@@ -98,12 +103,14 @@ const tiles = computed<{ icon: string, tone: Tone, title: string, sub: string, t
     icon: 'shuffle', tone: 'ink', to: '/test/start/random',
     title: i18n.t({ uz: 'Tasodifiy', kr: 'Тасодифий' }),
     sub: i18n.t({ uz: 'Tasodifiy 20 savol', kr: 'Тасодифий 20 савол' }),
+    locked: !isPremium.value,
   },
   {
     icon: 'refresh', tone: 'rose', to: '/test/start/mistakes',
     title: i18n.t({ uz: 'Xatolarim', kr: 'Хатоларим' }),
     sub: i18n.t({ uz: 'Xato qilingan savollar', kr: 'Хато қилинган саволлар' }),
     badge: mistakesPending.value || null,
+    locked: !isPremium.value,
   },
   {
     icon: 'bookmark', tone: 'sky', to: '/me/bookmarks',
@@ -142,7 +149,7 @@ const tiles = computed<{ icon: string, tone: Tone, title: string, sub: string, t
                   xl:grid-cols-[minmax(0,38fr)_minmax(0,62fr)]">
         <div class="min-w-0 flex flex-col justify-center">
           <DashboardHeader :exam-days-left="examDaysLeft" />
-          <HomeChips class="mt-4" :daily-tests="dailyTests" :is-guest="isGuest" :current="current" />
+          <HomeChips class="mt-4" :is-guest="isGuest" :current="current" :show-premium-hint="!isPremium" />
         </div>
 
         <div class="min-w-0">
@@ -174,7 +181,7 @@ const tiles = computed<{ icon: string, tone: Tone, title: string, sub: string, t
 
     <!-- Mobilda chiplar maketdagidek kartalardan KEYIN turadi (ish stolida esa
          yuqoridagi blok ichida, salomlashuv ostida) -->
-    <HomeChips class="md:hidden mt-4" :daily-tests="dailyTests" :is-guest="isGuest" :current="current" />
+    <HomeChips class="md:hidden mt-4" :is-guest="isGuest" :current="current" :show-premium-hint="!isPremium" />
 
     <!-- ── Rejimlar — ikkala tartibda ham shu yerda (QuickActionCard o'zi
          mobil/ish stoli ko'rinishini boshqaradi) ── -->
@@ -182,7 +189,7 @@ const tiles = computed<{ icon: string, tone: Tone, title: string, sub: string, t
          :aria-label="i18n.t({ uz: 'Mashq rejimlari', kr: 'Машқ режимлари' })">
       <QuickActionCard v-for="t in tiles" :key="t.to"
         :icon="t.icon" :tone="t.tone" :title="t.title" :subtitle="t.sub" :to="t.to"
-        :badge="t.badge" :tag="t.tag" />
+        :badge="t.badge" :tag="t.tag" :locked="t.locked" />
     </nav>
 
     <!-- ── 4-qator: AI tavsiya + mavzular + faollik ──

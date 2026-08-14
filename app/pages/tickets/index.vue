@@ -212,22 +212,31 @@ const qolgan = computed(() => Math.max(0, topilgan.value.length - CHEK))
     <template v-else>
       <!-- ── KATAK ko'rinishi ── -->
       <div v-if="korinish === 'grid'" class="grid-tickets">
+        <!-- `is_locked` — bepul tarifda yopiq bilet. `is_ready` dan FARQLI:
+             qulflangan bilet BOSILADI, lekin tariflar sahifasiga olib boradi
+             (savoli yetmagan bilet esa umuman bosilmaydi). -->
         <component :is="t.is_ready ? NuxtLink : 'div'" v-for="t in korinadigan" :key="t.id"
-                   :to="t.is_ready ? `/test/start/ticket?ticket_id=${t.id}` : undefined"
-                   class="tcard" :class="[`t-${holat(t)}`, !t.is_ready && 'tcard-off']"
+                   :to="t.is_locked ? '/pricing' : (t.is_ready ? `/test/start/ticket?ticket_id=${t.id}` : undefined)"
+                   class="tcard" :class="[`t-${holat(t)}`, !t.is_ready && 'tcard-off', t.is_locked && 'tcard-lock']"
                    :aria-disabled="!t.is_ready || undefined">
           <div class="tnum">{{ t.number }}</div>
           <div class="tqty">{{ t.questions_count }} {{ i18n.t({ uz: 's.', kr: 'с.' }) }}</div>
 
           <div class="tfoot">
             <span class="tstat">
-              <span v-if="holat(t) === 'ishlanmagan'" class="tdot" aria-hidden="true" />
-              <AppIcon v-else :name="HOLAT[holat(t)].icon" :size="13" aria-hidden="true" />
-              {{ t.is_ready
-                ? i18n.t(HOLAT[holat(t)].soz)
-                : i18n.t({ uz: 'Tayyorlanmoqda', kr: 'Тайёрланмоқда' }) }}
+              <template v-if="t.is_locked">
+                <AppIcon name="lock" :size="13" aria-hidden="true" />
+                {{ i18n.t({ uz: 'Premium', kr: 'Премиум' }) }}
+              </template>
+              <template v-else>
+                <span v-if="holat(t) === 'ishlanmagan'" class="tdot" aria-hidden="true" />
+                <AppIcon v-else :name="HOLAT[holat(t)].icon" :size="13" aria-hidden="true" />
+                {{ t.is_ready
+                  ? i18n.t(HOLAT[holat(t)].soz)
+                  : i18n.t({ uz: 'Tayyorlanmoqda', kr: 'Тайёрланмоқда' }) }}
+              </template>
             </span>
-            <span v-if="t.is_ready" class="tgo" aria-hidden="true"><AppIcon name="arrow" :size="14" /></span>
+            <span v-if="t.is_ready && !t.is_locked" class="tgo" aria-hidden="true"><AppIcon name="arrow" :size="14" /></span>
           </div>
         </component>
       </div>
@@ -236,20 +245,26 @@ const qolgan = computed(() => Math.max(0, topilgan.value.length - CHEK))
       <ul v-else class="list">
         <li v-for="t in korinadigan" :key="t.id">
           <component :is="t.is_ready ? NuxtLink : 'div'"
-                     :to="t.is_ready ? `/test/start/ticket?ticket_id=${t.id}` : undefined"
-                     class="lrow" :class="[`t-${holat(t)}`, !t.is_ready && 'tcard-off']">
+                     :to="t.is_locked ? '/pricing' : (t.is_ready ? `/test/start/ticket?ticket_id=${t.id}` : undefined)"
+                     class="lrow" :class="[`t-${holat(t)}`, !t.is_ready && 'tcard-off', t.is_locked && 'tcard-lock']">
             <span class="lnum tabular-nums">{{ t.number }}</span>
             <span class="lname">{{ nom(t) || i18n.t({ uz: 'Bilet', kr: 'Билет' }) + ' ' + t.number }}</span>
             <span class="lqty">{{ t.questions_count }} {{ i18n.t({ uz: 'savol', kr: 'савол' }) }}</span>
             <span v-if="t.best_score !== null" class="lscore tabular-nums">{{ t.best_score }}/{{ jami(t) }}</span>
             <span class="tstat lstat">
+              <template v-if="t.is_locked">
+                <AppIcon name="lock" :size="13" aria-hidden="true" />
+                {{ i18n.t({ uz: 'Premium', kr: 'Премиум' }) }}
+              </template>
+              <template v-else>
               <span v-if="holat(t) === 'ishlanmagan'" class="tdot" aria-hidden="true" />
               <AppIcon v-else :name="HOLAT[holat(t)].icon" :size="13" aria-hidden="true" />
               {{ t.is_ready
                 ? i18n.t(HOLAT[holat(t)].soz)
                 : i18n.t({ uz: 'Tayyorlanmoqda', kr: 'Тайёрланмоқда' }) }}
+              </template>
             </span>
-            <span v-if="t.is_ready" class="tgo" aria-hidden="true"><AppIcon name="arrow" :size="14" /></span>
+            <span v-if="t.is_ready && !t.is_locked" class="tgo" aria-hidden="true"><AppIcon name="arrow" :size="14" /></span>
           </component>
         </li>
       </ul>
@@ -430,6 +445,13 @@ const qolgan = computed(() => Math.max(0, topilgan.value.length - CHEK))
 .tcard-off { background: var(--surface-soft); cursor: not-allowed; }
 .tcard-off:hover { border-color: var(--border-soft); box-shadow: var(--shadow-card); transform: none; }
 .tcard-off .tstat { color: var(--text-3); }
+
+/* Qulflangan bilet: `tcard-off` dan FARQLI — u bosiladi (tariflarga olib
+   boradi), shuning uchun `cursor` va hover o'zgarmaydi. Faqat raqam susayadi
+   va holat sariq "Premium" bo'ladi. */
+.tcard-lock .tnum { opacity: 0.55; }
+.tcard-lock .tstat { color: var(--warn-ink); }
+.dark .tcard-lock .tstat { color: var(--warn); }
 
 /* ── Ro'yxat ko'rinishi ── */
 .list { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
