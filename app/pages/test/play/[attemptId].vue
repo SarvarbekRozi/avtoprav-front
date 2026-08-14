@@ -665,7 +665,7 @@ onBeforeUnmount(() => {
     <!-- Konteyner /tickets, /topics, /belgilar va natija sahifasi bilan AYNAN
          bir xil: ilgari `max-w-[1400px]` + kichik padding edi va ikki yonda
          keraksiz bo'sh joy qolardi. -->
-    <div class="mx-auto w-full max-w-[1800px] px-4 sm:px-6 lg:px-8 xl:px-10 pt-6 lg:pt-8 pb-16 md:pb-12 flex flex-col gap-3 sm:gap-4">
+    <div class="play-wrap mx-auto w-full max-w-[1800px] px-4 sm:px-6 lg:px-8 xl:px-10 pt-6 lg:pt-8 pb-16 md:pb-12 flex flex-col gap-3 sm:gap-4">
 
       <!-- Yuqori qator: chiqish · savol hisobi · XP -->
       <div class="flex items-center gap-2 sm:gap-3">
@@ -724,8 +724,8 @@ onBeforeUnmount(() => {
            ketardi (kartalarning o'ng cheti ekrandan chiqib qolardi).
            Tailwind `grid-cols-1` = `repeat(1, minmax(0, 1fr))`, ya'ni trek
            konteynerga qisiladi. -->
-      <div class="grid grid-cols-1 gap-3 sm:gap-4 items-start lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div class="min-w-0 flex flex-col gap-3 sm:gap-4">
+      <div class="play-grid grid grid-cols-1 gap-3 sm:gap-4 items-start lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div class="play-col min-w-0 flex flex-col gap-3 sm:gap-4">
           <!-- Loading -->
           <div v-if="loading" class="space-y-4">
             <div class="h-3 w-1/4 bg-ink-100 rounded animate-pulse"></div>
@@ -745,7 +745,10 @@ onBeforeUnmount(() => {
           </div>
 
           <!-- Question -->
-          <div v-else-if="currentItem" class="card p-4 sm:p-6 space-y-4 anim-in" :key="currentItem.question.id">
+          <!-- `q-card` — mobilda BITTA ekranga sig'dirish uchun kerak: shu
+               karta qolgan joyni egallaydi va zarur bo'lsa faqat o'zi
+               siljiydi (pastdagi media so'roviga qarang). -->
+          <div v-else-if="currentItem" class="q-card card p-4 sm:p-6 space-y-4 anim-in" :key="currentItem.question.id">
             <div class="flex items-start gap-3">
               <div v-if="currentItem.question.topic" class="play-eyebrow flex-1 min-w-0">{{ currentItem.question.topic }}</div>
               <div v-else class="flex-1"></div>
@@ -770,7 +773,7 @@ onBeforeUnmount(() => {
               <img :src="currentItem.question.image || '/default-pic.png'"
                    @error="onQuestionImageError"
                    :alt="i18n.t({ uz: 'Savol rasmi', kr: 'Савол расми' })"
-                   class="w-full rounded-xl border max-h-[40vh] sm:max-h-[340px] object-contain"
+                   class="q-img w-full rounded-xl border max-h-[40vh] sm:max-h-[340px] object-contain"
                    style="background: var(--surface-inset); border-color: var(--border-soft);">
               <!-- Maketda OQ doira + kattalashtirish ikonkasi (to'q doira +
                    "plus" emas) -->
@@ -1166,6 +1169,60 @@ onBeforeUnmount(() => {
    inline-flex }` uni bosib ketadi. Shuning uchun o'z media so'rovimiz. */
 @media (min-width: 1024px) {
   .play-chip-narrow { display: none; }
+}
+
+/* ═══ MOBIL: butun ekran, sahifa siljimaydi ═══
+   Ilgari savol, variantlar, navigatsiya va AI tugmasi birgalikda ekrandan
+   uzun bo'lib, har savolda pastga siljish kerak edi — bu test yechishni
+   qiyinlashtirardi. Endi sahifa `100dvh` ga qotiriladi va faqat SAVOL
+   KARTASI (matn + rasm + variantlar) zarur bo'lsa ichkarida siljiydi;
+   yuqori qator, raqamlar lentasi, navigatsiya va AI tugmasi doim ko'rinib
+   turadi.
+
+   `100dvh` (`100vh` EMAS): mobil brauzerda manzil paneli yig'ilib-ochilganda
+   `vh` o'zgarmaydi va sahifa panel ostiga kirib ketardi. */
+@media (max-width: 767px) {
+  .play-ai { height: 100dvh; overflow: hidden; }
+  .play-wrap {
+    height: 100%;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    gap: 0.5rem;
+  }
+  /* Yuqori qator va lenta — qat'iy balandlik */
+  .play-wrap > div:first-child, .strip-card { flex-shrink: 0; }
+  .strip-card { padding: 0.5rem; }
+  .strip-tile { width: 2.25rem; height: 2.25rem; border-radius: 0.5rem; font-size: 0.8125rem; }
+
+  /* Qolgan joyni savol bloki egallaydi */
+  /* `align-items: stretch` SHART: shablonda `items-start` (Tailwind) bor va
+     u flex-column'da KO'NDALANG o'qda ishlaydi — farzandlar to'liq kenglikni
+     olmay, navigatsiya bilan AI tugmasi bir-birining ustiga chiqib qolardi. */
+  .play-grid {
+    flex: 1 1 auto; min-height: 0;
+    display: flex; flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  .play-col { flex: 1 1 auto; min-height: 0; gap: 0.5rem; }
+
+  /* Savol kartasi — yagona siljiydigan joy */
+  .q-card { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0.875rem; }
+  .nav-card { flex-shrink: 0; padding: 0.5rem; }
+  .play-grid > aside { flex-shrink: 0; }
+
+  /* Rasm ekranning beshdan biridan oshmasin — aks holda variantlar pastga
+     tushib, savol kartasi ichida siljish kerak bo'ladi. Rasmni kattalashtirish
+     uchun burchakdagi tugma bor (u kichrayishdan zarar ko'rmaydi). */
+  /* `!important` — Tailwind `max-h-[40vh]` bilan bir xil aniqlikda, lekin
+     scoped uslub kiritilish tartibiga bog'liq qolmasin */
+  .q-img { max-height: 20dvh !important; }
+  .qtext { font-size: 0.9375rem; margin-bottom: 0.625rem; }
+  .q-opt { padding: 0.5rem 0.625rem; }
+  .q-opt span { font-size: 0.875rem; }
+  .q-letter { width: 1.75rem; height: 1.75rem; }
+  /* Savol kartasi ichidagi vertikal bo'shliqlar (`space-y-4` = 1rem) */
+  .q-card > * + * { margin-top: 0.625rem; }
 }
 
 /* Tor ekranda o'ng ustun savol OSTIGA tushadi va yuqori qatordagi chiplar
