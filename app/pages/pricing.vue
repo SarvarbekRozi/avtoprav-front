@@ -5,7 +5,8 @@ const route = useRoute()
 
 const isPremium = computed(() => auth.user?.is_premium ?? false)
 const isGuest = computed(() => auth.user?.is_guest ?? false)
-const dailyLimit = computed(() => auth.user?.daily_tests?.limit ?? 2)
+// `dailyLimit` OLIB TASHLANDI: kunlik urinishlar cheklovi yo'q, cheklov
+// kontentda (5 bilet, 1 mavzu; imtihon cheksiz).
 
 interface Tariff {
   id: string
@@ -65,37 +66,68 @@ const socialProof = computed<{ count: string, text: string } | null>(() => {
   return null
 })
 
-/** Taqqoslash jadvali. `free: null` → ✕ belgisi. */
+/**
+ * Taqqoslash jadvali. `free: null` → ✕ belgisi, `free: true` → ✓ belgisi.
+ *
+ * Jadval YANGI freemium modelini aks ettiradi: kunlik urinishlar cheklovi
+ * yo'q, cheklov KONTENTDA. Sonlar backenddagi `config/premium.php` bilan
+ * mos bo'lishi kerak (`free.tickets`, `free.topics`).
+ */
+const FREE_TICKETS = 5
+const FREE_TOPICS = 1
+const ALL_TICKETS = 63
+
 const rows = computed(() => [
-  {
-    icon: 'check-circle', tone: 'violet',
-    title: i18n.t({ uz: 'Cheklovsiz test yechish', kr: 'Чекловсиз тест ечиш' }),
-    desc: i18n.t({ uz: 'Istagancha test yeching', kr: 'Истаганча тест ечинг' }),
-    free: null,
-  },
   {
     icon: 'exam', tone: 'primary',
     title: i18n.t({ uz: 'Imtihon rejimi', kr: 'Имтиҳон режими' }),
-    desc: i18n.t({ uz: 'Vaqt bilan mashq qilib, tayyor bo\'ling', kr: 'Вақт билан машқ қилиб, тайёр бўлинг' }),
-    free: i18n.t({ uz: `${dailyLimit.value} ta / kuniga`, kr: `${dailyLimit.value} та / кунига` }),
+    desc: i18n.t({
+      uz: 'Real imtihon muhiti — bepul tarifda ham cheksiz',
+      kr: 'Реал имтиҳон муҳити — бепул тарифда ҳам чексиз',
+    }),
+    // Bepul tarifda ham CHEKSIZ — mahsulotning asosiy qiymati.
+    free: true,
   },
   {
-    icon: 'target', tone: 'warn',
-    title: i18n.t({ uz: 'Xatolar ustida ishlash', kr: 'Хатолар устида ишлаш' }),
-    desc: i18n.t({ uz: 'Xatolarni tahlil qiling va yodingizda saqlang', kr: 'Хатоларни таҳлил қилинг ва ёдингизда сақланг' }),
-    free: i18n.t({ uz: 'Cheklangan', kr: 'Чекланган' }),
+    icon: 'ticket', tone: 'primary',
+    title: i18n.t({ uz: 'Rasmiy biletlar', kr: 'Расмий билетлар' }),
+    desc: i18n.t({
+      uz: `Har biri 20 savol — jami ${ALL_TICKETS} ta bilet`,
+      kr: `Ҳар бири 20 савол — жами ${ALL_TICKETS} та билет`,
+    }),
+    free: i18n.t({ uz: `${FREE_TICKETS} ta`, kr: `${FREE_TICKETS} та` }),
+    premiumText: i18n.t({ uz: `${ALL_TICKETS} ta`, kr: `${ALL_TICKETS} та` }),
   },
   {
-    icon: 'user', tone: 'primary',
-    title: i18n.t({ uz: 'AI shaxsiy tavsiyalar', kr: 'AI шахсий тавсиялар' }),
-    desc: i18n.t({ uz: 'Zaif tomonlaringiz bo\'yicha aqlli tavsiyalar', kr: 'Заиф томонларингиз бўйича ақлли тавсиялар' }),
+    icon: 'book', tone: 'ok',
+    title: i18n.t({ uz: 'Mavzular bo\'yicha mashq', kr: 'Мавзулар бўйича машқ' }),
+    desc: i18n.t({
+      uz: 'Yo\'l belgilari, tezlik, javobgarlik va boshqalar',
+      kr: 'Йўл белгилари, тезлик, жавобгарлик ва бошқалар',
+    }),
+    free: i18n.t({ uz: `${FREE_TOPICS} ta`, kr: `${FREE_TOPICS} та` }),
+    premiumText: i18n.t({ uz: 'Barchasi', kr: 'Барчаси' }),
+  },
+  {
+    icon: 'bolt', tone: 'warn',
+    title: i18n.t({ uz: 'Kunlik, Blits va Tasodifiy', kr: 'Кунлик, Блиц ва Тасодифий' }),
+    desc: i18n.t({
+      uz: 'Tez mashq rejimlari va kunlik challenge',
+      kr: 'Тез машқ режимлари ва кунлик челлендж',
+    }),
     free: null,
   },
   {
-    icon: 'spark', tone: 'ok',
-    title: i18n.t({ uz: 'To\'liq reyting va XP', kr: 'Тўлиқ рейтинг ва XP' }),
-    desc: i18n.t({ uz: 'Reytingda ko\'tariling va ko\'proq XP oling', kr: 'Рейтингда кўтарилинг ва кўпроқ XP олинг' }),
-    free: i18n.t({ uz: 'Cheklangan', kr: 'Чекланган' }),
+    icon: 'target', tone: 'danger',
+    title: i18n.t({ uz: 'Xatolar ustida ishlash', kr: 'Хатолар устида ишлаш' }),
+    desc: i18n.t({ uz: 'Xato qilgan savollaringizni qayta yechish', kr: 'Хато қилган саволларингизни қайта ечиш' }),
+    free: null,
+  },
+  {
+    icon: 'ai', tone: 'violet',
+    title: i18n.t({ uz: 'AI tushuntirish va tavsiyalar', kr: 'AI тушунтириш ва тавсиялар' }),
+    desc: i18n.t({ uz: 'Har savolga izoh va zaif mavzular tahlili', kr: 'Ҳар саволга изоҳ ва заиф мавзулар таҳлили' }),
+    free: null,
   },
   {
     icon: 'ban', tone: 'danger',
@@ -257,7 +289,13 @@ onMounted(async () => {
               </th>
 
               <td class="cmp-free">
-                <span v-if="r.free" class="cmp-limit">{{ r.free }}</span>
+                <!-- `free === true` → ✓ (imtihon bepul tarifda ham cheksiz),
+                     matn → cheklangan miqdor, `null` → ✕ -->
+                <template v-if="r.free === true">
+                  <AppIcon name="check-circle" :size="20" class="cmp-yes" aria-hidden="true" />
+                  <span class="sr-only">{{ i18n.t({ uz: 'bor', kr: 'бор' }) }}</span>
+                </template>
+                <span v-else-if="r.free" class="cmp-limit">{{ r.free }}</span>
                 <template v-else>
                   <AppIcon name="x" :size="17" class="cmp-no" aria-hidden="true" />
                   <span class="sr-only">{{ i18n.t({ uz: 'yo\'q', kr: 'йўқ' }) }}</span>
@@ -265,8 +303,13 @@ onMounted(async () => {
               </td>
 
               <td class="cmp-prem">
-                <AppIcon name="check-circle" :size="20" class="cmp-yes" aria-hidden="true" />
-                <span class="sr-only">{{ i18n.t({ uz: 'bor', kr: 'бор' }) }}</span>
+                <!-- Ba'zi qatorlarda Premium tomonda ham SON turadi
+                     ("63 ta", "Barchasi") — ✓ dan aniqroq -->
+                <span v-if="r.premiumText" class="cmp-limit cmp-limit-prem">{{ r.premiumText }}</span>
+                <template v-else>
+                  <AppIcon name="check-circle" :size="20" class="cmp-yes" aria-hidden="true" />
+                  <span class="sr-only">{{ i18n.t({ uz: 'bor', kr: 'бор' }) }}</span>
+                </template>
               </td>
             </tr>
           </tbody>
