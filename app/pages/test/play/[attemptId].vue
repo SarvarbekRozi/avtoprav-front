@@ -763,7 +763,7 @@ onBeforeUnmount(() => {
             </div>
 
             <!-- Question text -->
-            <h1 class="text-lg sm:text-xl font-semibold leading-snug" style="color: var(--text-1);">{{ currentItem.question.text }}</h1>
+            <h1 class="q-text text-lg sm:text-xl font-semibold leading-snug" style="color: var(--text-1);">{{ currentItem.question.text }}</h1>
 
             <!-- Rasm: haqiqiy rasm bo'lsa o'sha, bo'lmasa default o'rin egallovchi
                  rasm. @error — savol rasmi fayli serverda yo'q bo'lsa (404) ham
@@ -1191,8 +1191,12 @@ onBeforeUnmount(() => {
   }
   /* Yuqori qator va lenta — qat'iy balandlik */
   .play-wrap > div:first-child, .strip-card { flex-shrink: 0; }
-  .strip-card { padding: 0.5rem; }
-  .strip-tile { width: 2.25rem; height: 2.25rem; border-radius: 0.5rem; font-size: 0.8125rem; }
+  /* Raqamlar lentasi mobilda faqat "qayerdaman" degan ko'rsatkich — bosish
+     nishoni sifatida u ASOSIY emas (navigatsiya pastdagi katta tugmalarda),
+     shuning uchun 30px maqbul va savol uchun joy bo'shatadi. */
+  .strip-card { padding: 0.4rem; }
+  .strip-tile { width: 1.875rem; height: 1.875rem; border-radius: 0.4rem; font-size: 0.75rem; }
+  .strip-card > div { gap: 0.3rem; }
 
   /* Qolgan joyni savol bloki egallaydi */
   /* `align-items: stretch` SHART: shablonda `items-start` (Tailwind) bor va
@@ -1217,7 +1221,8 @@ onBeforeUnmount(() => {
   /* `!important` — Tailwind `max-h-[40vh]` bilan bir xil aniqlikda, lekin
      scoped uslub kiritilish tartibiga bog'liq qolmasin */
   .q-img { max-height: 20dvh !important; }
-  .qtext { font-size: 0.9375rem; margin-bottom: 0.625rem; }
+  /* `!important` — Tailwind `text-lg` bilan bir xil aniqlikda */
+  .q-text { font-size: 0.9375rem !important; line-height: 1.4 !important; }
   .q-opt { padding: 0.5rem 0.625rem; }
   .q-opt span { font-size: 0.875rem; }
   .q-letter { width: 1.75rem; height: 1.75rem; }
