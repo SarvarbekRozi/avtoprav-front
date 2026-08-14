@@ -845,11 +845,11 @@ onBeforeUnmount(() => {
           </div>
 
           <!-- Savol ma'lumoti.
-               MOBILDA faqat "seriya" qatori qoladi — qolgan uchtasi allaqachon
-               ekranda bor: kategoriya savol kartasining tepasida, "7 / 20" va
-               XP esa yuqori qatordagi chiplarda. Ularni takrorlash tor ekranda
-               savol ostiga to'rt qatorli keraksiz karta qo'shardi. -->
-          <div class="card p-2">
+               MOBILDA BUTUNLAY CHIQMAYDI: kategoriya savol kartasining
+               tepasida, "7 / 20" va XP yuqori qatordagi chiplarda turibdi,
+               seriya esa test yechayotganda diqqatni tortadigan ortiqcha
+               ma'lumot — u natija sahifasida ko'rinadi. -->
+          <div class="card p-2 dup-mobile">
             <div v-if="currentTopic" class="rail-row dup-mobile">
               <span class="rail-tile rail-tile-primary">
                 <AppIcon name="clipboard" :size="15" />
@@ -1357,7 +1357,11 @@ onBeforeUnmount(() => {
   font-size: 0.875rem; font-weight: 600; color: var(--ai-accent);
   transition: border-color 0.15s;
 }
-.ai-btn:hover { border-color: var(--ai-accent); }
+/* Lavanda to'ldirish — oq fonli ramkali tugma qo'shni "Xatolik haqida
+   xabar berish" havolasidan ajralib turmasdi va AI ekani bilinmasdi.
+   Natija sahifasidagi tugma bilan ham bir xil bo'ldi. */
+.ai-btn { background: var(--ai-bg); border-radius: 0.625rem; }
+.ai-btn:hover { border-color: var(--ai-accent); filter: brightness(0.98); }
 
 .ai-box {
   padding: 0.875rem 1rem; border-radius: 0.75rem;
