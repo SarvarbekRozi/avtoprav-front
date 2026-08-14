@@ -249,7 +249,13 @@ const stats = computed(() => [
     <!-- Mavzular -->
     <div v-else class="grid-topics">
       <article v-for="t in topics" :key="t.id" class="topic-card"
-               :class="t.questions_count === 0 && 'topic-card-off'">
+               :class="[t.questions_count === 0 && 'topic-card-off', t.is_locked && 'topic-card-lock']">
+        <!-- Qulf qatlami: kartani xiralashtiradi va markazda qulf belgisi
+             turadi. `pointer-events: none` — karta baribir bosiladi va
+             tariflar sahifasiga olib boradi. -->
+        <span v-if="t.is_locked" class="lock-veil" aria-hidden="true">
+          <span class="lock-badge"><AppIcon name="lock" :size="18" /></span>
+        </span>
         <div class="topic-head">
           <IconTile :icon="styleFor(t).icon" :tone="styleFor(t).tone" :size="44" />
 
@@ -501,6 +507,41 @@ const stats = computed(() => [
    o'z joyida qoladi. Faqat rang sariq bo'ladi. */
 .topic-cta-lock { color: var(--warn-ink); }
 .dark .topic-cta-lock { color: var(--warn); }
+
+/* ── Qulf qatlami ──
+   Kartaning ustida yarim shaffof parda + markazda qulf. `pointer-events:
+   none` SHART: pastda `.topic-cta::after` butun kartani bosiladigan qilib
+   turadi, parda uni to'sib qo'ymasligi kerak.
+   `z-index: 2` — parda kontentdan ustun, lekin `::after` (bosish qatlami)
+   undan yuqorida qoladi. */
+.lock-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  border-radius: inherit;
+  pointer-events: none;
+  /* 68% juda quyuq edi — mavzu nomi butunlay o'qilmasdi. Foydalanuvchi qaysi
+     mavzu yopiqligini KO'RISHI kerak, aks holda uni sotib olishga nima
+     undaydi? 45% + engil blur "yopiq, lekin nima ekani ko'rinadi" beradi. */
+  background: color-mix(in srgb, var(--surface) 45%, transparent);
+  backdrop-filter: blur(1px);
+}
+.lock-badge {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9999px;
+  background: var(--surface);
+  border: 1px solid var(--warn);
+  color: var(--warn-ink);
+  box-shadow: var(--shadow-lift);
+}
+.dark .lock-badge { color: var(--warn); }
+/* Qulflangan kartada hover ko'tarilishi yo'q — u ochilmaydi, faqat taklif */
+.topic-card-lock:hover { transform: none; border-color: var(--warn); }
 
 /* Yuklanish skeleti — karta bilan bir o'lchamda, sahifa kamroq "sakraydi".
    `pointer-events: none`: usiz bo'sh skelet ustiga sichqoncha kelganda

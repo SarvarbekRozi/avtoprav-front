@@ -219,6 +219,11 @@ const qolgan = computed(() => Math.max(0, topilgan.value.length - CHEK))
                    :to="t.is_locked ? '/pricing' : (t.is_ready ? `/test/start/ticket?ticket_id=${t.id}` : undefined)"
                    class="tcard" :class="[`t-${holat(t)}`, !t.is_ready && 'tcard-off', t.is_locked && 'tcard-lock']"
                    :aria-disabled="!t.is_ready || undefined">
+          <!-- Qulf qatlami: karta xiralashadi, markazda qulf belgisi.
+               `pointer-events: none` — karta baribir bosiladi (tariflarga). -->
+          <span v-if="t.is_locked" class="lock-veil" aria-hidden="true">
+            <span class="lock-badge"><AppIcon name="lock" :size="12" /></span>
+          </span>
           <div class="tnum">{{ t.number }}</div>
           <div class="tqty">{{ t.questions_count }} {{ i18n.t({ uz: 's.', kr: 'с.' }) }}</div>
 
@@ -394,6 +399,9 @@ const qolgan = computed(() => Math.max(0, topilgan.value.length - CHEK))
 }
 
 .tcard {
+  /* `relative` SHART: qulf pardasi (`.lock-veil`) shu kartaga tayanadi,
+     usiz u eng yaqin joylashgan ajdodga — ya'ni butun sahifaga — yopishardi. */
+  position: relative;
   display: block;
   padding: 0.9rem 1rem 0.85rem;
   border-radius: 0.875rem;
@@ -449,9 +457,41 @@ const qolgan = computed(() => Math.max(0, topilgan.value.length - CHEK))
 /* Qulflangan bilet: `tcard-off` dan FARQLI — u bosiladi (tariflarga olib
    boradi), shuning uchun `cursor` va hover o'zgarmaydi. Faqat raqam susayadi
    va holat sariq "Premium" bo'ladi. */
-.tcard-lock .tnum { opacity: 0.55; }
 .tcard-lock .tstat { color: var(--warn-ink); }
 .dark .tcard-lock .tstat { color: var(--warn); }
+/* Qulflangan kartada hover ko'tarilishi yo'q — u ochilmaydi, faqat taklif */
+.tcard-lock:hover { transform: none; border-color: var(--warn); }
+
+/* ── Qulf qatlami ──
+   `pointer-events: none` SHART: karta o'zi havola, parda bosishni to'smasin.
+   Holat qatori (`.tfoot`) parda OSTIDA qolmasin — "Premium" yozuvi
+   o'qilishi kerak, shuning uchun parda faqat raqam qismini qoplaydi. */
+.lock-veil {
+  position: absolute;
+  inset: 0 0 2.25rem;
+  z-index: 2;
+  display: grid;
+  /* O'ng YUQORI burchak, markaz EMAS: bilet kartasi kichik va markazda qulf
+     bilet raqamining yonига tushib, yonma-yon g'alati ko'rinardi. */
+  place-items: start end;
+  padding: 0.5rem 0.55rem 0 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--surface) 45%, transparent);
+  backdrop-filter: blur(1px);
+}
+.lock-badge {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  background: var(--surface);
+  border: 1px solid var(--warn);
+  color: var(--warn-ink);
+  box-shadow: var(--shadow-card);
+}
+.dark .lock-badge { color: var(--warn); }
 
 /* ── Ro'yxat ko'rinishi ── */
 .list { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
