@@ -67,7 +67,10 @@ const themeLabel = computed(() => theme.isDark.value
       </button>
     </div>
 
-    <main class="flex-1 flex flex-col">
+    <!-- `pt-14` mobilda: til/mavzu klasteri `absolute top-3` va tor ekranda
+         u sahifa tepasidagi "Avtoprav" logotipi USTIGA chiqib qolardi
+         (iPhone'da ko'rilgan). Bu padding logoni chiplar ostiga tushiradi. -->
+    <main class="flex-1 flex flex-col pt-14 sm:pt-0">
       <slot />
     </main>
   </div>

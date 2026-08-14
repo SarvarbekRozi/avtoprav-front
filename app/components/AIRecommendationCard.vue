@@ -21,6 +21,21 @@ const { data } = await useTopicStats()
 const videoEl = ref<HTMLVideoElement | null>(null)
 
 /**
+ * Safari VP9 ALFA KANALINI qo'llamaydi: video o'ynaydi, lekin shaffof joylar
+ * QORA to'rtburchak bo'lib chiqadi (iPhone'da ko'rilgan). U yerda video
+ * o'rniga o'sha videoning shaffof PNG kadri ko'rsatiladi.
+ *
+ * `canPlayType` yordam bermaydi — Safari WebM/VP9 ni "probably" deb qaytaradi,
+ * muammo faqat alfa kanalida. Shuning uchun brauzerning o'zi aniqlanadi.
+ * Boshlang'ich qiymat `false`: SSR va hidratsiya bir xil bo'lsin.
+ */
+const alfaYoq = ref(false)
+onMounted(() => {
+  const ua = navigator.userAgent
+  alfaYoq.value = /safari/i.test(ua) && !/chrome|chromium|crios|android|fxios|edg/i.test(ua)
+})
+
+/**
  * WCAG 2.2.2: 5 soniyadan uzun, o'zi boshlanadigan takrorlanuvchi animatsiya
  * to'xtatilishi kerak. Foydalanuvchi tizimida "harakatni kamaytirish"
  * yoqilgan bo'lsa videoni birinchi kadrda to'xtatamiz — qolganlar uchun
@@ -77,7 +92,10 @@ const primary = computed(() => rec.value
       <!-- Robot. Dekorativ: `aria-hidden` + `pointer-events: none` — ekran
            o'quvchi uchun ma'no tashimaydi, bosilmaydi ham. -->
       <div class="robot-slot shrink-0" aria-hidden="true">
+        <!-- Safari uchun videoning shaffof PNG kadri (yuqoridagi izohga qarang) -->
+        <img v-if="alfaYoq" src="/assets/avtoprav-robot-v7-poster.png" class="robot-video" alt="">
         <video
+          v-else
           ref="videoEl"
           class="robot-video"
           autoplay
@@ -113,7 +131,10 @@ const primary = computed(() => rec.value
       </div>
     </div>
 
-    <div class="relative mt-auto pt-4 flex flex-wrap items-center gap-2.5">
+    <!-- `ai-acts` — mobilda ikki tugma BIR QATORDA turishi uchun o'lchamlari
+         kichrayadi (pastdagi media so'rovi). Ilgari ular 375px da sig'may
+         ustma-ust tushib qolardi. -->
+    <div class="ai-acts relative mt-auto pt-4 flex flex-wrap items-center gap-2.5">
       <NuxtLink :to="primary.to"
         class="ai-cta inline-flex items-center gap-2 h-10 px-5 rounded-xl text-[13.5px] font-semibold text-white">
         {{ primary.label }}
@@ -190,5 +211,13 @@ const primary = computed(() => rec.value
 @media (prefers-reduced-motion: reduce) {
   .ai-glow { animation: none; }
   .ai-cta, .ai-cta:hover { transition: none; transform: none; }
+}
+
+/* Mobilda ikki amal tugmasi bir qatorda: standart o'lchamlarda ular ~340px
+   talab qiladi, kartaga esa 375px ekranda ~307px qoladi (o'lchangan). */
+@media (max-width: 767px) {
+  .ai-acts { gap: 0.5rem; }
+  .ai-acts .ai-cta { padding-left: 0.875rem; padding-right: 0.875rem; font-size: 12.5px; gap: 0.375rem; }
+  .ai-acts .ai-alt { padding-left: 0.75rem; padding-right: 0.75rem; font-size: 12.5px; }
 }
 </style>
