@@ -1189,20 +1189,22 @@ onBeforeUnmount(() => {
   .play-chip-narrow { display: none; }
 }
 
-/* ═══ MOBIL: butun ekran, sahifa siljimaydi ═══
-   Ilgari savol, variantlar, navigatsiya va AI tugmasi birgalikda ekrandan
-   uzun bo'lib, har savolda pastga siljish kerak edi — bu test yechishni
-   qiyinlashtirardi. Endi sahifa `100dvh` ga qotiriladi va faqat SAVOL
-   KARTASI (matn + rasm + variantlar) zarur bo'lsa ichkarida siljiydi;
-   yuqori qator, raqamlar lentasi, navigatsiya va AI tugmasi doim ko'rinib
-   turadi.
+/* ═══ MOBIL: KAMIDA bir ekran, lekin qotirilmagan ═══
+   Sahifa `min-height: 100dvh` — ya'ni kontent kam bo'lsa navigatsiya
+   tugmalari ekranning pastida turadi (savol kartasi qolgan joyni to'ldiradi),
+   kontent ko'p bo'lsa esa karta CHO'ZILADI, tugmalar pastga tushadi va
+   sahifa oddiy siljiydi.
+
+   Ilgari `height: 100dvh` + `overflow: hidden` edi va tugmalar qotirilgan:
+   uzun savolda variantlarga kam joy qolib, savol kartasi ichida ikkinchi
+   siljish paydo bo'lardi — bu telefonda noqulay edi.
 
    `100dvh` (`100vh` EMAS): mobil brauzerda manzil paneli yig'ilib-ochilganda
    `vh` o'zgarmaydi va sahifa panel ostiga kirib ketardi. */
 @media (max-width: 767px) {
-  .play-ai { height: 100dvh; overflow: hidden; }
+  .play-ai { min-height: 100dvh; }
   .play-wrap {
-    height: 100%;
+    min-height: 100dvh;
     padding-top: 0.75rem;
     padding-bottom: 0.75rem;
     gap: 0.5rem;
@@ -1221,15 +1223,17 @@ onBeforeUnmount(() => {
      u flex-column'da KO'NDALANG o'qda ishlaydi — farzandlar to'liq kenglikni
      olmay, navigatsiya bilan AI tugmasi bir-birining ustiga chiqib qolardi. */
   .play-grid {
-    flex: 1 1 auto; min-height: 0;
+    flex: 1 1 auto;
     display: flex; flex-direction: column;
     align-items: stretch;
     gap: 0.5rem;
   }
-  .play-col { flex: 1 1 auto; min-height: 0; gap: 0.5rem; }
+  .play-col { flex: 1 1 auto; gap: 0.5rem; }
 
-  /* Savol kartasi — yagona siljiydigan joy */
-  .q-card { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0.875rem; }
+  /* Savol kartasi qolgan joyni TO'LDIRADI, lekin kontent ko'p bo'lsa
+     cho'ziladi. `min-height: 0` va `overflow-y: auto` OLIB TASHLANDI — ular
+     kartani ekran balandligiga qisib, ichida ikkinchi siljish yaratardi. */
+  .q-card { flex: 1 1 auto; padding: 0.875rem; }
   .nav-card { flex-shrink: 0; padding: 0.5rem; }
   .play-grid > aside { flex-shrink: 0; }
 
