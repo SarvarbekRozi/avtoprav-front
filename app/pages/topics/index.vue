@@ -15,10 +15,15 @@ const auth = useAuthStore()
  * `watch` mehmon yaralgan (yoki foydalanuvchi almashgan) zahoti qayta so'raydi.
  * Ayni naqsh `useTopicStats.ts` da ham ishlatilgan.
  */
-const { data: topicsRes, status, error, refresh } = await useAsyncData(
+/**
+ * `lazy: true` va `await` YO'Q — SHART. Sahifa `setup` ichidagi `await`
+ * navigatsiyani BLOKLAYDI: havola bosilganda Nuxt yangi sahifani API javobi
+ * kelguncha ko'rsatmaydi va eski sahifa ekranda qotib turadi.
+ */
+const { data: topicsRes, status, error, refresh } = useAsyncData(
   'topics',
   () => apiFetch<{ data: any[] }>('/topics'),
-  { server: false, default: () => ({ data: [] as any[] }), watch: [() => auth.user?.id] },
+  { server: false, lazy: true, default: () => ({ data: [] as any[] }), watch: [() => auth.user?.id] },
 )
 const topics = computed(() => topicsRes.value?.data || [])
 

@@ -8,10 +8,12 @@ const route = useRoute()
 // chiqadi (backend ?focus bilan saralaydi) va ajratib ko'rsatiladi.
 const focusId = computed(() => Number(route.query.focus) || null)
 
-const { data } = await useAsyncData(
+// `lazy: true` va `await` YO'Q — `setup` ichidagi `await` navigatsiyani
+// BLOKLAYDI. `default` SHART: `lazy` da `data` boshida `null` bo'ladi.
+const { data } = useAsyncData(
   () => `me-mistakes-${focusId.value ?? 'all'}`,
   () => apiFetch<any>('/me/mistakes', { query: focusId.value ? { focus: focusId.value } : undefined }),
-  { watch: [focusId] },
+  { lazy: true, default: () => ({ data: [] as any[] }), watch: [focusId] },
 )
 
 function startMistakesTest() { return navigateTo('/test/start/mistakes') }

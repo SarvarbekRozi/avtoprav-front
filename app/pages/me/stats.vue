@@ -6,10 +6,15 @@ const i18n = useI18n()
 // Oraliq URL'da EMAS, holatda: grafik tabi sahifa manzilini o'zgartirmasin.
 const oraliq = ref<'7' | '30' | '90' | 'all'>('30')
 
-const { data: stats, status, refresh } = await useAsyncData(
+/**
+ * `lazy: true` va `await` YO'Q — SHART. Sahifa `setup` ichidagi `await`
+ * navigatsiyani BLOKLAYDI: havola bosilganda Nuxt yangi sahifani API javobi
+ * kelguncha ko'rsatmaydi va eski sahifa ekranda qotib turadi.
+ */
+const { data: stats, status, refresh } = useAsyncData(
   'me-stats',
   () => apiFetch<any>(`/me/stats?range=${oraliq.value}`),
-  { watch: [oraliq] },
+  { lazy: true, watch: [oraliq] },
 )
 /** Qayta so'rovda skelet MILTILLAMASIN — oldingi render shaffofroq turadi. */
 const yangilanmoqda = computed(() => status.value === 'pending' && !!stats.value)

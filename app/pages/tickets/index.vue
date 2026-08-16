@@ -23,10 +23,16 @@ const auth = useAuthStore()
  * beradi va sahifa bo'sh holatda qotib qolardi (aynan shu xato /topics da
  * ham bor edi). `watch` mehmon yaralgan zahoti qayta so'raydi.
  */
-const { data: ticketsRes, status, error, refresh } = await useAsyncData(
+/**
+ * `lazy: true` va `await` YO'Q — SHART. Sahifa `setup` ichidagi `await`
+ * navigatsiyani BLOKLAYDI: havola bosilganda Nuxt yangi sahifani API javobi
+ * kelguncha ko'rsatmaydi va eski sahifa ekranda qotib turadi. Endi sahifa
+ * darhol ochiladi, ma'lumot kelguncha esa pastdagi skelet ko'rinadi.
+ */
+const { data: ticketsRes, status, error, refresh } = useAsyncData(
   'tickets',
   () => apiFetch<{ data: any[] }>('/tickets'),
-  { server: false, default: () => ({ data: [] as any[] }), watch: [() => auth.user?.id] },
+  { server: false, lazy: true, default: () => ({ data: [] as any[] }), watch: [() => auth.user?.id] },
 )
 const tickets = computed(() => ticketsRes.value?.data || [])
 

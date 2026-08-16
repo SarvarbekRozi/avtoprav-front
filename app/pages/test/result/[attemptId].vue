@@ -5,7 +5,11 @@ const route = useRoute()
 const i18n = useI18n()
 const attemptId = Number(route.params.attemptId)
 
-const { data, status } = await useAsyncData(`result-${attemptId}`, () => apiFetch<any>(`/test/${attemptId}/result`))
+// `lazy: true` va `await` YO'Q — `setup` ichidagi `await` navigatsiyani
+// BLOKLAYDI: testni yakunlagach natija sahifasi API javobini kutib turardi.
+// Sahifada `status` bo'yicha skelet bor, shuning uchun `lazy` to'g'ri ishlaydi.
+const { data, status } = useAsyncData(`result-${attemptId}`,
+  () => apiFetch<any>(`/test/${attemptId}/result`), { lazy: true })
 
 const a = computed(() => data.value?.attempt)
 

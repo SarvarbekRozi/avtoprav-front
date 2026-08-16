@@ -38,12 +38,13 @@ function openSheet() {
  * qaytaradi va bu blok umuman ko'rinmaydi. Maketda "45 000+ foydalanuvchi"
  * yozilgan, lekin qo'lda yozilgan son to'lov sahifasida yolg'on va'da bo'ladi.
  */
-const { data: stats } = await useAsyncData('pricing-stats',
+// `lazy: true` va `await` YO'Q — `setup` ichidagi `await` navigatsiyani bloklaydi
+const { data: stats } = useAsyncData('pricing-stats',
   () => apiFetch<{
     proof: { count: number, window: 'day' | 'week' } | null
     activity: { learners_7d: number, tests_today: number } | null
   }>('/pricing/stats'),
-  { default: () => ({ proof: null, activity: null }), server: false })
+  { default: () => ({ proof: null, activity: null }), server: false, lazy: true })
 
 /** Pilldagi qalin ko'k son — matndan alohida, chunki u alohida stillanadi. */
 const socialProof = computed<{ count: string, text: string } | null>(() => {

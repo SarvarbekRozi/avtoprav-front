@@ -28,10 +28,12 @@ const route = useRoute()
 const router = useRouter()
 
 // SSR bilan yuklanadi — botlar ham to'liq kontentni ko'radi.
-const { data, error, refresh, pending } = await useAsyncData(
+// `lazy: true` va `await` YO'Q — SHART: `setup` ichidagi `await` navigatsiyani
+// BLOKLAYDI va sahifa API javobi kelguncha ochilmaydi (`pending` skeleti bor).
+const { data, error, refresh, pending } = useAsyncData(
   'road-signs',
   () => apiFetch<Payload>('/signs'),
-  { default: () => ({ categories: [], signs: [], source: null as any, credits: [] }) },
+  { lazy: true, default: () => ({ categories: [], signs: [], source: null as any, credits: [] }) },
 )
 
 const categories = computed(() => data.value?.categories ?? [])

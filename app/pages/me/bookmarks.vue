@@ -2,7 +2,11 @@
 definePageMeta({ middleware: 'auth' })
 
 const i18n = useI18n()
-const { data } = await useAsyncData('me-bookmarks', () => apiFetch<any>('/me/bookmarks'))
+// `lazy: true` va `await` YO'Q — `setup` ichidagi `await` navigatsiyani
+// BLOKLAYDI. `default` SHART: `lazy` da `data` boshida `null` bo'ladi va
+// shablon undan o'qiganda xato berardi.
+const { data } = useAsyncData('me-bookmarks', () => apiFetch<any>('/me/bookmarks'),
+  { lazy: true, default: () => ({ data: [] as any[] }) })
 </script>
 
 <template>

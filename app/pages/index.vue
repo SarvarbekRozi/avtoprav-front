@@ -26,15 +26,17 @@ const i18n = useI18n()
  * `default: () => null` — usiz ref boshida `undefined` bo'lib, prop tekshiruvi
  * ("Expected Object | Null, got Undefined") ogohlantirish beradi.
  */
-const { data: stats } = await useAsyncData('home-stats', async () => {
+// `lazy: true` va `await` YO'Q — SHART: sahifa `setup` ichidagi `await`
+// navigatsiyani BLOKLAYDI (bosh sahifaga qaytish ham API javobini kutardi).
+const { data: stats } = useAsyncData('home-stats', async () => {
   if (!auth.token) return null
   try { return await apiFetch<any>('/me/stats') } catch { return null }
-}, { server: false, default: () => null, watch: [() => auth.user?.id] })
+}, { server: false, lazy: true, default: () => null, watch: [() => auth.user?.id] })
 
-const { data: weekBoard } = await useAsyncData('home-week-xp', async () => {
+const { data: weekBoard } = useAsyncData('home-week-xp', async () => {
   if (!auth.token) return null
   try { return await apiFetch<any>('/leaderboard?period=week&limit=5') } catch { return null }
-}, { server: false, default: () => null, watch: [() => auth.user?.id] })
+}, { server: false, lazy: true, default: () => null, watch: [() => auth.user?.id] })
 
 const totals = computed(() => stats.value?.totals ?? null)
 const readiness = computed(() => totals.value?.readiness_percent ?? 0)
