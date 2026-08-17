@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "uz.avtoprav.avtoprav",
+      "sha256_cert_fingerprints": [
+        "36:97:4D:9A:EC:C8:99:4B:0C:58:5D:D7:33:51:79:C4:01:50:7D:58:DA:36:09:4A:CD:26:50:F5:C7:46:22:6F"
+      ]
+    }
+  }
+]
