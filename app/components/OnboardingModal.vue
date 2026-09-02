@@ -16,8 +16,8 @@ const steps = computed(() => [
     icon: 'exam', tone: 'brand',
     title: i18n.t({ uz: 'Xush kelibsiz!', kr: 'Хуш келибсиз!' }),
     text: i18n.t({
-      uz: 'Ro\'yxatdan o\'tish shart emas — darhol boshlang! Imtihon, mavzu, bilet, marafon va yodlash rejimlarida mashq qiling.',
-      kr: 'Рўйхатдан ўтиш шарт эмас — дарҳол бошланг! Имтиҳон, мавзу, билет, марафон ва ёдлаш режимларида машқ қилинг.',
+      uz: 'Ro\'yxatdan o\'tish shart emas — darhol boshlang! Imtihon rejimida cheksiz mashq qiling: real format, 20 savol, 25 daqiqa.',
+      kr: 'Рўйхатдан ўтиш шарт эмас — дарҳол бошланг! Имтиҳон режимида чексиз машқ қилинг: реал формат, 20 савол, 25 дақиқа.',
     }),
   },
   {
@@ -29,11 +29,11 @@ const steps = computed(() => [
     }),
   },
   {
-    icon: 'spark', tone: 'violet',
-    title: i18n.t({ uz: 'Har kuni 2 ta bepul test', kr: 'Ҳар куни 2 та бепул тест' }),
+    icon: 'crown', tone: 'violet',
+    title: i18n.t({ uz: 'Bepul va Premium', kr: 'Бепул ва Премиум' }),
     text: i18n.t({
-      uz: 'Barcha rejimlar va biletlar hammaga ochiq. Har kuni 2 ta testni bepul boshlaysiz — Premium bilan esa cheksiz.',
-      kr: 'Барча режимлар ва билетлар ҳаммага очиқ. Ҳар куни 2 та тестни бепул бошлайсиз — Премиум билан эса чексиз.',
+      uz: 'Imtihon rejimi — cheksiz bepul. Bepul tarifda 5 ta bilet va 1 ta mavzu ochiq. Premium bilan barcha bilet, mavzu, blits, xatolar tahlili va AI tushuntirish ochiladi.',
+      kr: 'Имтиҳон режими — чексиз бепул. Бепул тарифда 5 та билет ва 1 та мавзу очиқ. Премиум билан барча билет, мавзу, блиц, хатолар таҳлили ва AI тушунтириш очилади.',
     }),
   },
 ])
