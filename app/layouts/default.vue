@@ -42,6 +42,12 @@ const themeLabel = computed(() => theme.isDark.value
          turardi, ustiga test paytida bildirishnoma ochish ham keraksiz. -->
     <NotificationBell v-if="mobileChrome" class="md:hidden" />
 
+    <!-- "Taklif va izohlar" — o'ng pastdagi suzuvchi tugma. Qo'ng'iroqdan
+         farqli, u DESKTOPDA HAM chiqadi: o'ng past burchak bo'sh turadi.
+         `mobileChrome: false` bo'lgan sahifada (test yechish) chiqmaydi —
+         imtihon paytida chalg'itmasligi kerak. -->
+    <FeedbackFab v-if="mobileChrome" />
+
     <DashboardSidebar />
 
     <!-- min-w-0 SHART: usiz ichkaridagi keng grid/jadval main'ni cho'zib yuboradi -->
