@@ -94,6 +94,10 @@ async function confirmManual() {
     })
     activated.value = false
     view.value = 'sent'
+    // Oyna yopilsa ham kuzatuv davom etsin: admin ko'pincha kechroq
+    // tasdiqlaydi va pastdagi poll faqat ~2 daqiqa ishlaydi.
+    // Qarang: plugins/premium-watch.client.ts
+    setPendingOrder(res.order_id)
     pollOrder(res.order_id, ++pollToken)
   }
   catch (e: any) {
@@ -118,6 +122,7 @@ async function pollOrder(orderId: number, token: number) {
       const s = await apiFetch<{ is_paid: boolean }>(`/me/orders/${orderId}`)
       if (s.is_paid) {
         if (token !== pollToken) return
+        clearPendingOrder()
         await auth.fetchMe()
         activated.value = true
         return
