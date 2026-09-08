@@ -1,3 +1,19 @@
+<script lang="ts">
+/**
+ * MODUL darajasidagi holat — ATAYLAB `<script setup>` dan tashqarida.
+ *
+ * `layouts/default.vue` da `auth.user` kelguncha "mehmon" tarmog'i, kelgach
+ * "app" tarmog'i chiziladi; ular boshqa `key` ga ega, shuning uchun Vue butun
+ * sahifani QAYTA yaratadi. `<script setup>` ichidagi har qanday qiymat shunda
+ * nolga tushadi va rasmlar ikkinchi marta oldindan yuklanardi (o'lchandi:
+ * har bir rasm 2 marta so'ralgan) — aynan sekin internetda keraksiz trafik.
+ *
+ * Faqat klientda to'ldiriladi (`preloadAhead` dagi `import.meta.client`
+ * qorovuli), ya'ni serverda so'rovlar orasida hech narsa saqlanmaydi.
+ */
+const preloaded = new Set<string>()
+</script>
+
 <script setup lang="ts">
 // Test ekrani endi dashboard qobig'i ichida turadi (chap panel + o'ng axborot
 // ustuni). Ilgari yalang'och `test` layout ishlatilardi.
@@ -549,23 +565,84 @@ const correctStreak = ref(0)
 
 const currentTopic = computed(() => currentItem.value?.question.topic || '')
 
-/** Savol rasmi serverda yo'q bo'lsa (404) — o'rin egallovchi rasmga tushamiz. */
-/**
- * Rasmi yo'q savollar. Ikki holat bor:
- *   1) `question.image` null — savol matnli
- *   2) `image` bor, lekin fayl serverda yo'q (`error` hodisasi)
- * Ikkalasida ham o'rin egallovchi rasm chiqadi; MOBILDA u faqat joy
- * egallaydi, shuning uchun yashiriladi (pastdagi `.q-img-none` qoidasi).
- */
-const rasmiYoq = ref<Set<number>>(new Set())
+/* ── Savol rasmi ──────────────────────────────────────────────────────────
+   Sekin internet (3G) uchun uchta narsa qilingan. Ilgari rasm yuklanmasa
+   darhol `/default-pic.png` qo'yilardi — u 1.1 MB, ya'ni yuklanmagan rasm
+   o'rniga YANA katta fayl so'ralardi va qayta urinish umuman yo'q edi. */
 
-function onQuestionImageError(e: Event) {
-  const img = e.target as HTMLImageElement | null
-  if (!img || img.src.endsWith('/default-pic.png')) return
-  img.src = '/default-pic.png'
-  const id = currentItem.value?.question.id
-  if (id) rasmiYoq.value = new Set(rasmiYoq.value).add(id)
+/** Rasm holati savol id'si bo'yicha. */
+const imgStatus = ref<Record<number, 'loading' | 'ok' | 'failed'>>({})
+/** Nechanchi urinish — `?r=N` shundan olinadi. */
+const imgAttempt = ref<Record<number, number>>({})
+
+const IMG_MAX_RETRIES = 2
+const IMG_RETRY_BASE_MS = 1200
+
+/**
+ * `?r=N` faqat XATODAN KEYIN qo'shiladi: birinchi yuklashda URL toza bo'ladi
+ * va brauzer/CDN keshi odatdagidek ishlaydi.
+ */
+function questionImageSrc(url: string, id: number): string {
+  const n = imgAttempt.value[id] || 0
+  if (n === 0) return url
+  return `${url}${url.includes('?') ? '&' : '?'}r=${n}`
 }
+
+function imgState(id: number) {
+  return imgStatus.value[id] ?? 'loading'
+}
+
+function onImgLoad(id: number) {
+  imgStatus.value = { ...imgStatus.value, [id]: 'ok' }
+}
+
+function onImgError(id: number) {
+  const tried = imgAttempt.value[id] || 0
+
+  if (tried < IMG_MAX_RETRIES) {
+    // Kechikish ortib boradi — uzilish o'tishiga vaqt beramiz.
+    setTimeout(() => {
+      imgAttempt.value = { ...imgAttempt.value, [id]: tried + 1 }
+      imgStatus.value = { ...imgStatus.value, [id]: 'loading' }
+    }, IMG_RETRY_BASE_MS * (tried + 1))
+    return
+  }
+
+  imgStatus.value = { ...imgStatus.value, [id]: 'failed' }
+}
+
+/** "Qayta urinish" tugmasi — avtomatik urinishlar tugagach ko'rinadi. */
+function retryImage(id: number) {
+  imgAttempt.value = { ...imgAttempt.value, [id]: (imgAttempt.value[id] || 0) + 1 }
+  imgStatus.value = { ...imgStatus.value, [id]: 'loading' }
+}
+
+/**
+ * Keyingi ikkita savolning rasmini FONDA oldindan yuklaymiz.
+ *
+ * Savollar allaqachon bitta so'rovda kelgan, lekin rasm faqat ekranga
+ * chiqqanda so'ralardi — sekin internetda har o'tishda noldan kutish.
+ * Foydalanuvchi joriy savolni o'qiyotgan vaqtda keyingilari tayyor bo'ladi.
+ */
+function preloadAhead(pos: number) {
+  if (!import.meta.client) return
+  for (let i = 1; i <= 2; i++) {
+    const url = questions.value.find(q => q.position === pos + i)?.question.image
+    if (!url || preloaded.has(url)) continue
+    preloaded.add(url)
+    const img = new Image()
+    img.decoding = 'async'
+    img.src = url
+  }
+}
+
+// `questions.length` ham kuzatiladi: savollar kelishidan oldin `currentPosition`
+// allaqachon 1 bo'lishi mumkin va faqat unga qarash birinchi juftlikni o'tkazib yuborardi.
+watch(
+  [currentPosition, () => questions.value.length],
+  ([pos]) => preloadAhead(pos as number),
+  { immediate: true },
+)
 
 /* ── Xatolik haqida xabar ────────────────────────────────────────────────
    Faqat foydalanuvchiga BERILGAN savol uchun ishlaydi (server ham shuni
@@ -776,23 +853,50 @@ onBeforeUnmount(() => {
             <!-- Question text -->
             <h1 class="q-text text-lg sm:text-xl font-semibold leading-snug" style="color: var(--text-1);">{{ currentItem.question.text }}</h1>
 
-            <!-- Rasm: haqiqiy rasm bo'lsa o'sha, bo'lmasa default o'rin egallovchi
-                 rasm. @error — savol rasmi fayli serverda yo'q bo'lsa (404) ham
-                 buzuq belgi o'rniga default rasm chiqadi.
-                 `q-img-none` — MOBILDA o'rin egallovchi rasm butunlay
-                 yashiriladi: u hech qanday ma'lumot bermaydi, faqat joy olib
-                 savol va variantlarni ekrandan chiqarib yuboradi. -->
-            <div class="relative cursor-zoom-in"
-                 :class="{ 'q-img-none': !currentItem.question.image || rasmiYoq.has(currentItem.question.id) }"
-                 @click="zoomedImage = currentItem.question.image || '/default-pic.png'">
-              <img :src="currentItem.question.image || '/default-pic.png'"
-                   @error="onQuestionImageError"
+            <!-- Rasmi yo'q savolda konteyner UMUMAN chizilmaydi. Ilgari bu yerda
+                 o'rin egallovchi rasm turardi va mobilda savol bilan variantlarni
+                 ekrandan chiqarib yuborardi; endi u umuman yo'q.
+                 Yuklanayotgan va yuklanmagan holatlar uchun pastda skelet va
+                 ixcham "qayta urinish" qatori bor. -->
+            <div v-if="currentItem.question.image"
+                 class="relative"
+                 :class="imgState(currentItem.question.id) === 'ok' ? 'cursor-zoom-in' : 'q-img-box'"
+                 @click="imgState(currentItem.question.id) === 'ok'
+                   && (zoomedImage = questionImageSrc(currentItem.question.image, currentItem.question.id))">
+              <!-- `@load`/`@error` ATAYLAB `:src` dan oldin: Vue proplarni
+                   e'lon tartibida qo'yadi, ya'ni tinglovchilar manzil
+                   berilishidan oldin ulanadi. -->
+              <img @load="onImgLoad(currentItem.question.id)"
+                   @error="onImgError(currentItem.question.id)"
+                   :src="questionImageSrc(currentItem.question.image, currentItem.question.id)"
+                   decoding="async"
+                   fetchpriority="high"
                    :alt="i18n.t({ uz: 'Savol rasmi', kr: 'Савол расми' })"
                    class="q-img w-full rounded-xl border max-h-[40vh] sm:max-h-[340px] object-contain"
+                   :class="{ 'q-img-hidden': imgState(currentItem.question.id) !== 'ok' }"
                    style="background: var(--surface-inset); border-color: var(--border-soft);">
+
+              <!-- Yuklanmoqda: skelet. Sekin internetda bo'sh joy o'rniga
+                   jarayon ko'rinadi — foydalanuvchi kutish kerakligini biladi. -->
+              <div v-if="imgState(currentItem.question.id) === 'loading'" class="q-img-ph">
+                <span class="q-img-spin" aria-hidden="true"></span>
+                <span>{{ i18n.t({ uz: 'Rasm yuklanmoqda…', kr: 'Расм юкланмоқда…' }) }}</span>
+              </div>
+
+              <!-- Yuklanmadi: IXCHAM qator + qo'lda qayta urinish. Katta o'rin
+                   egallovchi rasm emas — mobilda ekranni yeb qo'ymaydi. -->
+              <div v-else-if="imgState(currentItem.question.id) === 'failed'" class="q-img-fail">
+                <AppIcon name="alert" :size="15" class="shrink-0" />
+                <span class="truncate">{{ i18n.t({ uz: 'Rasm yuklanmadi', kr: 'Расм юкланмади' }) }}</span>
+                <button type="button" class="q-img-retry"
+                        @click.stop="retryImage(currentItem.question.id)">
+                  {{ i18n.t({ uz: 'Qayta urinish', kr: 'Қайта уриниш' }) }}
+                </button>
+              </div>
+
               <!-- Maketda OQ doira + kattalashtirish ikonkasi (to'q doira +
                    "plus" emas) -->
-              <div class="q-zoom">
+              <div v-if="imgState(currentItem.question.id) === 'ok'" class="q-zoom">
                 <AppIcon name="expand" :size="15" />
               </div>
             </div>
@@ -999,8 +1103,10 @@ onBeforeUnmount(() => {
                 style="background: rgba(255,255,255,0.1); color: #fff;">
           <AppIcon name="x" :size="22" />
         </button>
+        <!-- Kattalashtirish faqat allaqachon yuklangan rasmda ochiladi, ya'ni
+             bu yerda xato deyarli bo'lmaydi; bo'lsa — oynani yopamiz. -->
         <img :src="zoomedImage"
-             @error="onQuestionImageError"
+             @error="zoomedImage = null"
              class="max-w-full max-h-full object-contain rounded-lg shadow-2xl anim-in"
              @click.stop>
       </div>
@@ -1250,7 +1356,6 @@ onBeforeUnmount(() => {
   .rail-exam { display: none; }
 
   /* Rasmi yo'q savolda o'rin egallovchi rasm ham chiqmaydi */
-  .q-img-none { display: none; }
   .q-opt { padding: 0.5rem 0.625rem; }
   .q-opt span { font-size: 0.875rem; }
   .q-letter { width: 1.75rem; height: 1.75rem; }
@@ -1309,6 +1414,67 @@ onBeforeUnmount(() => {
   width: 2.25rem; height: 2.25rem; border-radius: 9999px;
   background: var(--surface); color: var(--text-2);
   box-shadow: var(--shadow-card);
+}
+
+/* ── Rasm holatlari (sekin internet) ───────────────────────────────────────
+   Rasm `display:none` QILINMAYDI, faqat ko'rinmas bo'ladi: yashirilgan
+   <img> ni brauzer yuklamay qo'yishi mumkin, bizga esa u fonda yuklanib
+   `@load` berishi kerak. Shuning uchun balandligi 0 va o'lchamdan chiqarilgan. */
+.q-img-hidden {
+  opacity: 0;
+  height: 0;
+  min-height: 0;
+  border: 0;
+  pointer-events: none;
+}
+/* Rasm kelmaguncha BIR XIL to'rtburchak band bo'lib turadi.
+   Usiz "yuklanmoqda" (skelet) dan "yuklanmadi" (ixcham qator) ga o'tishda
+   ostidagi javob tugmalari ~100px yuqoriga sakrardi — foydalanuvchi savolni
+   o'qib turib tegib ketishi mumkin edi. Balandlik `.q-img` shifti bilan bir xil,
+   ya'ni rasm kelganda ham sakrash deyarli bo'lmaydi. */
+.q-img-box { min-height: 340px; }
+@media (max-width: 640px) {
+  .q-img-box { min-height: 40vh; }
+}
+/* Skelet va xato qatori — o'sha to'rtburchak ichida, markazda */
+.q-img-ph,
+.q-img-fail {
+  position: absolute;
+  inset: 0;
+}
+.q-img-ph {
+  display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-soft);
+  background: var(--surface-inset);
+  color: var(--text-3);
+  font-size: 0.8125rem;
+}
+.q-img-spin {
+  width: 1.05rem; height: 1.05rem;
+  border-radius: 9999px;
+  border: 2px solid var(--border-1);
+  border-top-color: var(--primary);
+  animation: q-img-spin 0.8s linear infinite;
+}
+@keyframes q-img-spin { to { transform: rotate(360deg); } }
+/* Yuklanmadi — IXCHAM qator, katta o'rin egallovchi rasm emas */
+.q-img-fail {
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-soft);
+  background: var(--surface-inset);
+  color: var(--text-3);
+  font-size: 0.8125rem;
+}
+.q-img-retry {
+  padding: 0.25rem 0.6rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem; font-weight: 600;
+  color: var(--primary-ink);
+  background: var(--primary-soft);
+  white-space: nowrap;
 }
 
 /* ── Javob variantlari ─────────────────────────────────────────────────── */
