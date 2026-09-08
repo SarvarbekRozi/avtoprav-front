@@ -39,14 +39,15 @@ export default defineNuxtPlugin(() => {
       return
     }
 
-    // Allaqachon Premium bo'lsa kuzatishning ma'nosi yo'q (masalan boshqa
-    // qurilmada yoki `PaymentSheet` ning o'z so'rovi ilgari ushlagan).
-    if (auth.user?.is_premium) {
-      clearPendingOrder()
-      stop()
-      return
-    }
-
+    // DIQQAT: bu yerda "allaqachon Premium bo'lsa to'xtatamiz" degan shart
+    // BO'LMASLIGI kerak edi. U bor paytda sahifa tasdiqlangandan KEYIN
+    // yuklansa (foydalanuvchi qaytib kelgan, F5 bosgan), `auth.user.is_premium`
+    // allaqachon `true` bo'lar va xabar ko'rsatilmasdan buyurtma o'chirib
+    // tashlanardi — premium ochilgan, lekin odam nima bo'lganini bilmasdi.
+    //
+    // Haqiqat manbai — BUYURTMANING o'zi. Obunani uzaytirayotgan odam ham
+    // to'lovdan oldin Premium bo'ladi, ya'ni `is_premium` bu yerda hech narsa
+    // aytmaydi.
     if (busy) return
     busy = true
 

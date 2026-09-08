@@ -58,7 +58,7 @@ const themeLabel = computed(() => theme.isDark.value
     <!-- Karta to'lovi admin tomonidan tasdiqlanganda chiqadi. Layoutda turadi,
          chunki foydalanuvchi o'sha paytda ISTALGAN sahifada bo'lishi mumkin —
          to'lov oynasi allaqachon yopilgan bo'ladi. -->
-    <PremiumActivatedToast />
+    <PremiumActivatedModal />
   </div>
 
   <div v-else key="guest" class="min-h-screen flex flex-col" style="background: var(--canvas);">
