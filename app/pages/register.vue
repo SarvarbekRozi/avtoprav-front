@@ -257,10 +257,10 @@ watch(errors, (next) => {
             </button>
 
             <p class="text-xs text-center leading-relaxed" style="color: var(--text-3);">
-              {{ i18n.t({
-                uz: 'Ro\'yxatdan o\'tish orqali siz xizmat shartlariga rozilik bildirasiz.',
-                kr: 'Рўйхатдан ўтиш орқали сиз хизмат шартларига розилик билдирасиз.',
-              }) }}
+              {{ i18n.t({ uz: 'Ro\'yxatdan o\'tish orqali siz', kr: 'Рўйхатдан ўтиш орқали сиз' }) }}
+              <NuxtLink to="/shartlar" class="note-link">{{ i18n.t({ uz: 'foydalanish shartlari', kr: 'фойдаланиш шартлари' }) }}</NuxtLink>
+              {{ i18n.t({ uz: 'va', kr: 'ва' }) }}
+              <NuxtLink to="/maxfiylik" class="note-link">{{ i18n.t({ uz: 'maxfiylik siyosati', kr: 'махфийлик сиёсати' }) }}</NuxtLink>{{ i18n.t({ uz: 'ga rozilik bildirasiz.', kr: 'га розилик билдирасиз.' }) }}
             </p>
           </form>
 

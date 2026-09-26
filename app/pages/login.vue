@@ -166,6 +166,14 @@ async function submit() {
             kr: 'Avtoprav — сизнинг имтиҳонга ишончли йўлдошингиз',
           }) }}
         </p>
+
+        <!-- Google "Production" rejimi ommaviy maxfiylik siyosati va shartlarni
+             talab qiladi — foydalanuvchi ularni kirishdan OLDIN ko'ra olishi kerak. -->
+        <p class="mt-3 flex items-center justify-center gap-3 text-xs" style="color: var(--text-4);">
+          <NuxtLink to="/maxfiylik" class="legal-link">{{ i18n.t({ uz: 'Maxfiylik siyosati', kr: 'Махфийлик сиёсати' }) }}</NuxtLink>
+          <span aria-hidden="true">·</span>
+          <NuxtLink to="/shartlar" class="legal-link">{{ i18n.t({ uz: 'Foydalanish shartlari', kr: 'Фойдаланиш шартлари' }) }}</NuxtLink>
+        </p>
       </div>
     </div>
   </div>
@@ -374,6 +382,8 @@ async function submit() {
   color: var(--primary-ink);
 }
 .auth-link:hover { text-decoration: underline; text-underline-offset: 4px; }
+.legal-link { color: var(--text-3); }
+.legal-link:hover { color: var(--text-1); text-decoration: underline; text-underline-offset: 3px; }
 
 @media (prefers-reduced-motion: reduce) {
   .submit-btn, .submit-btn:active { transition: none; transform: none; }
