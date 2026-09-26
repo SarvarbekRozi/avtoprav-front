@@ -5,7 +5,8 @@
       "namespace": "android_app",
       "package_name": "uz.avtoprav.avtoprav",
       "sha256_cert_fingerprints": [
-        "36:97:4D:9A:EC:C8:99:4B:0C:58:5D:D7:33:51:79:C4:01:50:7D:58:DA:36:09:4A:CD:26:50:F5:C7:46:22:6F"
+        "36:97:4D:9A:EC:C8:99:4B:0C:58:5D:D7:33:51:79:C4:01:50:7D:58:DA:36:09:4A:CD:26:50:F5:C7:46:22:6F",
+        "E5:24:91:0E:42:F4:04:4E:86:5B:6B:54:93:3C:52:CF:4A:A8:9A:D6:9C:73:80:78:12:2D:5D:70:CE:4C:F6:8C"
       ]
     }
   }
