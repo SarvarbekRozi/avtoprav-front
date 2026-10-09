@@ -111,6 +111,19 @@ export default defineNuxtConfig({
     '/test/play/**': { ssr: false },
     '/test/result/**': { ssr: false },
     '/pricing': { ssr: false },
+
+    // Reklama havolasi → Google Play. Meta "Traffic" kampaniyasida play.google.com
+    // manzilini to'g'ridan-to'g'ri qabul qilmaydi (u faqat Meta'da ro'yxatdan
+    // o'tgan ilova bilan "App promotion"da ishlaydi), shuning uchun reklama shu
+    // manzilga ishora qiladi va server darhol Play sahifasiga yo'naltiradi.
+    // `referrer` — Play Console'ning "Acquisition" hisobotida manba ko'rinishi uchun.
+    // App Link faqat /ilova uchun (AndroidManifest), bu manzilni ilova ushlamaydi.
+    '/play': {
+      redirect: {
+        to: 'https://play.google.com/store/apps/details?id=uz.avtoprav.avtoprav&referrer=utm_source%3Dinstagram%26utm_medium%3Dcpc%26utm_campaign%3Dplay_2026_10',
+        statusCode: 302,
+      },
+    },
   },
 
   tailwindcss: {
